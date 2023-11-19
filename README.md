@@ -1,6 +1,10 @@
 # Circuit-controlled router
 
-**Development version!** Please note that this is an early development release, and is not close to completion.
+## Development version
+
+Please note that this is an early development release, and is not close to completion.  In particular, the graphics are just placeholders (and have the wrong rendering angle), except maybe for the signals.
+
+## Introduction
 
 This mod introduces two types of circuit-controlled belt routers for moving items around your base.  These buildings act somewhat like 4-way splitters, with belts of items going into them and coming out of them.
 
@@ -39,8 +43,8 @@ Each router contains several invisible very fast filter inserters, much like wit
 Smart routers use extensive circuitry.  Each green wire carries the following signals:
 * For each item, the number of those items being put on the belt in that tick.  This must remain less than 16.
 * For each item, 16 times a demand factor for that item.
-* The ![connected_signal_icon](resources/default.png) is set to -16 by each smart router.  So if it's -16 then one smart router is connected, and if it's -32 then two smart routers are connected.
-* The ![leaf_signal_icon](resources/leaf.png) is set to 16 by each leaf (requester and/or provider) port.  This is currently only used to turn the port indicator light blue.
+* The connected signal ![connected_signal_icon](resources/connected.png) is set to -16 by each smart router.  So if it's -16 then one smart router is connected, and if it's -32 then two smart routers are connected.
+* The leaf signal ![leaf_signal_icon](resources/leaf.png) is set to 16 by each leaf (requester and/or provider) port.  This is currently only used to turn the port indicator light blue.
 
 The item types participate in a "leaky heat equation": each smart router with N connected ports propagates slightly less than 1/Nth of its demands to each neighboring router.  You can imagine that a leaf node demanding e.g. copper is a "heat source" on the copper channel, and then heat propagates throughout the smart router network.  The heat leaks out slightly from everywhere in the network, but especially from the edges, which sets up a heat gradient.  When a router receives an item, it will be routed in a direction that has above-average heat (= demand) for that item type.
 
