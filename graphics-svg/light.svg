@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="64"
+   height="32"
+   viewBox="0 0 16.933333 8.4666664"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed, 2023-07-21)"
+   sodipodi:docname="light.svg"
+   inkscape:export-filename="light.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     showgrid="true"
+     inkscape:zoom="3.83"
+     inkscape:cx="37.989556"
+     inkscape:cy="26.89295"
+     inkscape:window-width="1216"
+     inkscape:window-height="787"
+     inkscape:window-x="165"
+     inkscape:window-y="38"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       id="grid1"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="4.2333332"
+       spacingy="4.2333332"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       dotted="false"
+       gridanglex="30"
+       gridanglez="30"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient2"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#b6b6b6;stop-opacity:1;"
+         offset="0"
+         id="stop2" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="1"
+         id="stop3" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient29"
+       id="linearGradient28"
+       gradientUnits="userSpaceOnUse"
+       x1="2.6730013"
+       y1="-0.97597605"
+       x2="3.5394614"
+       y2="-0.95720732"
+       gradientTransform="matrix(8.3063512,0,0,8.3063512,-22.575998,0.26613562)" />
+    <linearGradient
+       id="linearGradient29"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#ff1010;stop-opacity:1;"
+         offset="0"
+         id="stop28" />
+      <stop
+         style="stop-color:#e0665a;stop-opacity:1;"
+         offset="1"
+         id="stop29" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2"
+       id="linearGradient3"
+       x1="1.9868793"
+       y1="-12.7"
+       x2="6.4797869"
+       y2="-12.7"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="circle33"
+       style="font-variation-settings:normal;vector-effect:none;fill:url(#linearGradient28);fill-opacity:1;stroke:none;stroke-width:0.259574;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+       d="M 2.2458577 -4.2322998 C 2.2458577 -3.1334413 3.1334413 -2.2458577 4.2322998 -2.2458577 C 5.3311583 -2.2458577 6.2208089 -3.1334413 6.2208089 -4.2322998 C 6.2208089 -5.3311583 5.3311583 -6.2208089 4.2322998 -6.2208089 C 3.1334413 -6.2208089 2.2458577 -5.3311583 2.2458577 -4.2322998 z "
+       transform="rotate(90)" />
+    <path
+       id="circle1"
+       style="font-variation-settings:normal;vector-effect:none;fill:url(#linearGradient3);fill-opacity:1;stroke:none;stroke-width:0.259574;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+       d="M 2.2458577 -12.698966 C 2.2458577 -11.600108 3.1334413 -10.713041 4.2322998 -10.713041 C 5.3311583 -10.713041 6.2208089 -11.600108 6.2208089 -12.698966 C 6.2208089 -13.797824 5.3311583 -14.687476 4.2322998 -14.687476 C 3.1334413 -14.687476 2.2458577 -13.797824 2.2458577 -12.698966 z "
+       transform="rotate(90)" />
+  </g>
+</svg>
