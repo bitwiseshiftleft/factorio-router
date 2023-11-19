@@ -8,7 +8,7 @@ mod: build/router_$(VERSION).zip
 clean:
 	rm -fr build
 
-build/router_0.0.1.zip: $(FILES)
+build/router_$(VERSION).zip: $(FILES)
 	rm -fr build
 	mkdir -p build/router_$(VERSION)
 	convert graphics/default.png -crop 32x32+192+0 resources/default.png
