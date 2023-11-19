@@ -23,6 +23,8 @@ Manual routers do not have any form of priority.  An item is either requested by
 
 ## Smart routers, requesters and providers
 
+![smart router screenshot](resources/screenshot-smart.png)
+
 Smart routers are designed to form a network, routing items from provider stations to requester stations.  The routers and the stations form a network connected by green wires.  When two smart routers are connected together, their port lights will turn green.  When a smart router is connected to a requester or provider, its port light will turn blue.
 
 The requests can be set on each requester station by an integrated constant combinator, or using the circuit network.
@@ -31,6 +33,8 @@ Smart routers use a fancy communication protocol over the green wires.  It is re
 
 Since the circuit network doesn't update instantaneously, it is possible that slightly too many of an item will be sent.  These items would normally have nowhere to go, and so would clog up the network.  However, they can be sent to
 *buffer stations*.  As with manual routers, these request all types of resources by using the default signal ![default_signal_icon](resources/default.png).
+
+Currently the requester and provider ports aren't done, but a circuit connection can still be mocked up.  The above screenshot shows a work-in-progress smart router grid.  At each leaf, the "leaf" signal is set to 16 (which turns the port blue), and the resource being requested is set to 1600.  It's important that these be multiples of 16, since the low 4 bits are used to count outgoing items on the belt.  You can see that the routing behavior isn't quite tight: the copper and plastic go almost (but not quite) directly to their targets, but the blue circuits take a meandering path toward the default receiver at upper left.
 
 ## Balancing
 

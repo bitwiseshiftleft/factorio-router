@@ -1,11 +1,11 @@
 # Factorio smart routers TODO list
 
 ## General
-Document how the circuits work
-Clean up functions
-Clean up prototypes via table merging
-Remove unused icons
-Proper packaging
+* Document how the circuits work
+* Clean up functions
+* Clean up prototypes via table merging
+* Remove unused icons
+* Proper packaging
 
 Refactor lua slightly
 * Move circuit builder to its own module
@@ -33,17 +33,17 @@ Make other router shapes, e.g. 3 <=> 3??
 
 ## Integration/testing
 
-Test fast-replacing ghosts
-Test what happens when you place a router on a spaceship
+* Test fast-replacing ghosts
+* Test what happens when you place a router on a spaceship
 
-Integrate with SE (deep space belts woo)
-Integrate with K2
-Integrate with Py
-Integrate with AngelBobs
-Integrate with IR
-Integrate with Exotic
-Integrate with 248k
-Integrate with Ultimate belts
+* Integrate with SE (deep space belts woo)
+* Integrate with K2
+* Integrate with Py
+* Integrate with AngelBobs
+* Integrate with IR
+* Integrate with Exotic
+* Integrate with 248k
+* Integrate with Ultimate belts
 
 ## Smart routers
 * Make a startup setting to enable/disable smart routers
@@ -52,13 +52,14 @@ Design smart I/O ports
 * Have a circuit design, but need to implement it and make the entities
 
 Design smart I/O buffers (= buffered version of router with a small chest??)
-* These would receive default??
+* These would set the default signal?
+* Compare performance.  If it's much better then maybe all routers should be buffered?
 
-Add a reset switch somehow
-* Possibly add a signal for that
+* Add a reset switch somehow
+* * Possibly add a signal definition for that
 
-Wider smart routers?  May need buffer/splitter
-Create buffered router, maybe.  Compare perf.
+* Adjust how loosely/tightly things are routed by adjusting the average.
+* Wider smart routers?  May need buffer/splitter
 
 ## Smart router autoconnect
 * Consider not connecting with a single wire, but with several
@@ -76,9 +77,8 @@ Create buffered router, maybe.  Compare perf.
 ## Regular routers
 * Make a startup setting to enable/disable non-smart routers
 
-Make blueprintable
-Set control behavior of lamps so they aren't "disabled by control behavior".
-Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
+*Make blueprintable
+*Set control behavior of lamps so they aren't "disabled by control behavior".
+*Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
 
-Allow <0 instead of >0 as port condition?
--- Like I dunno, shift-R?
+* Allow <0 instead of >0 as port condition? ... Like I dunno, shift-R?
