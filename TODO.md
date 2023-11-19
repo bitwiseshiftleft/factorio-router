@@ -46,7 +46,7 @@ Make other router shapes, e.g. 3 <=> 3??
 * Integrate with Ultimate belts
 
 ## Smart routers
-* Make a startup setting to enable/disable smart routers
+Make a startup setting to enable/disable smart routers
 
 Design smart I/O ports
 * Have a circuit design, but need to implement it and make the entities
@@ -55,14 +55,16 @@ Design smart I/O buffers (= buffered version of router with a small chest??)
 * These would set the default signal?
 * Compare performance.  If it's much better then maybe all routers should be buffered?
 
-* Add a reset switch somehow
-* * Possibly add a signal definition for that
+Add a reset switch somehow
+* Possibly add a signal definition for that
 
-* Adjust how loosely/tightly things are routed by adjusting the average.
-* Wider smart routers?  May need buffer/splitter
+Adjust how loosely/tightly things are routed by adjusting the average.
+
+Wider smart routers?  May need buffer/splitter
 
 ## Smart router autoconnect
-* Consider not connecting with a single wire, but with several
+
+Consider not connecting with a single wire, but with several, automatically using Lua
 * When one wire is connected (or when bi-directional belts are connected??), automatically connect the other wires.
 * Pro: gets rid of requirement to blueprint the lamps
 * Pro: Significant reduction in circuit size
@@ -74,11 +76,13 @@ Design smart I/O buffers (= buffered version of router with a small chest??)
 * Con: need on-build handler to trace the belts for connect/disconnect
 * Con: opaque and even cheatier
 
+I could consider enabling this by creating a "routable belt/underneathie" that's the same as normal belts, but which must be used to connect routers.  This would both add to flavor and possibly graphics, and help the Lua avoid triggering too much on regular belts.
+
 ## Regular routers
 * Make a startup setting to enable/disable non-smart routers
 
-*Make blueprintable
-*Set control behavior of lamps so they aren't "disabled by control behavior".
-*Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
+* Make blueprintable
+* Set control behavior of lamps so they aren't "disabled by control behavior".
+* Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
 
 * Allow <0 instead of >0 as port condition? ... Like I dunno, shift-R?
