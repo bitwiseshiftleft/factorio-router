@@ -321,7 +321,7 @@ local function create_smart_comms(surface,position,force,input_belts,output_belt
     local default_neg_2 = builder:constant_combi({{signal=DEFAULT,count=-2,out=DEFAULT}})
     default_neg_2.connect_neighbour{wire=RED,target_entity=minus_one_unhandled,target_circuit_id=OUTPUT}
 
-    local LIBERALIZE = 1 -- A fudge factor so that things spread out a bit more
+    local LIBERALIZE = 0 -- A fudge factor so that things spread out a bit more
 
     -----------------------------------------
     -- Bus interface and output determination
