@@ -1,3 +1,4 @@
+local util = require"__core__.lualib.util"
 local circuit = require "lualib.circuit"
 
 local NORTH = defines.direction.north;

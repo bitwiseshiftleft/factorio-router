@@ -1,27 +1,7 @@
+local util = require"__core__.lualib.util"
 local belt_with_no_frames = require "prototypes.belt_with_no_frames" 
 
-local empty_sheet = {
-    filename = "__router__/graphics/empty1.png",
-    priority = "very-low",
-    width = 1,
-    height = 1,
-    frame_count = 1
-}
-local empty_sheet_32 = {
-    filename = "__router__/graphics/empty32.png",
-    priority = "very-low",
-    width = 1,
-    height = 1,
-    frame_count = 1
-}
-local empty_sheet_128 = {
-    filename = "__router__/graphics/empty128.png",
-    priority = "very-low",
-    width = 1,
-    height = 1,
-    frame_count = 1
-}
-local empty_sheet_4_128 = { north=empty_sheet_128, south=empty_sheet_128, east=empty_sheet_128, west=empty_sheet_128 }
+local empty_sheet = util.empty_sprite(1)
 local empty_sheet_4 = { north=empty_sheet, south=empty_sheet, east=empty_sheet, west=empty_sheet }
 
 local function mk_empty(color,size)
@@ -33,23 +13,6 @@ local function mk_empty(color,size)
         frame_count = 1
     }
 end
-local empty_red = mk_empty("red",1)
-local empty_green16 = mk_empty("green",16)
-local empty_green_sheet_32 = {
-    filename = "__router__/graphics/emptygreen128.png",
-    priority = "very-low",
-    width = 32,
-    height =32,
-    frame_count = 1
-}
-local empty_green_sheet_128 = {
-    filename = "__router__/graphics/emptygreen128.png",
-    priority = "very-low",
-    width = 128,
-    height =128,
-    frame_count = 1
-}
-local empty_green_sheet_4_128 = { north=empty_green_sheet_128, south=empty_green_sheet_128, east=empty_green_sheet_128, west=empty_green_sheet_128 }
 local wow = {
     filename = "__router__/graphics/wow.png",
     priority = "very-low",
@@ -108,20 +71,14 @@ local hidden_combinator = {
     circuit_wire_max_distance = 9
 }
 
-function merge_tables(t1,t2)
-    t1 = util.table.deepcopy(t1)
-    for x,y in pairs(t2) do t1[x] = y end
-    return t1
-end
-
-local hidden_arith = merge_tables(hidden_combinator,{
+local hidden_arith = util.merge{hidden_combinator,{
     type = "arithmetic-combinator",
     name = "router-component-arithmetic-combinator"
-})
-local hidden_decider = merge_tables(hidden_combinator,{
+}}
+local hidden_decider = util.merge{hidden_combinator,{
     type = "decider-combinator",
     name = "router-component-decider-combinator"
-})
+}}
 
 -- Prototype base for hidden widgets
 local hidden_widget_proto = {
@@ -170,40 +127,44 @@ local interface_lamp_proto = {
 }
 
 -- Super inserter
-local super_inserter = merge_tables(hidden_widget_proto,{
+local super_inserter = util.merge{hidden_widget_proto,{
     type = "inserter",
     name = "router-component-inserter",
-    hand_base_picture = empty_sheet,
-    hand_open_picture = empty_sheet,
-    hand_closed_picture = empty_sheet,
+    hand_base_picture   = util.empty_sprite(1),
+    hand_open_picture   = util.empty_sprite(1),
+    hand_closed_picture = util.empty_sprite(1),
+    hand_base_shadow    = nil,
+    hand_open_shadow    = nil,
+    hand_closed_shadow  = nil,
     allow_custom_vectors = true,
     energy_per_movement = "1J",
     energy_per_rotation = "1J",
     energy_source = { type = "void", }, -- TODO: require power
-    extension_speed = 1,
+    extension_speed = 2,
     rotation_speed = 2,
     pickup_position = {0, 0},
     insert_position = {0, 0},
     filter_count = 5,
     draw_held_item = false,
     draw_inserter_arrow = false,
-    draw_circuit_wires = false,
     circuit_wire_max_distance = 9,
-    platform_picture = {sheets={empty_sheet_32}}
-})
+    chases_belt_frames = false,
+    stack_size_bonus = 0,
+    platform_picture = empty_sheet_4
+}}
 
-local indicator_inserter = merge_tables(super_inserter,{
+local indicator_inserter = util.merge{super_inserter,{
     name = "router-component-indicator-inserter",
     flags = { "hidden", "not-blueprintable" },
     energy_source = { type = "void", },
     filter_count = 4
-})
+}}
 
 -- generate base storehouse and warehouse
 data:extend({
 
     -- Hidden control combinator
-    merge_tables(control_combinator_proto,{
+    util.merge{control_combinator_proto,{
         type = "constant-combinator",
         name = "router-component-port-control-combinator",
         item_slot_count = 20,
@@ -213,9 +174,9 @@ data:extend({
         circuit_wire_max_distance = 4,
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
         fast_replaceable_group = "router-component-port-control-combinator"
-    }),
+    }},
 
-    merge_tables(control_combinator_proto,{
+    util.merge{control_combinator_proto,{
         type = "constant-combinator",
         name = "router-component-hidden-constant-combinator",
         flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid" },
@@ -227,35 +188,35 @@ data:extend({
         circuit_wire_max_distance = 4,
         draw_circuit_wires = false,
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
-    }),
+    }},
 
     -- Smart port control lamp
-    merge_tables(interface_lamp_proto,{
+    util.merge{interface_lamp_proto,{
         name = "router-component-smart-port-lamp",
         picture_off = light_off,
-        picture_on = merge_tables(light_on,{apply_runtime_tint=true}),
+        picture_on = util.merge{light_on,{apply_runtime_tint=true}},
         signal_to_color_mapping = {
             {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
             {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
         },
         fast_replaceable_group = "router-component-smart-port-lamp"
-    }),
+    }},
 
     -- Contents lamp
-    merge_tables(interface_lamp_proto,{
+    util.merge{interface_lamp_proto,{
         name = "router-component-contents-indicator-lamp",
-        picture_off = empty_sheet_128,
-        picture_on = empty_sheet_128,
+        picture_off = util.empty_sprite(1),
+        picture_on = util.empty_sprite(1),
         always_on = true
-    }),
+    }},
 
     -- Output lamp
-    merge_tables(interface_lamp_proto,{
+    util.merge{interface_lamp_proto,{
         name = "router-component-output-indicator-lamp",
-        picture_off = empty_sheet_128,
-        picture_on = empty_sheet_128,
+        picture_off = util.empty_sprite(1),
+        picture_on = util.empty_sprite(1),
         always_on = true
-    }),
+    }},
 
     -- Super inserters
     super_inserter, indicator_inserter,
@@ -314,9 +275,7 @@ function create_router(size,prefix,tint)
             tint = tint
         }}
     }
-    -- -- (don't) make it invisible to see hidden graphics issues
-    -- local wow_smart = empty_sheet_128 
-	data:extend({merge_tables(fake_combinator,{
+	data:extend({util.merge{fake_combinator,{
 		name = "router-"..size.."-"..prefix.."router",
         minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },
         sprites = {north=wow,south=wow,west=wow,east=wow},
@@ -326,7 +285,7 @@ function create_router(size,prefix,tint)
         },
         fast_replaceable_group = "router-"..size.."-router",
         next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-router")
-    }),merge_tables(fake_combinator,{
+    }},util.merge{fake_combinator,{
 		name = "router-"..size.."-"..prefix.."smart",
         minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },
         sprites = {north=wow_smart,south=wow_smart,west=wow_smart,east=wow_smart},
@@ -337,7 +296,7 @@ function create_router(size,prefix,tint)
         },
         fast_replaceable_group = "router-"..size.."-smart",
         next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-smart")
-    })})
+    }}})
 end
 
 create_router("4x4","",util.color("ffc340D1"))
