@@ -57,13 +57,6 @@ local wow = {
     height =128,
     frame_count = 1
 }
-local wow_smart = {
-    filename = "__router__/graphics/wow-smart.png",
-    priority = "very-low",
-    width = 128,
-    height =128,
-    frame_count = 1
-}
 local wow_4 = { north=wow, south=wow, east=wow, west=wow }
 local light_off = {
     filename = "__router__/graphics/light.png",
@@ -194,6 +187,7 @@ local super_inserter = merge_tables(hidden_widget_proto,{
     filter_count = 5,
     draw_held_item = false,
     draw_inserter_arrow = false,
+    draw_circuit_wires = false,
     circuit_wire_max_distance = 9,
     platform_picture = {sheets={empty_sheet_32}}
 })
@@ -300,6 +294,28 @@ function create_router(size,prefix,tint)
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
 
+    local wow_smart = {
+        layers = {{
+            filename = "__router__/graphics/wow-smart.png",
+            priority = "very-low",
+            width = 256,
+            height =256,
+            scale = 0.5,
+            frame_count = 1
+        },{
+            filename = "__router__/graphics/wow-smart.png",
+            priority = "very-low",
+            width = 256,
+            height =256,
+            scale = 0.5,
+            x = 0,
+            y = 256,
+            frame_count = 1,
+            tint = tint
+        }}
+    }
+    -- -- (don't) make it invisible to see hidden graphics issues
+    -- local wow_smart = empty_sheet_128 
 	data:extend({merge_tables(fake_combinator,{
 		name = "router-"..size.."-"..prefix.."router",
         minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },

@@ -6,6 +6,7 @@
 * Clean up prototypes via table merging
 * Remove unused icons
 * Proper packaging
+* Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 
 Refactor lua slightly
 * Move circuit builder to its own module
