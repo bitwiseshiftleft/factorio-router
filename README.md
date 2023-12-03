@@ -21,6 +21,8 @@ Manual routers are controlled by a constant combinator on each port.  Every item
 
 Manual routers do not have any form of priority.  An item is either requested by a port, or it is not.
 
+Manual routers are currently in a rougher state than smart ones, and are not enabled by default.
+
 ## Smart routers, requesters and providers
 
 **TODO:** Requesters and providers aren't in the mod yet, but they can be built with circuit-controlled belts and combinators.
@@ -72,9 +74,8 @@ The trick of channeling everything over one green wire costs some performance.  
 See TODO.md on the github.  Some notable todo items:
 * Smart router requesters and providers
 * Smart router buffer stations
-* Tech icons
 * Better graphics
-* Localization
-* Startup settings to enable/disable router types
+* Localization to languages other than English
 * Integration with K2, SE, py, IR, AB, 248k, EI, etc
+* Test and polish interactions
 * Allow manual routers to request items when negative instead of positive, in the style of LTN
