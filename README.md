@@ -23,7 +23,7 @@ Manual routers do not have any form of priority.  An item is either requested by
 
 ## Smart routers, requesters and providers
 
-(Requesters and providers aren't in the mod yet, but they can be built with circuit-controlled belts and combinators.)
+**TODO:** Requesters and providers aren't in the mod yet, but they can be built with circuit-controlled belts and combinators.
 
 ![smart router screenshot](resources/screenshot-smart.jpg)
 
@@ -36,7 +36,7 @@ Smart routers use a fancy communication protocol over the green wires.  It is re
 Since the circuit network doesn't update instantaneously, it is possible that slightly too many of an item will be sent.  These items would normally have nowhere to go, and so would clog up the network.  However, they can be sent to
 *buffer stations*.  As with manual routers, these request all types of resources by using the default signal ![default_signal_icon](resources/default.png).
 
-Currently the requester and provider ports aren't done, but a circuit connection can still be mocked up.  The above screenshot shows a work-in-progress smart router grid.  At each leaf, the "leaf" signal is set to 16 (which turns the port blue).  The combinator signal is set to 16 times the demannd: for example, the plastic leaf is requesting 6400 (i.e. 400 plastic bars) and the copper leaf is requesting 1600 (i.e. 100 copper plates).  It's important that the requests be multiples of 16, since the low 4 bits are used to count outgoing items on the belt.  The provider belts are set to enable if the corresponding resource is > 0, and to read belt contents (pulse).  You can see that the routing behavior isn't quite tight: the copper goes directly to its target, but the plastic bars meander slightly.  This can probably be ironed out eventually.
+Currently the requester and provider ports aren't done, but a circuit connection can still be mocked up.  The above screenshot shows a work-in-progress smart router grid.  At each leaf, the "leaf" signal is set to 16 (which turns the port blue).  The combinator signal is set to 16 times the demannd: for example, the plastic leaf is requesting 6400 (i.e. 400 plastic bars) and the copper leaf is requesting 1600 (i.e. 100 copper plates).  It's important that the requests be multiples of 16, since the low 4 bits are used to count outgoing items on the belt.  The provider belts are set to enable if the corresponding resource is > 0, and to read belt contents (pulse).  You can see that the routing behavior isn't perfectly tight: the copper goes directly to its target, but the plastic bars meander slightly.
 
 ## Balancing
 
