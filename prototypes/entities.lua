@@ -1,4 +1,5 @@
-local util = require"__core__.lualib.util"
+local util = require "__core__.lualib.util"
+local protos = require "prototypes.router_proto_table"
 local belt_with_no_frames = require "prototypes.belt_with_no_frames" 
 
 local empty_sheet = util.empty_sprite(1)
@@ -160,9 +161,8 @@ local indicator_inserter = util.merge{super_inserter,{
     filter_count = 4
 }}
 
--- generate base storehouse and warehouse
-data:extend({
-
+-- TODO: condition on startup
+data:extend{
     -- Hidden control combinator
     util.merge{control_combinator_proto,{
         type = "constant-combinator",
@@ -190,18 +190,6 @@ data:extend({
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }},
 
-    -- Smart port control lamp
-    util.merge{interface_lamp_proto,{
-        name = "router-component-smart-port-lamp",
-        picture_off = light_off,
-        picture_on = util.merge{light_on,{apply_runtime_tint=true}},
-        signal_to_color_mapping = {
-            {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
-            {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
-        },
-        fast_replaceable_group = "router-component-smart-port-lamp"
-    }},
-
     -- Contents lamp
     util.merge{interface_lamp_proto,{
         name = "router-component-contents-indicator-lamp",
@@ -223,7 +211,24 @@ data:extend({
 
     -- Hidden combinators
     hidden_arith, hidden_decider
-})
+}
+
+
+if protos.enable_smart then
+    data:extend{
+        -- Smart port control lamp
+        util.merge{interface_lamp_proto,{
+            name = "router-component-smart-port-lamp",
+            picture_off = light_off,
+            picture_on = util.merge{light_on,{apply_runtime_tint=true}},
+            signal_to_color_mapping = {
+                {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
+                {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
+            },
+            fast_replaceable_group = "router-component-smart-port-lamp"
+        }},
+    }
+end
 
 function create_belt_components(prefix)
     data:extend({belt_with_no_frames.create_belt(prefix.."transport-belt")})
@@ -275,30 +280,36 @@ function create_router(size,prefix,tint)
             tint = tint
         }}
     }
-	data:extend({util.merge{fake_combinator,{
-		name = "router-"..size.."-"..prefix.."router",
-        minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },
-        sprites = {north=wow,south=wow,west=wow,east=wow},
-        icons = {
-            {icon="__router__/graphics/router-icon.png", icon_size=128,},
-            {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
-        },
-        fast_replaceable_group = "router-"..size.."-router",
-        next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-router")
-    }},util.merge{fake_combinator,{
-		name = "router-"..size.."-"..prefix.."smart",
-        minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },
-        sprites = {north=wow_smart,south=wow_smart,west=wow_smart,east=wow_smart},
-        icons = {
-            {icon="__router__/graphics/router-icon.png", icon_size=128,},
-            {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
-            {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
-        },
-        fast_replaceable_group = "router-"..size.."-smart",
-        next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-smart")
-    }}})
+
+    if protos.enable_manual then
+        data:extend{util.merge{fake_combinator,{
+            name = "router-"..size.."-"..prefix.."router",
+            minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },
+            sprites = {north=wow,south=wow,west=wow,east=wow},
+            icons = {
+                {icon="__router__/graphics/router-icon.png", icon_size=128,},
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
+            },
+            fast_replaceable_group = "router-"..size.."-router",
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-router")
+        }}}
+    end
+    if protos.enable_smart then
+        data:extend{util.merge{fake_combinator,{
+            name = "router-"..size.."-"..prefix.."smart",
+            minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },
+            sprites = {north=wow_smart,south=wow_smart,west=wow_smart,east=wow_smart},
+            icons = {
+                {icon="__router__/graphics/router-icon.png", icon_size=128,},
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
+                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+            },
+            fast_replaceable_group = "router-"..size.."-smart",
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-smart")
+        }}}
+    end
 end
 
-create_router("4x4","",util.color("ffc340D1"))
-create_router("4x4","fast-",util.color("e31717D1"))
-create_router("4x4","express-",util.color("43c0faD1"))
+for prefix,router in pairs(protos.table) do
+    create_router("4x4",prefix,router.tint)
+end

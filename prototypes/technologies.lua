@@ -1,24 +1,32 @@
-local function create_technology(prefix, tint, prereqs, cost)
-    name = "router-" .. prefix .. "router"
+local protos = require "prototypes.router_proto_table"
+
+local function create_router_technology(prefix, tint, prerequisites, cost)
+    local name = "router-" .. prefix .. "router"
+
+    local effects = {}
+    if protos.enable_manual then
+        table.insert(effects,{type = "unlock-recipe", recipe =  "router-4x4-" .. prefix .. "router"})
+    end
+    if protos.enable_smart then
+        table.insert(effects,{type = "unlock-recipe", recipe =  "router-4x4-" .. prefix .. "smart"})
+    end
+
     local technology = {
         type = "technology",
         name = name,
         icons = {
             {
-                icon = "__router__/graphics/emptyred1.png",
-                icon_size = 1,
+                icon = "__router__/graphics/router-icon.png",
+                icon_size = 128,
             },
             {
-                icon = "__router__/graphics/emptyred1.png",
-                icon_size = 1,
+                icon = "__router__/graphics/router-icon-mask.png",
+                icon_size = 128,
                 tint = tint,
             },
         },
-        effects = {
-            {type = "unlock-recipe", recipe =  "router-4x4-" .. prefix .. "router"},
-            {type = "unlock-recipe", recipe =  "router-4x4-" .. prefix .. "smart"}
-         },
-        -- prerequisites = tech_prereqs, -- TODO
+        effects = effects,
+        prerequisites = prerequisites,
         unit = cost,
         order = name
     }
@@ -26,41 +34,8 @@ local function create_technology(prefix, tint, prereqs, cost)
     data:extend{technology}
 end
 
-create_technology("",{r=0.8, g=0.8, b=0, a=1},
-    { "circuit-network" },
-    {
-        count = 50,
-        ingredients =
-        {
-            { "automation-science-pack", 1 },
-            { "logistic-science-pack", 1 },
-        },
-        time = 30
-    }
-)
-
-create_technology("fast-",{r=0.8, g=0.8, b=0, a=1},
-    { "router" },
-    {
-        count = 50,
-        ingredients =
-        {
-            { "automation-science-pack", 1 },
-            { "logistic-science-pack", 1 },
-        },
-        time = 30
-    }
-)
-
-create_technology("express-",{r=0.8, g=0.8, b=0, a=1},
-    { "fast-router" },
-    {
-        count = 50,
-        ingredients =
-        {
-            { "automation-science-pack", 1 },
-            { "logistic-science-pack", 1 },
-        },
-        time = 30
-    }
-)
+if protos.enable_manual or protos.enable_smart then
+    for prefix,router in pairs(protos.table) do
+        create_router_technology(prefix,router.tint,router.prerequisites,router.tech_costs)
+    end
+end

@@ -1,8 +1,9 @@
+local protos = require "prototypes.router_proto_table"
 local base_underground_item = data.raw["item"]["underground-belt"]
 
 function create_router_item(size,prefix,tint)
-    data:extend({
-        {
+    if protos.enable_manual then
+        data:extend{{
             type = "item",
             name = "router-"..size.."-"..prefix.."router",
             icons = {
@@ -12,8 +13,10 @@ function create_router_item(size,prefix,tint)
             subgroup = base_underground_item.subgroup,
             place_result = "router-"..size.."-"..prefix.."router",
             stack_size = 10
-        },
-        {
+        }}
+    end
+    if protos.enable_smart then
+        data:extend{{
             type = "item",
             name = "router-"..size.."-"..prefix.."smart",
             icons = {
@@ -24,22 +27,23 @@ function create_router_item(size,prefix,tint)
             subgroup = base_underground_item.subgroup,
             place_result = "router-"..size.."-"..prefix.."smart",
             stack_size = 10
-        }
-    })
+        }}
+    end
 end
 
-create_router_item("4x4","",util.color("ffc340D1"))
-create_router_item("4x4","fast-",util.color("e31717D1"))
-create_router_item("4x4","express-",util.color("43c0faD1"))
+for prefix,router in pairs(protos.table) do
+    create_router_item("4x4",prefix,router.tint)
+end
 
-
-data:extend({
-    {
-        type = "item",
-        name = "router-component-smart-port-lamp",
-        icon = "__router__/graphics/light.png",
-        icon_size = 32,
-        place_result = "router-component-smart-port-lamp",
-        stack_size = 1
-    },
-})
+if protos.enable_smart then
+    data:extend({
+        {
+            type = "item",
+            name = "router-component-smart-port-lamp",
+            icon = "__router__/graphics/light.png",
+            icon_size = 32,
+            place_result = "router-component-smart-port-lamp",
+            stack_size = 1
+        },
+    })
+end
