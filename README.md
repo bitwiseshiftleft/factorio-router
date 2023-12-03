@@ -27,7 +27,7 @@ Manual routers do not have any form of priority.  An item is either requested by
 
 ![smart router screenshot](resources/screenshot-smart.jpg)
 
-Smart routers are designed to form a network, routing items from provider stations to requester stations.  The routers and the stations form a network connected by green wires.  When two smart routers are connected together, their port lights will turn green.  When a smart router is connected to a requester or provider, its port light will turn blue.
+Smart routers are designed to form a network, routing items from provider stations to requester stations.  The routers and the stations form a network connected by green wires.  When two smart routers are connected together, their port lights will turn green.  You can see that nothing is sent south from the central router to the southwest one, because the ports aren't connected.  When a smart router is connected to a requester or provider, its port light will turn blue.
 
 The requests can be set on each requester station by an integrated constant combinator, or using the circuit network.
 
