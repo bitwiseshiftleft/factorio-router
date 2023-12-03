@@ -9,17 +9,15 @@
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 
 Refactor lua slightly
-* Move circuit builder to its own module
-* If building a lot of circuits, move each one to its own file
 * Move subroutines out of control.lua
 * Use builder more extensively
-* Use base's merge_tables when possible
+* Use util.add_shift instead of vector_add
 
 Detect belt techs, recipes etc
 * Refine the recipes -- add some kind of circuits or filter inserters?
 * Special case recipes for some uses
 * Localize router names
-* Extra inserters as necessary
+* Create inserters as necessary for higher-speed versions
 * Create/destroy extra inserters on fast replace
 * Space routers should be placeable in space
 * Chain upgrades yellow -> red -> blue
@@ -35,8 +33,7 @@ Make other router shapes, e.g. 3 <=> 3??
 ## Integration/testing
 
 * Test fast-replacing ghosts
-* Test what happens when you place a router on a spaceship
-
+* Test what happens when you place a router on a spaceship, or just ban that
 * Integrate with SE (deep space belts woo)
 * Integrate with K2
 * Integrate with Py
@@ -63,6 +60,11 @@ Adjust how loosely/tightly things are routed by adjusting the average.
 
 Wider smart routers?  May need buffer/splitter
 
+Design a diode
+* This would connect two parts of the network but only allow demand to flow in one direction
+* Would be useful for e.g. train stations or rocket loading in SE, where the materials inherently flow in 
+* Can probably just present as a leaf to both sides, but proxy requests in one direction and not the other.
+
 ## Smart router autoconnect
 
 Consider not connecting with a single wire, but with several, automatically using Lua
@@ -71,15 +73,17 @@ Consider not connecting with a single wire, but with several, automatically usin
 * Pro: Significant reduction in circuit size
 * * Current node is ~50
 * * Save at least 9 gates (input high and low filters, and nega driver)
-* * Save up to 8 gates from avoiding leaf vs root scaling (optimistic)
+* * Save up to 8 gates from avoiding leaf vs root scaling (optimistic) -- this would be adjusted by the Lua on detecting a leaf.
 * * Many of the rest of the gates can be eliminated with factorio 2 decider combinator
 * Pro: faster convergence
+* Pro: don't need a diode entity, can just autodetect it
 * Con: need on-build handler to trace the belts for connect/disconnect
+* Con: need complicated circuit reworking to connect things, turn leaf scaling on/off etc.
 * Con: opaque and even cheatier
 
 I could consider enabling this by creating a "routable belt/underneathie" that's the same as normal belts, but which must be used to connect routers.  This would both add to flavor and possibly graphics, and help the Lua avoid triggering too much on regular belts.
 
-## Regular routers
+## Non-smart routers
 * Make a startup setting to enable/disable non-smart routers
 
 * Make blueprintable
