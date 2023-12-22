@@ -59,15 +59,11 @@ Make other router shapes, e.g. 3 <=> 3??
 ## Smart routers
 
 Implement smart I/O ports
-* Never provide things we're requesting, even if demand is satisfied?  Or be less eager to?
-* Disable output if it's a one-way port, perhaps if threshold = 0
-* GUI for threshold, default?  Or put them in the main combinator.
-* Lamp for default maybe.
+* Lamps for defaultness, disablement.
+* Rotate to disable output / set defaultness to 100?
 * Do we want to provide limiting loaders for the I/O ports?  Eg with an amount to cache
 * Autoconnect chests, maybe pursuant to startup option
 * Copy-paste, auto deconstruct, undo etc.
-* Graphics
-* Burst output suppression
 * Create filtered-slot chests for the I/O ports??
 
 Buffered routers?
@@ -75,17 +71,15 @@ Buffered routers?
 * Compare performance.  If it's much better then maybe all routers should be buffered?
 * Or maybe just make buffers a regular I/O node.
 
-Position the inserters for optimal throughput (e.g. low angles, no extension)
-
 Add a reset switch somehow in case the system goes haywire
 * Possibly add a signal definition for that
 
 Make the routers leak a little less: signals don't propagate far enough.
 
-Wider smart routers?  Probably needs buffer/splitter for perf.
+Wider smart routers??  Probably needs buffer/splitter for perf.
 
 Design a diode
-* Have a circuit design, but need to implement it and make the entities
+* I have a circuit design, but need to implement it and make the entities
 * The diode appears as a leaf on both sides, but propagates requests in one direction.
 * Inputs at leaf stations get magnified by a factor of almost D, so they should be reduced. One possible calculation is x//(D+1) + (x mod (D+1)).  This is the same mod D: x//(D+1) == (x - (x mod (D+1)))/(D+1) === x - (x mod (D+1)) because D+1 === 1.  This allows a latency-1 division by approximately D without changing the low bits.
 * What about long-distance link situations?  May want a version which can be proxied by radio
