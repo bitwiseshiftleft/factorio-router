@@ -39,6 +39,15 @@ if protos.enable_smart then
             icon="__router__/graphics/leaf.png",
             icon_size=128,
             icon_mipmaps=3
+        },
+        {
+            type="virtual-signal",
+            name="router-signal-threshold",
+            subgroup="router-signals",
+            order="h[router-signals]-c[threshold]",
+            icon="__router__/graphics/threshold.png",
+            icon_size=128,
+            icon_mipmaps=3
         }
     }
 end

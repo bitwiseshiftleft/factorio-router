@@ -45,6 +45,8 @@ for prefix,router in pairs(protos.table) do
 end
 
 if protos.enable_smart then
+    -- For blueprinting
+    -- TODO: add regular routers
     data:extend({
         {
             type = "item",
@@ -52,6 +54,20 @@ if protos.enable_smart then
             icon = "__router__/graphics/light.png",
             icon_size = 32,
             place_result = "router-component-smart-port-lamp",
+            stack_size = 1
+        }, {
+            type = "item",
+            name = "router-component-port-trim-combinator",
+            icon = "__router__/graphics/light.png", -- TODO make graphics
+            icon_size = 32,
+            place_result = "router-component-port-trim-combinator",
+            stack_size = 1
+        }, {
+            type = "item",
+            name = "router-component-chest-contents-lamp",
+            icon = "__router__/graphics/light.png", -- TODO make graphics
+            icon_size = 32,
+            place_result = "router-component-chest-contents-lamp",
             stack_size = 1
         },
     })

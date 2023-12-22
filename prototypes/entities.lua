@@ -38,33 +38,101 @@ local light_on = {
     frame_count = 1
 }
 
--- TODO: placeholders for IO
-local io_north = {
-    filename = "__router__/graphics/emptyred128.png",
-    priority = "very-low",
-    width = 128,
-    height =32,
-    x = 0,
-    frame_count = 1
-}
-local io_south = io_north
-local io_west = {
-    filename = "__router__/graphics/emptyred128.png",
-    priority = "very-low",
-    width = 32,
-    height =128,
-    x = 0,
-    frame_count = 1
-}
-local io_east = io_west
+local function mk_io_sprites(tint)
+    local file = "__router__/graphics/io.png"
+    return {
+        south = {
+            layers = {{
+                filename = file,
+                priority = "very-low",
+                width = 256,
+                height =128,
+                scale = 0.5,
+                x=0, y=0,
+                frame_count = 1
+            },{
+                filename = file,
+                priority = "very-low",
+                width = 256,
+                height =128,
+                scale = 0.5,
+                x = 0,
+                y = 128,
+                frame_count = 1,
+                tint = tint
+            }}
+        }, 
+        north = {
+            layers = {{
+                filename = file,
+                priority = "very-low",
+                width = 256,
+                height =128,
+                scale = 0.5,
+                x=256, y=0,
+                frame_count = 1
+            },{
+                filename = file,
+                priority = "very-low",
+                width = 256,
+                height =126,
+                scale = 0.5,
+                x = 256,
+                y = 128,
+                frame_count = 1,
+                tint = tint
+            }}
+        },
+        west = {
+            layers = {{
+                filename = file,
+                priority = "very-low",
+                width =  96,
+                height = 256,
+                scale = 0.5,
+                x=512, y=0,
+                frame_count = 1
+            },{
+                filename = file,
+                priority = "very-low",
+                width = 96,
+                height =256,
+                scale = 0.5,
+                x = 608, y = 0,
+                frame_count = 1,
+                tint = tint
+            }}
+        },
+        east = {
+            layers = {{
+                filename = file,
+                priority = "very-low",
+                width =  96,
+                height = 256,
+                scale = 0.5,
+                x=704, y=0,
+                frame_count = 1
+            },{
+                filename = file,
+                priority = "very-low",
+                width = 96,
+                height =256,
+                scale = 0.5,
+                x = 800, y = 0,
+                frame_count = 1,
+                tint = tint
+            }}
+        },
+    }
+end
 
 local connector_definitions = circuit_connector_definitions.create(
   universal_connector_template,
   {
-    { variation = 24, main_offset = {0.5,0.5}, shadow_offset = {0.5,0.5}, show_shadow = false },
-    { variation = 24, main_offset = {0.5,0.5}, shadow_offset = {0.5,0.5}, show_shadow = false },
-    { variation = 24, main_offset = {0.5,0.5}, shadow_offset = {0.5,0.5}, show_shadow = false },
-    { variation = 24, main_offset = {0.5,0.5}, shadow_offset = {0.5,0.5}, show_shadow = false },
+    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
+    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
+    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
+    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
   }
 )
 
@@ -125,7 +193,7 @@ local control_combinator_proto = {
     allow_copy_paste = true,
     selectable_in_game = true,
     selection_priority = 70,
-    collision_box = {{-0.5,-0.5},{0.5,0.5}},
+    collision_box = {{-0.45,-0.45},{0.45,0.45}},
     selection_box = {{-0.5,-0.5},{0.5,0.5}},
     collision_mask = {},
     circuit_wire_max_distance = 16,
@@ -134,7 +202,7 @@ local control_combinator_proto = {
 local interface_lamp_proto = {
     type = "lamp",
     flags = { "placeable-off-grid", "player-creation" },
-    collision_box = {{-0.5,-0.5},{0.5,0.5}},
+    collision_box = {{-0.45,-0.45},{0.45,0.45}},
     selection_box = {{-0.5,-0.5},{0.5,0.5}},
     collision_mask = {},
     allow_copy_paste = true,
@@ -185,58 +253,66 @@ local indicator_inserter = util.merge{super_inserter,{
     filter_count = 4
 }}
 
--- TODO: condition on startup
-data:extend{
-    -- Hidden control combinator
-    util.merge{control_combinator_proto,{
-        type = "constant-combinator",
-        name = "router-component-port-control-combinator",
-        item_slot_count = 20,
-        sprites = empty_sheet_4,
-        circuit_wire_connection_points = connector_definitions.points,
-        circuit_connector_sprites = connector_definitions.sprites,
-        circuit_wire_max_distance = 4,
-        activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
-        fast_replaceable_group = "router-component-port-control-combinator"
-    }},
+if protos.enable_manual or protos.enable_smart then
+    -- Common elements
+    data:extend{
+        -- Hidden control combinator
+        util.merge{control_combinator_proto,{
+            type = "constant-combinator",
+            name = "router-component-hidden-constant-combinator",
+            flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid" },
+            selectable_in_game = false,
+            item_slot_count = 20,
+            sprites = empty_sheet_4,
+            circuit_wire_connection_points = connector_definitions.points,
+            circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_max_distance = 4,
+            draw_circuit_wires = false,
+            activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
+        }},
 
-    util.merge{control_combinator_proto,{
-        type = "constant-combinator",
-        name = "router-component-hidden-constant-combinator",
-        flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid" },
-        selectable_in_game = false,
-        item_slot_count = 20,
-        sprites = empty_sheet_4,
-        circuit_wire_connection_points = connector_definitions.points,
-        circuit_connector_sprites = connector_definitions.sprites,
-        circuit_wire_max_distance = 4,
-        draw_circuit_wires = false,
-        activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
-    }},
+        -- Hidden combinators
+        hidden_arith, hidden_decider,
 
-    -- Contents lamp
-    util.merge{interface_lamp_proto,{
-        name = "router-component-contents-indicator-lamp",
-        picture_off = util.empty_sprite(1),
-        picture_on = util.empty_sprite(1),
-        always_on = true
-    }},
+        -- Super filter inserters
+        super_inserter
+    }
+end
 
-    -- Output lamp
-    util.merge{interface_lamp_proto,{
-        name = "router-component-output-indicator-lamp",
-        picture_off = util.empty_sprite(1),
-        picture_on = util.empty_sprite(1),
-        always_on = true
-    }},
+if protos.enable_manual then
+    data:extend{
+        -- Non-hidden control combinator
+        util.merge{control_combinator_proto,{
+            type = "constant-combinator",
+            name = "router-component-port-control-combinator",
+            item_slot_count = 20,
+            sprites = empty_sheet_4,
+            circuit_wire_connection_points = connector_definitions.points,
+            circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_max_distance = 9,
+            activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
+            fast_replaceable_group = "router-component-port-control-combinator"
+        }},
 
-    -- Super inserters
-    super_inserter, super_inserter_nonfilter, indicator_inserter,
+        -- Contents lamp
+        util.merge{interface_lamp_proto,{
+            name = "router-component-contents-indicator-lamp",
+            picture_off = util.empty_sprite(1),
+            picture_on = util.empty_sprite(1),
+            always_on = true
+        }},
 
-    -- Hidden combinators
-    hidden_arith, hidden_decider
-}
+        -- Output lamp
+        util.merge{interface_lamp_proto,{
+            name = "router-component-output-indicator-lamp",
+            picture_off = util.empty_sprite(1),
+            picture_on = util.empty_sprite(1),
+            always_on = true
+        }},
 
+        indicator_inserter
+    }
+end
 
 if protos.enable_smart then
     data:extend{
@@ -251,6 +327,37 @@ if protos.enable_smart then
             },
             fast_replaceable_group = "router-component-smart-port-lamp"
         }},
+        -- Input for the chest contents
+        util.merge{interface_lamp_proto,{
+            name = "router-component-chest-contents-lamp",
+            circuit_wire_max_distance = 4,
+            fast_replaceable_group = "router-component-chest-contents-lamp",
+            selection_box = {{-0.35,-0.35},{0.35,0.35}},
+            always_on = true,
+            picture_off = util.empty_sprite(1),
+            picture_on = util.empty_sprite(1), -- TODO: add a picture_on?
+        }},
+        -- TODO: make sprites for this
+        util.merge{interface_lamp_proto,{
+            name = "router-component-is-default-lamp",
+            selectable_in_game = false,
+            picture_off = util.empty_sprite(1),
+            picture_on = util.empty_sprite(1), -- TODO
+        }},
+        -- I/O point trim control
+        util.merge{control_combinator_proto,{
+            type = "constant-combinator",
+            name = "router-component-port-trim-combinator",
+            selection_box = {{-0.35,-0.35},{0.35,0.35}},
+            item_slot_count = 20,
+            sprites = empty_sheet_4,
+            circuit_wire_connection_points = connector_definitions.points,
+            circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_max_distance = 9,
+            activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
+            fast_replaceable_group = "router-component-port-control-combinator"
+        }},
+        super_inserter_nonfilter
     }
 end
 
@@ -275,7 +382,7 @@ function create_router(size,prefix,tint)
         rotatable = true,
         item_slot_count = 0,
 		collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
-		selection_box = {{-1.9, -1.9}, {1.9, 1.9}},
+		selection_box = {{-2, -2}, {2, 2}},
         selection_priority = 30,
         selectable_in_game = true,
         circuit_wire_connection_points = connector_definitions.points,
@@ -334,15 +441,15 @@ function create_router(size,prefix,tint)
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."io",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."io" },
-            sprites = {north=io_north,south=io_south,west=io_west,east=io_east},
+            sprites = mk_io_sprites(tint),
             icons = {
                 {icon="__router__/graphics/router-icon.png", icon_size=128,},
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
                 {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
             },
             item_slot_count=20,
-            collision_box = {{-1.9, -0.45}, {1.9, 0.45}},
-            selection_box = {{-1.9, -0.45}, {1.9, 0.45}},
+            collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
+            selection_box = {{-1.75, -0.5}, {1.75, 0.5}},
             fast_replaceable_group = "router-"..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-io"),
             circuit_wire_max_distance = 10

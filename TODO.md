@@ -59,20 +59,18 @@ Make other router shapes, e.g. 3 <=> 3??
 ## Smart routers
 
 Implement smart I/O ports
-* Make sure the trim port works
-* Make them 1x2 instead of 1x4?
 * Never provide things we're requesting, even if demand is satisfied?  Or be less eager to?
-* GUI for threshold, default?
-* Do we want one chest connection or two?  Probably only one
-* Make new entities for the chest interface lamps
+* Disable output if it's a one-way port, perhaps if threshold = 0
+* GUI for threshold, default?  Or put them in the main combinator.
+* Lamp for default maybe.
 * Do we want to provide limiting loaders for the I/O ports?  Eg with an amount to cache
 * Autoconnect chests, maybe pursuant to startup option
-* Copy-paste
+* Copy-paste, auto deconstruct, undo etc.
 * Graphics
-* Burst suppression
+* Burst output suppression
 * Create filtered-slot chests for the I/O ports??
 
-Design smart I/O buffers (= buffered version of router with a small chest??)
+Buffered routers?
 * These would set the default signal?
 * Compare performance.  If it's much better then maybe all routers should be buffered?
 * Or maybe just make buffers a regular I/O node.
@@ -84,10 +82,12 @@ Add a reset switch somehow in case the system goes haywire
 
 Make the routers leak a little less: signals don't propagate far enough.
 
-Wider smart routers?  May need buffer/splitter
+Wider smart routers?  Probably needs buffer/splitter for perf.
 
 Design a diode
 * Have a circuit design, but need to implement it and make the entities
+* The diode appears as a leaf on both sides, but propagates requests in one direction.
+* Inputs at leaf stations get magnified by a factor of almost D, so they should be reduced. One possible calculation is x//(D+1) + (x mod (D+1)).  This is the same mod D: x//(D+1) == (x - (x mod (D+1)))/(D+1) === x - (x mod (D+1)) because D+1 === 1.  This allows a latency-1 division by approximately D without changing the low bits.
 * What about long-distance link situations?  May want a version which can be proxied by radio
 
 ## Smart router autoconnect

@@ -10,8 +10,9 @@ local GREEN = defines.wire_type.green
 local EACH = {type="virtual",name="signal-each"}
 local ANYTHING = {type="virtual",name="signal-anything"}
 local EVERYTHING = {type="virtual",name="signal-everything"}
-local THRESHOLD = {type="virtual",name="signal-T"}
+local THRESHOLD = {type="virtual",name="router-signal-threshold"}
 local DEFAULT = {type="virtual",name="router-signal-default"}
+local ZERO = {type="virtual",name="signal-0"}
 local INPUT = defines.circuit_connector_id.combinator_input
 local OUTPUT = defines.circuit_connector_id.combinator_output
 
@@ -406,8 +407,7 @@ local function create_smart_comms(builder,input_belts,output_belts)
 end
 
 local function create_smart_comms_io(
-    entity,builder,input_belts,output_belts,
-    in_chest,out_chest,demand,threshold_trim
+    entity,builder,input_belts,output_belts,chest,demand,threshold_trim
 )
     -- TODO: add reset control
 
@@ -428,26 +428,39 @@ local function create_smart_comms_io(
     local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green=output_belts}
     local inbound_count = builder:combi{op=">",R=RESET,green={ITSELF,inbound_neg,inbound_and}}
 
+    -- burst suppression
+    local BURST_FACTOR = 2
+    local BURST_FALLOFF = 4
+    local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR, red={output_belts[1]}}
+    local burst_hold = builder:combi{op="+", R=1, green={scale_before_burst,ITSELF}}
+    local burst_falloff = builder:combi{op="/", R=-BURST_FALLOFF, green={scale_before_burst,ITSELF}}
+
     -- OK, create the comms
-    local internal_combi = builder:constant_combi{{signal=THRESHOLD,count=1},{signal=LEAF,count=-1}}
-    local demand1       = builder:combi{op="-",L=0,R=EACH,green={entity}}
-    local demand2       = builder:combi{op="-",L=0,R=EACH,green={entity}} -- separate to not mix with inbound_count
+    local internal_combi = builder:constant_combi{{signal=LEAF,count=-1}}
+    local demand_pos     = builder:combi{op=">",R=0,green={entity}}
+    local demand1        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}}
+    local demand2        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}} -- separate to not mix with inbound_count
     -- demand each item whose net supply is < 0
-    local supply_neg    = builder:combi{op="<",R=0,green={in_chest},red={inbound_count,internal_combi,demand1}}
-    local supply_pos1   = builder:combi{op=">",R=0,red={demand2},set_one=true}
+    local supply_neg     = builder:combi{op="<",R=0,green={chest},red={inbound_count,internal_combi,demand1}}
+    local supply_pos1    = builder:combi{op=">",R=0,red={demand2},set_one=true}
     builder:connect_inputs(supply_neg,supply_pos1,GREEN)
 
     -- Scale threshold by DEMAND, and trim by -DEMAND
-    local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=DEMAND_FACTOR,out=THRESHOLD,green={demand1,internal_combi}}
     local trim_scaler = builder:combi{op="*",R=-DEMAND_FACTOR,green={threshold_trim}}
+    local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=2*DEMAND_FACTOR,out=THRESHOLD,green={threshold_trim}}
 
     -- drive the bus according to demand
     local driver        = builder:combi{op="*",R=-DEMAND_FACTOR,green={supply_neg}}
     driver.connect_neighbour{wire=GREEN,target_entity=inbound_and,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
-    local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={threshold_scaler,trim_scaler},set_one=true}
+    local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={
+        threshold_scaler,trim_scaler,burst_hold,scale_before_burst
+    },set_one=true}
 
     -- drive according to in demand and in supply, i.e. >= 2
-    local ret = builder:combi{op=">=",R=2,green={in_demand_1,supply_pos1}}
+    -- disable if thershold <= 0
+    local ret  = builder:combi{op=">",L=THRESHOLD,R=0,out=EVERYTHING,green={in_demand_1,supply_pos1}}
+    local ret2 = builder:combi{op="OR",R=-1,green={in_demand_1,supply_pos1}}
+    builder:connect_outputs(ret,ret2,GREEN)
     return {output=ret, input=inbound_neg}
 end
 
@@ -466,6 +479,7 @@ M.EVERYTHING = EVERYTHING
 M.Builder = Builder
 M.COUNT = COUNT
 M.LEAF = LEAF
+M.ZERO = ZERO
 M.DEMAND_FACTOR = DEMAND_FACTOR
 M.THRESHOLD = THRESHOLD
 M.PULSE = PULSE

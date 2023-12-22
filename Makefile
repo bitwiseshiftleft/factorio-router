@@ -5,6 +5,8 @@ FILES= info.json changelog.txt *.lua prototypes graphics lualib locale README.md
 
 all: mod
 mod: build/router_$(VERSION).zip
+run:
+	open -a Factorio
 
 clean:
 	rm -fr build

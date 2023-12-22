@@ -270,6 +270,8 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
     -- entity.operable = false -- Nope, GUI is enabled
     -- TODO: custom GUI?
 
+    entity.rotatable = false
+
     n_lanes = n_lanes or 1
     local epos = entity.position
     local data = nil
@@ -309,27 +311,26 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
     -- TODO: make extra inserters / or cull
     if is_fast_replace then return end
 
-    -- TODO: different component for these
     -- TODO: auto-connect on place
-    local in_chest = builder:create_or_find_entity{
-        name = "router-component-smart-port-lamp",
+    local chest_inventory = builder:create_or_find_entity{
+        name = "router-component-chest-contents-lamp",
         direction = orientation,
-        position = relative({x=-0.5,y=0.2})
+        position = relative({x=-n_lanes-0.3,y=0.2})
     }
-    local out_chest = builder:create_or_find_entity{
-        name = "router-component-smart-port-lamp",
-        direction = orientation,
-        position = relative({x=0.5,y=0.2})
+    chest_inventory.get_or_create_control_behavior().circuit_condition = {
+        condition = {comparator="=",first_signal=circuit.ZERO,second_signal=circuit.ZERO}
     }
+    chest_inventory.operable = false
     local threshold_trim = builder:create_or_find_entity{
-        name = "router-component-port-control-combinator",
+        name = "router-component-port-trim-combinator",
         direction = orientation,
-        position = relative({x=n_lanes+0.5,y=0})
+        position = relative({x=n_lanes+0.3,y=0.2})
     }
+    threshold_trim.get_or_create_control_behavior().set_signal(1,{signal=circuit.THRESHOLD,count=10})
     local port = builder:create_or_find_entity{
         name = "router-component-smart-port-lamp",
         direction = orientation,
-        position = relative({x=0,y=-0.2})
+        position = relative({x=0,y=0})
     }
     port.connect_neighbour{wire=circuit.GREEN,target_entity=output_belts[1]}
     local control = port.get_or_create_control_behavior()
@@ -338,8 +339,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
 
     -- Create the comms and port control network
     local comm_circuit = circuit.create_smart_comms_io(
-        entity, builder, input_belts, output_belts,
-        in_chest,out_chest,demand,threshold_trim
+        entity, builder, input_belts, output_belts,chest_inventory,demand,threshold_trim
     )
 
     -- Create the movement inserters
