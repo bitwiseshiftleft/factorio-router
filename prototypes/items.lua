@@ -27,7 +27,16 @@ function create_router_item(size,prefix,tint)
             subgroup = base_underground_item.subgroup,
             place_result = "router-"..size.."-"..prefix.."smart",
             stack_size = 10
-        }}
+        },{
+            type = "item",
+            name = "router-"..size.."-"..prefix.."io",
+            icons = {
+                {icon="__router__/graphics/emptyred128.png", icon_size=128,}
+            },
+            subgroup = base_underground_item.subgroup,
+            place_result = "router-"..size.."-"..prefix.."io",
+            stack_size = 10
+    }}
     end
 end
 

@@ -7,7 +7,7 @@ local EAST  = defines.direction.east;
 local WEST  = defines.direction.west;
 
 -- TODO: have multiple and look up from table
-local router_io_table = {
+local router_component_table = {
     offset = { x=-1.5, y=-1.5 },
     contents_offset = {x=0, y=0},
     combi_offset = {x=1, y=1},
@@ -28,20 +28,28 @@ local router_io_table = {
     }
 }
 
-local function is_router_outer(entity)
-    return string.find(entity.name, '^router%-.*router$') ~= nil
-end
-
-local function is_router_smart(entity)
-    return string.find(entity.name, '^router%-.*smart$') ~= nil
-end
-
-local function is_router_component(entity)
-    return string.find(entity.name, '^router%-component%-') ~= nil
-end
+local function is_router_outer(entity) return string.find(entity.name, '^router%-.*router$') ~= nil end
+local function is_router_smart(entity) return string.find(entity.name, '^router%-.*smart$') ~= nil end
+local function is_router_io(entity)    return string.find(entity.name, '^router%-.*io$') ~= nil end
+local function is_router_component(entity)  return string.find(entity.name, '^router%-component%-') ~= nil end
 
 local function vector_add(v1,v2) return {x=v1.x+v2.x, y=v1.y+v2.y} end
 local function vector_sub(v1,v2) return {x=v1.x-v2.x, y=v1.y-v2.y} end
+
+local function relative_location(epos, orientation, data)
+    local re = ({[0]=1, [0.25]=0, [0.5]=-1, [0.75]=0})[orientation]
+    local im = ({[0]=0, [0.25]=1, [0.5]=0, [0.75]=-1})[orientation]
+    local data_offset = (data and data.offset) or {x=0,y=0}
+    local function inner(obj_offset)
+        -- TODO: take direction of entity into account
+        local rel_offset = vector_add(obj_offset, data_offset)
+        return {
+            x=epos.x + re*rel_offset.x - im*rel_offset.y,
+            y=epos.y + re*rel_offset.y + im*rel_offset.x
+        }
+    end
+    return inner
+end
 
 -- Adjustments for outserters to output to different lanes
 local lane_adj = {}
@@ -55,15 +63,8 @@ local function create_router(prefix, entity, is_fast_replace)
 
     -- The tricky part: constructing the router
     local epos = entity.position
-    local data = router_io_table -- TODO: make multiple of these
-
-    local function relative(obj_offset)
-        -- TODO: take direction of entity into account
-        local rel_offset = vector_add(obj_offset, data.offset)
-        return vector_add(epos, rel_offset)
-    end
-
-    -- local bit_decoder = circuit.create_bit_decoder(entity.surface,{x=epos.x + 0.5, y=epos.y+0.5},force,entity,4)
+    local data = router_component_table
+    local relative = relative_location(epos, entity.orientation, data)
 
     local input_ports = {}
 
@@ -82,7 +83,7 @@ local function create_router(prefix, entity, is_fast_replace)
     local contents_indicator
     if not is_fast_replace then
         -- Create the pass-band combinator network
-        passbands = circuit.create_passband(entity.surface, relative(data.combi_offset), entity.force, input_ports, #(data.output))
+        passbands = circuit.create_passband(builder, input_ports, #(data.output))
 
         -- Create the contents-nonempty indicator    
         contents_indicator = entity.surface.create_entity({
@@ -177,17 +178,10 @@ end
 local function create_smart_router(prefix, entity, is_fast_replace)
     entity.operable = false -- disable its gui
 
-    -- The tricky part: constructing the router
     local epos = entity.position
-    local data = router_io_table -- TODO: make multiple of these
-
+    local data = router_component_table -- TODO: make multiple of these
     local builder=circuit.Builder:new(entity.surface,entity.position,entity.force)
-
-    local function relative(obj_offset)
-        -- TODO: take direction of entity into account
-        local rel_offset = vector_add(obj_offset, data.offset)
-        return vector_add(epos, rel_offset)
-    end
+    local relative = relative_location(epos, entity.orientation, data)
     local input_belts = {}
     local output_belts = {}
     
@@ -239,10 +233,7 @@ local function create_smart_router(prefix, entity, is_fast_replace)
     if is_fast_replace then return end
 
     -- Create the comms and port control network
-    local passbands = circuit.create_smart_comms(
-        entity.surface, relative(data.combi_offset), entity.force,
-        input_belts, output_belts
-    )
+    local passbands = circuit.create_smart_comms(builder, input_belts, output_belts)
 
     -- Create the movement inserters
     for i,opt in ipairs(data.output) do
@@ -275,6 +266,119 @@ local function create_smart_router(prefix, entity, is_fast_replace)
     end
 end
 
+local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
+    -- entity.operable = false -- Nope, GUI is enabled
+    -- TODO: custom GUI?
+
+    n_lanes = n_lanes or 1
+    local epos = entity.position
+    local data = nil
+    local builder=circuit.Builder:new(entity.surface,entity.position,entity.force)
+    local relative = relative_location(epos, entity.orientation, data)
+    
+    local count_color_combi
+    if not is_fast_replace then
+        count_color_combi = builder:constant_combi{
+            {signal=circuit.COUNT,count=2*circuit.DEMAND_FACTOR},
+            {signal=circuit.LEAF, count=circuit.DEMAND_FACTOR}
+        }
+    end
+    local input_belts = {}
+    local output_belts = {}
+    local my_orientation = entity.orientation*8
+    local opposite_orientation = (4+entity.orientation*8)%8
+
+    for i=1,n_lanes do
+        output_belts[i] = entity.surface.create_entity{
+            name = "router-component-" .. prefix .. "transport-belt",
+            position = relative({x=i-0.5,y=0}),
+            direction = my_orientation,
+            force = entity.force,
+            fast_replace = is_fast_replace
+        }
+        input_belts[i] = entity.surface.create_entity{
+            name = "router-component-" .. prefix .. "transport-belt",
+            position = relative({x=0.5-i,y=0}),
+            direction = opposite_orientation,
+            force = entity.force,
+            fast_replace = is_fast_replace
+        }
+    end
+
+    -- Fast replace: all the electronics should exist: we're done here!
+    -- TODO: make extra inserters / or cull
+    if is_fast_replace then return end
+
+    -- TODO: different component for these
+    -- TODO: auto-connect on place
+    local in_chest = builder:create_or_find_entity{
+        name = "router-component-smart-port-lamp",
+        direction = orientation,
+        position = relative({x=-0.5,y=0.2})
+    }
+    local out_chest = builder:create_or_find_entity{
+        name = "router-component-smart-port-lamp",
+        direction = orientation,
+        position = relative({x=0.5,y=0.2})
+    }
+    local threshold_trim = builder:create_or_find_entity{
+        name = "router-component-port-control-combinator",
+        direction = orientation,
+        position = relative({x=n_lanes+0.5,y=0})
+    }
+    local port = builder:create_or_find_entity{
+        name = "router-component-smart-port-lamp",
+        direction = orientation,
+        position = relative({x=0,y=-0.2})
+    }
+    port.connect_neighbour{wire=circuit.GREEN,target_entity=output_belts[1]}
+    local control = port.get_or_create_control_behavior()
+    control.use_colors = true
+    control.circuit_condition = {condition = {comparator="!=",first_signal=circuit.COUNT,second_constant=0}}
+
+    -- Create the comms and port control network
+    local comm_circuit = circuit.create_smart_comms_io(
+        entity, builder, input_belts, output_belts,
+        in_chest,out_chest,demand,threshold_trim
+    )
+
+    -- Create the movement inserters
+    for i=1,n_lanes do
+        for lane=1,2 do
+            -- Input inserter
+            local ins = entity.surface.create_entity({
+                name = "router-component-nonfilter-inserter",
+                position = input_belts[i].position,
+                force = entity.force
+            })
+            ins.pickup_position = input_belts[i].position
+            ins.inserter_stack_size_override = 1 -- TODO: but perf...
+            ins.drop_position = relative({x=0.5-i,y=1}) -- box
+            control = ins.get_or_create_control_behavior()
+            control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.none
+            control.circuit_read_hand_contents = true
+            control.circuit_hand_read_mode = circuit.PULSE
+            ins.connect_neighbour{wire=circuit.RED,target_entity=comm_circuit.input,target_circuit_id=circuit.INPUT}
+
+            -- TODO: disable if not connected
+
+            -- Output inserter
+            ins = entity.surface.create_entity({
+                name = "router-component-inserter",
+                position = output_belts[i].position,
+                force = entity.force
+            })
+            ins.pickup_position = relative({x=i-0.5,y=1})
+            ins.inserter_stack_size_override = 1 -- TODO: but perf...
+            ins.drop_position = relative({x=i+lane/2-1.25,y=0})
+            control = ins.get_or_create_control_behavior()
+            ins.inserter_filter_mode = "whitelist"
+            control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
+            ins.connect_neighbour{wire=circuit.GREEN, target_entity=comm_circuit.output, target_circuit_id=circuit.OUTPUT}
+        end
+    end
+end
+
 -- If not nil: we think this is a fast upgrade
 local fast_replace_state = nil
 
@@ -300,7 +404,7 @@ local function on_died(ev, mined_by_robot)
         fast_replace_state = {tick = ev.tick, position = entity.position}
     end
 
-    if entity and entity.type ~= "entity-ghost" and (is_router_outer(entity) or is_router_smart(entity)) then
+    if entity and entity.type ~= "entity-ghost" and (is_router_outer(entity) or is_router_smart(entity) or is_router_io(entity)) then
         if is_fast_replace then
             fast_replace_state.something_died_here = true
             return -- TODO: is there anything to mine here?
@@ -350,6 +454,10 @@ local function on_built(ev)
         local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
         prefix = string.gsub(prefix, "smart$", "")
         create_smart_router(prefix, entity, is_fast_replace)
+    elseif entity and entity.type ~= "entity-ghost" and is_router_io(entity) then
+        local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
+        prefix = string.gsub(prefix, "io$", "")
+        create_smart_router_io(prefix, entity, is_fast_replace)
     end
     fast_replace_state = nil -- we got the built event; clear it
 end

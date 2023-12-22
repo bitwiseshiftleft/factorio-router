@@ -10,6 +10,7 @@ local GREEN = defines.wire_type.green
 local EACH = {type="virtual",name="signal-each"}
 local ANYTHING = {type="virtual",name="signal-anything"}
 local EVERYTHING = {type="virtual",name="signal-everything"}
+local THRESHOLD = {type="virtual",name="signal-T"}
 local DEFAULT = {type="virtual",name="router-signal-default"}
 local INPUT = defines.circuit_connector_id.combinator_input
 local OUTPUT = defines.circuit_connector_id.combinator_output
@@ -19,6 +20,9 @@ local OUTPUT = defines.circuit_connector_id.combinator_output
 local RESET = {type="virtual",name="signal-red"}
 local COUNT = {type="virtual",name="router-signal-link"}
 local LEAF  = {type="virtual",name="router-signal-leaf"}
+
+local PULSE = defines.control_behavior.transport_belt.content_read_mode.pulse
+local HOLD  = defines.control_behavior.transport_belt.content_read_mode.hold
 
 -- When used as a builder interface, takes input from itself
 local ITSELF = "__ITSELF__"
@@ -85,20 +89,24 @@ function Builder:combi(args)
 
     -- Connect up the inputs
     for i,red in ipairs(args.red or {}) do
-        if red == ITSELF then red = entity end
-        parameters = {wire=RED,target_entity=entity,target_circuit_id=INPUT}
-        if red.type == "arithmetic-combinator" or red.type == "decider-combinator" then
-            parameters.source_circuit_id=OUTPUT
+        if red then
+            if red == ITSELF then red = entity end
+            parameters = {wire=RED,target_entity=entity,target_circuit_id=INPUT}
+            if red.type == "arithmetic-combinator" or red.type == "decider-combinator" then
+                parameters.source_circuit_id=OUTPUT
+            end
+            red.connect_neighbour(parameters)
         end
-        red.connect_neighbour(parameters)
     end
     for i,green in ipairs(args.green or {}) do
-        if green == ITSELF then green = entity end
-        parameters = {wire=GREEN,target_entity=entity,target_circuit_id=INPUT}
-        if green.type == "arithmetic-combinator" or green.type == "decider-combinator" then
-            parameters.source_circuit_id=OUTPUT
+        if green then
+            if green == ITSELF then green = entity end
+            parameters = {wire=GREEN,target_entity=entity,target_circuit_id=INPUT}
+            if green.type == "arithmetic-combinator" or green.type == "decider-combinator" then
+                parameters.source_circuit_id=OUTPUT
+            end
+            green.connect_neighbour(parameters)
         end
-        green.connect_neighbour(parameters)
     end
 
     return entity
@@ -133,7 +141,7 @@ function Builder:create_or_find_entity(args)
     
     -- Is it already there?
     local entity = self.surface.find_entity(args.name,position)
-    if entity then return entity end
+    if entity and position == entity.position then return entity end
 
     -- Is it a ghost?
     entity = self.surface.find_entities_filtered{
@@ -155,7 +163,7 @@ function Builder:create_or_find_entity(args)
 end
 
 -- TODO: rename
-local function create_passband(surface,position,force,input_belts,n_outputs)
+local function create_passband(builder,input_belts,n_outputs)
     -- Create a passband for user-controlled routers that sets the belts
     -- Return several arrays:
     -- input_control[i]  should be connected to the control signals for direction[i]
@@ -172,8 +180,6 @@ local function create_passband(surface,position,force,input_belts,n_outputs)
         output_pickup  = {},
         output_dropoff = {}
     }
-    
-    local builder = Builder:new(surface,position,force)
 
     -- For unhandled inputs: each = ((-1)|each) & -0x40000000
     -- = -4.. if present and unhandled
@@ -226,7 +232,7 @@ end
 -- Must be > 2 * maximum number of items that can be placed per tick
 local DEMAND_FACTOR = 16
 
-local function create_smart_comms(surface,position,force,input_belts,output_belts)
+local function create_smart_comms(builder,input_belts,output_belts)
     -- Create communications system.
 
     -- For each output belt, set its mode to {don't enable or disable; read=pulse}
@@ -234,7 +240,6 @@ local function create_smart_comms(surface,position,force,input_belts,output_belt
     
     -- Return output_pickup and output_dropoff combinators
     -- TODO: add reset control
-    local builder = Builder:new(surface,position,force)
 
     local ret = {
         output_pickup  = {},
@@ -318,7 +323,7 @@ local function create_smart_comms(surface,position,force,input_belts,output_belt
     builder:connect_outputs(minus_one_unhandled,minus_one_unhandled_2,RED)
 
     -- Add in default = -2 for reasons seen below
-    local default_neg_2 = builder:constant_combi({{signal=DEFAULT,count=-2,out=DEFAULT}})
+    local default_neg_2 = builder:constant_combi{{signal=DEFAULT,count=-2}}
     default_neg_2.connect_neighbour{wire=RED,target_entity=minus_one_unhandled,target_circuit_id=OUTPUT}
 
     local LIBERALIZE = 0 -- A fudge factor so that things spread out a bit more
@@ -334,7 +339,7 @@ local function create_smart_comms(surface,position,force,input_belts,output_belt
         local control = bus.get_or_create_control_behavior()
         control.enable_disable = false
         control.read_contents = true
-        control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.pulse
+        control.read_contents_mode = PULSE
 
         -- bus & DEMAND_FACTOR-1 = inbound items pulse
         local inbound_pulse = builder:combi{op="AND",R=DEMAND_FACTOR-1,green={bus}}
@@ -400,9 +405,56 @@ local function create_smart_comms(surface,position,force,input_belts,output_belt
     return ret
 end
 
+local function create_smart_comms_io(
+    entity,builder,input_belts,output_belts,
+    in_chest,out_chest,demand,threshold_trim
+)
+    -- TODO: add reset control
+
+    -- Construct the inbound counter counter
+    -- Inbound counter = sum(outbound - inbound) if > RESET
+    -- Normally RESET == 0, so this leaves positive items, reducing effective demand
+    -- This reduces effective demand because demands are negative
+    -- (This is unlike in the non-IO smart_comms where outputting an item removes
+    -- it from an incoming belt, so it counts as -2 instead of -1)
+    local inbound_neg   = builder:combi{op="*",R=-1,red=output_belts}
+    for i,the_belt in ipairs(output_belts) do
+        -- Configure the output belts
+        local control = the_belt.get_or_create_control_behavior()
+        control.enable_disable = false
+        control.read_contents = true
+        control.read_contents_mode = PULSE
+    end
+    local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green=output_belts}
+    local inbound_count = builder:combi{op=">",R=RESET,green={ITSELF,inbound_neg,inbound_and}}
+
+    -- OK, create the comms
+    local internal_combi = builder:constant_combi{{signal=THRESHOLD,count=1},{signal=LEAF,count=-1}}
+    local demand1       = builder:combi{op="-",L=0,R=EACH,green={entity}}
+    local demand2       = builder:combi{op="-",L=0,R=EACH,green={entity}} -- separate to not mix with inbound_count
+    -- demand each item whose net supply is < 0
+    local supply_neg    = builder:combi{op="<",R=0,green={in_chest},red={inbound_count,internal_combi,demand1}}
+    local supply_pos1   = builder:combi{op=">",R=0,red={demand2},set_one=true}
+    builder:connect_inputs(supply_neg,supply_pos1,GREEN)
+
+    -- Scale threshold by DEMAND, and trim by -DEMAND
+    local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=DEMAND_FACTOR,out=THRESHOLD,green={demand1,internal_combi}}
+    local trim_scaler = builder:combi{op="*",R=-DEMAND_FACTOR,green={threshold_trim}}
+
+    -- drive the bus according to demand
+    local driver        = builder:combi{op="*",R=-DEMAND_FACTOR,green={supply_neg}}
+    driver.connect_neighbour{wire=GREEN,target_entity=inbound_and,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
+    local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={threshold_scaler,trim_scaler},set_one=true}
+
+    -- drive according to in demand and in supply, i.e. >= 2
+    local ret = builder:combi{op=">=",R=2,green={in_demand_1,supply_pos1}}
+    return {output=ret, input=inbound_neg}
+end
+
 -- Construct module
 M.create_passband = create_passband
 M.create_smart_comms = create_smart_comms
+M.create_smart_comms_io = create_smart_comms_io
 M.RED = RED
 M.GREEN = GREEN
 M.DEFAULT = DEFAULT
@@ -415,5 +467,8 @@ M.Builder = Builder
 M.COUNT = COUNT
 M.LEAF = LEAF
 M.DEMAND_FACTOR = DEMAND_FACTOR
+M.THRESHOLD = THRESHOLD
+M.PULSE = PULSE
+M.HOLD = HOLD
 
 return M

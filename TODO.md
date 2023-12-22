@@ -1,5 +1,23 @@
 # Factorio smart routers TODO list
 
+## Suggestions to consider
+
+* Tallow: constrain the operation of the network to make it more of a puzzle.
+* For example, could require the network to be a directed or undirected tree, or a DAG.
+* VVG: consider contraining to a directed tree or similar because it's better for UPS.
+
+Another possibility to constrain the network more: instead of being completely free,
+there can only be one static requester for each resource (per network). This could either
+be static or potentially circuit controlled, but if you request the same resource in
+more than one place then that resource can't be routed anywhere.  Then the user would need
+to separately track how many of each item has been delivered.
+
+The (mostly) static routing layout might be better for UPS too.  A tree with a static
+routing layout, where each resource can only be requested from one place, requires only
+about 12 combinators per router, most of which are not active at any given time.
+However, a constraint to request each resource from only one place might be too
+restrictive.
+
 ## General
 * Document how the circuits work
 * Remove unused icons
@@ -7,8 +25,11 @@
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * Test fast-replacing ghosts
 
+Reverse the orders: it's currently express - fast - regular
+
 Refactor lua slightly
 * Move subroutines out of control.lua
+* Move relative movement into builder
 * Use builder more extensively
 * Use util.add_shift instead of vector_add
 
@@ -21,7 +42,7 @@ Make other router shapes, e.g. 3 <=> 3??
 
 ## Integration
 
-* Add soft dependencies on other models
+* Add soft dependencies on other mods
 * Test what happens when you place a router on a spaceship, or just ban that
 * Integrate with SE (deep space belts woo)
 * Space routers should be placeable in space
@@ -37,17 +58,31 @@ Make other router shapes, e.g. 3 <=> 3??
 
 ## Smart routers
 
-Design smart I/O ports
-* Have a circuit design, but need to implement it and make the entities
+Implement smart I/O ports
+* Make sure the trim port works
+* Make them 1x2 instead of 1x4?
+* Never provide things we're requesting, even if demand is satisfied?  Or be less eager to?
+* GUI for threshold, default?
+* Do we want one chest connection or two?  Probably only one
+* Make new entities for the chest interface lamps
+* Do we want to provide limiting loaders for the I/O ports?  Eg with an amount to cache
+* Autoconnect chests, maybe pursuant to startup option
+* Copy-paste
+* Graphics
+* Burst suppression
+* Create filtered-slot chests for the I/O ports??
 
 Design smart I/O buffers (= buffered version of router with a small chest??)
 * These would set the default signal?
 * Compare performance.  If it's much better then maybe all routers should be buffered?
+* Or maybe just make buffers a regular I/O node.
+
+Position the inserters for optimal throughput (e.g. low angles, no extension)
 
 Add a reset switch somehow in case the system goes haywire
 * Possibly add a signal definition for that
 
-Adjust how loosely/tightly things are routed by adjusting the average.
+Make the routers leak a little less: signals don't propagate far enough.
 
 Wider smart routers?  May need buffer/splitter
 

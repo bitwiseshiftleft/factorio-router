@@ -19,7 +19,9 @@ M.table = {
             {"decider-combinator",20},
         }, smart_ingredients = {
             {"arithmetic-combinator",20}
-        }
+        }, io_ingredients = {
+            {"arithmetic-combinator",10}
+        },
     },
     ["fast-"] = {
         tint=util.color("e31717D1"),
@@ -37,6 +39,8 @@ M.table = {
             {"advanced-circuit",20}
         }, smart_ingredients = {
             {"advanced-circuit",30}
+        }, io_ingredients = {
+            {"advanced-circuit",10}
         }
     },
     ["express-"] = {
@@ -58,6 +62,9 @@ M.table = {
         },
         smart_ingredients = {
             {"processing-unit",30}
+        },
+        io_ingredients = {
+            {"processing-unit",10}
         }
     }
 }
@@ -68,6 +75,8 @@ for prefix,router in pairs(M.table) do
     table.insert(router.manual_ingredients, { prefix.."splitter", 8 })
     table.insert(router.smart_ingredients,  { prefix.."transport-belt", 8 })
     table.insert(router.smart_ingredients,  { prefix.."splitter", 8 })
+    table.insert(router.io_ingredients,     { prefix.."transport-belt", 2 })
+    table.insert(router.io_ingredients,     { prefix.."splitter", 2 })
 end
 
 -- Fixup: add automatic prerequisites for upgrades
@@ -85,6 +94,7 @@ for prefix,router in pairs(M.table) do
             for index,size in ipairs(sizes) do
                 table.insert(next_table.manual_ingredients,{"router-"..size.."-"..prefix.."router",1})
                 table.insert(next_table.smart_ingredients,{"router-"..size.."-"..prefix.."smart", 1})
+                table.insert(next_table.io_ingredients,{"router-"..size.."-"..prefix.."io", 1})
                 next_table.had_prereq = true
             end
         end

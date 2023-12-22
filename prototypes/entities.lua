@@ -38,6 +38,26 @@ local light_on = {
     frame_count = 1
 }
 
+-- TODO: placeholders for IO
+local io_north = {
+    filename = "__router__/graphics/emptyred128.png",
+    priority = "very-low",
+    width = 128,
+    height =32,
+    x = 0,
+    frame_count = 1
+}
+local io_south = io_north
+local io_west = {
+    filename = "__router__/graphics/emptyred128.png",
+    priority = "very-low",
+    width = 32,
+    height =128,
+    x = 0,
+    frame_count = 1
+}
+local io_east = io_west
+
 local connector_definitions = circuit_connector_definitions.create(
   universal_connector_template,
   {
@@ -153,6 +173,10 @@ local super_inserter = util.merge{hidden_widget_proto,{
     stack_size_bonus = 0,
     platform_picture = empty_sheet_4
 }}
+local super_inserter_nonfilter = util.merge{super_inserter,{
+    name = "router-component-nonfilter-inserter",
+    filter_count = 0
+}}
 
 local indicator_inserter = util.merge{super_inserter,{
     name = "router-component-indicator-inserter",
@@ -207,7 +231,7 @@ data:extend{
     }},
 
     -- Super inserters
-    super_inserter, indicator_inserter,
+    super_inserter, super_inserter_nonfilter, indicator_inserter,
 
     -- Hidden combinators
     hidden_arith, hidden_decider
@@ -306,6 +330,22 @@ function create_router(size,prefix,tint)
             },
             fast_replaceable_group = "router-"..size.."-smart",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-smart")
+        }}}
+        data:extend{util.merge{fake_combinator,{
+            name = "router-"..size.."-"..prefix.."io",
+            minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."io" },
+            sprites = {north=io_north,south=io_south,west=io_west,east=io_east},
+            icons = {
+                {icon="__router__/graphics/router-icon.png", icon_size=128,},
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
+                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+            },
+            item_slot_count=20,
+            collision_box = {{-1.9, -0.45}, {1.9, 0.45}},
+            selection_box = {{-1.9, -0.45}, {1.9, 0.45}},
+            fast_replaceable_group = "router-"..size.."-io",
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-io"),
+            circuit_wire_max_distance = 10
         }}}
     end
 end

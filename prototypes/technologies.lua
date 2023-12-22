@@ -9,6 +9,7 @@ local function create_router_technology(prefix, tint, prerequisites, cost)
     end
     if protos.enable_smart then
         table.insert(effects,{type = "unlock-recipe", recipe =  "router-4x4-" .. prefix .. "smart"})
+        table.insert(effects,{type = "unlock-recipe", recipe =  "router-4x4-" .. prefix .. "io"})
     end
 
     local technology = {
