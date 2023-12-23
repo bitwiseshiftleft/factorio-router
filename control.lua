@@ -381,8 +381,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     local count_color_combi
     if not is_fast_replace then
         count_color_combi = builder:constant_combi{
-            {signal=circuit.COUNT,count=2*circuit.DEMAND_FACTOR},
-            {signal=circuit.LEAF, count=circuit.DEMAND_FACTOR}
+            {signal=circuit.COUNT,count=circuit.DEMAND_FACTOR}
         }
     end
     local input_belts = {}
@@ -439,7 +438,10 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     }
     local control = port.get_or_create_control_behavior()
     control.use_colors = true
-    control.circuit_condition = {condition = {comparator="!=",first_signal=circuit.COUNT,second_constant=0}}
+    control.circuit_condition = {condition = {comparator="!=",first_signal=circuit.COUNT,second_signal=circuit.LEAF}}
+    if not is_fast_replace then
+        port.connect_neighbour{wire=circuit.RED, target_entity=count_color_combi}
+    end
 
     -- Create the comms and port control network
     local comm_circuit = circuit.create_smart_comms_io(

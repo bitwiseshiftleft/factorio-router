@@ -23,26 +23,24 @@ Manual routers do not have any form of priority.  An item is either requested by
 
 Manual routers are currently in a rougher state than smart ones, and are not enabled by default.
 
-## Smart routers, requesters and providers
+## Smart routers and I/O terminals
 
-**TODO:** Requesters and providers aren't in the mod yet, but they can be built with circuit-controlled belts and combinators.
+The screenshot shows a simple network which uses smart routers to direct the manufacturing of blue chips.  First the green-chip station requests iron and copper; the red-chip station requests copper, plastic and green chips; the blue-chip station requests green chips, red chips, iron, sulfur and water barrels (to make sulfuric acid), and the barrel-filler station requests empty barrels.  Finally, a station at the left requests the blue chips.  All of these are routed automatically through the network.
 
 ![smart router screenshot](resources/screenshot-smart.jpg)
 
-Smart routers are designed to form a network, routing items from provider stations to requester stations.  The routers and the stations form a network connected by green wires.  When two smart routers are connected together, their port lights will turn green.  You can see that nothing is sent south from the central router to the southwest one, because the ports aren't connected.  When a smart router is connected to a requester or provider, its port light will turn blue.
+Smart routers and I/O terminals are designed to form a network, routing items from terminals that provide them to terminals that request them.  The routers and the terminals form a network connected by green wires.  When two smart routers are connected together, their port lights will turn from red to green green, and when a router port is connected to a terminal, the router's port light will turn blue.
 
-The requests can be set on each requester station by an integrated constant combinator, or using the circuit network.
+Each terminal has a set of items it requests.  You can adjust this using the constant combinator that's integrated into the terminal, or through the circuit network.  The terminal can also set the threshold at which it starts providing items, which is useful for adjusting its priority.
 
 Smart routers use a fancy communication protocol over the green wires.  It is recommended not to add your own signals to these.  The routers also track how many items have been from one smart router to another, so that they don't send too many.  It is therefore important not to divert these items, either with splitters or by picking them up off the belt.
 
-Since the circuit network doesn't update instantaneously, it is possible that slightly too many of an item will be sent.  These items would normally have nowhere to go, and so would clog up the network.  However, they can be sent to
-*buffer stations*.  As with manual routers, these request all types of resources by using the default signal ![default_signal_icon](resources/default.png).
-
-Currently the requester and provider ports aren't done, but a circuit connection can still be mocked up.  The above screenshot shows a work-in-progress smart router grid.  At each leaf, the "leaf" signal is set to 16 (which turns the port blue).  The combinator signal is set to 16 times the demannd: for example, the plastic leaf is requesting 6400 (i.e. 400 plastic bars) and the copper leaf is requesting 1600 (i.e. 100 copper plates).  It's important that the requests be multiples of 16, since the low 4 bits are used to count outgoing items on the belt.  The provider belts are set to enable if the corresponding resource is > 0, and to read belt contents (pulse).  You can see that the routing behavior isn't perfectly tight: the copper goes directly to its target, but the plastic bars meander slightly.
+Since the circuit network doesn't update instantaneously, it is possible that slightly too many of an item will be sent.  Reducing this problem is part of the purpose of the request threshold ![threshold_signal_igon](resources/threshold.png).  If extra items are sent, they would normally have nowhere to go, and so would clog up the network until someone requests them.  However, extra items can be sent to
+*buffer terminals*.  Buffer terminals additionally request all types of resources that aren't requested elsewhere, by using the default signal ![default_signal_icon](resources/default.png).
 
 ## Balancing
 
-Smart routers are totally unbalanced.  Maybe eventually they will approach "fair".
+Smart routers are totally unbalanced.  Maybe eventually they will approach "fair".  They currently don't use power and probably should use a lot of power.
 
 ## How it works
 
@@ -72,10 +70,8 @@ The trick of channeling everything over one green wire costs some performance.  
 ## TODO list
 
 See TODO.md on the github.  Some notable todo items:
-* Smart router requesters and providers
-* Smart router buffer stations
 * Better graphics
 * Localization to languages other than English
-* Integration with K2, SE, py, IR, AB, 248k, EI, etc
+* Integration with K2 (working but needs tests), SE, pY, IR, AB, 248k, EI, etc
 * Test and polish interactions
 * Allow manual routers to request items when negative instead of positive, in the style of LTN

@@ -1,7 +1,7 @@
 VERSION=0.0.1
 MODS_DIR="$(HOME)/Library/Application Support/factorio/mods"
 FILES= info.json changelog.txt *.lua prototypes graphics lualib locale README.md resources \
-	resources/default.png resources/leaf.png resources/connected.png
+	resources/default.png resources/leaf.png resources/connected.png resources/threshold.png
 
 all: mod
 mod: build/router_$(VERSION).zip
@@ -18,6 +18,9 @@ resources/leaf.png: graphics/leaf.png
 	convert $< -crop 32x32+192+0 $@
 	
 resources/connected.png: graphics/connected.png
+	convert $< -crop 32x32+192+0 $@
+	
+resources/threshold.png: graphics/threshold.png
 	convert $< -crop 32x32+192+0 $@
 
 build/router_$(VERSION).zip: $(FILES)

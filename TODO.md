@@ -26,8 +26,6 @@ restrictive.
 * Test fast-replacing ghosts
 * Make the stations use (a lot of) power somehow, or else add solar to the recipe
 
-Reverse the orders: it's currently express - fast - regular
-
 Refactor lua slightly
 * Move subroutines out of control.lua
 * Use builder more extensively
@@ -38,8 +36,7 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 ## Integration
 
 * Add soft dependencies on other mods
-* Test what happens when you place a router on a spaceship, or just ban that
-* Integrate with SE (deep space belts woo)
+* Integrate with SE (deep space belts woo).  Ban placing them on spaceships.
 * Space routers should be placeable in space
 * Integrate with K2 -- needs more testing
 * Integrate with Py
@@ -51,13 +48,14 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 
 ## Smart routers
 
-Implement smart I/O ports
+Implement smart I/O terminals
 * Wire connection points
 * Lamps for defaultness, disablement.
 * Rotate to disable output / set defaultness to 100?
-* Do we want to provide limiting loaders for the I/O ports?  Eg with an amount to cache
+* Do we want to provide limiting loaders for the I/O terminals?  Eg with an amount to cache
 * Autoconnect chests, maybe pursuant to startup option
 * Copy-paste, auto deconstruct, undo etc.
+* Test throughput when a terminal is connected to another terminal
 
 Buffered routers?
 * These would set the default signal?
@@ -77,6 +75,11 @@ Design a diode
 * The diode appears as a leaf on both sides, but propagates requests in one direction.
 * Inputs at leaf stations get magnified by a factor of almost D, so they should be reduced. One possible calculation is x//(D+1) + (x mod (D+1)).  This is the same mod D: x//(D+1) == (x - (x mod (D+1)))/(D+1) === x - (x mod (D+1)) because D+1 === 1.  This allows a latency-1 division by approximately D without changing the low bits.
 * What about long-distance link situations?  May want a version which can be proxied by radio
+
+
+Some sort of history buffer instead of / in addition to defaults?
+* So that e.g. iron can still go to the iron station if we sent too much.
+* It's not obvious that this is stable, but it might be.
 
 ## Smart router autoconnect
 
