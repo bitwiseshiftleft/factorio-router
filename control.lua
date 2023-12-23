@@ -348,7 +348,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
         for lane=1,2 do
             -- Input inserter
             local ins = entity.surface.create_entity({
-                name = "router-component-nonfilter-inserter",
+                name = "router-component-nonf-inserter",
                 position = input_belts[i].position,
                 force = entity.force
             })

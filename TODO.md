@@ -36,16 +36,13 @@ Refactor lua slightly
 
 Refine the recipes -- add some kind of circuits or filter inserters?
 
-Add a design doc
-* Maybe note in game not to mess with certain signals
-
 ## Integration
 
 * Add soft dependencies on other mods
 * Test what happens when you place a router on a spaceship, or just ban that
 * Integrate with SE (deep space belts woo)
 * Space routers should be placeable in space
-* Integrate with K2
+* Integrate with K2 -- need to add extra inserters for speed
 * Integrate with Py
 * Integrate with AngelBobs
 * Integrate with IR
@@ -76,7 +73,8 @@ Add a reset switch somehow in case the system goes haywire
 
 Make the routers leak a little less: signals don't propagate far enough.
 
-Other shapes?? Wider smart routers? Probably needs buffer/splitter for perf.
+Other shapes?? Wider smart routers?
+* Wider smart routers probably would use a filter for perf.
 
 Design a diode
 * I have a circuit design, but need to implement it and make the entities
@@ -93,7 +91,7 @@ Consider not connecting with a single wire, but with several, automatically usin
 * * Current node is ~50
 * * Save at least 9 gates (input high and low filters, and nega driver)
 * * Save up to 8 gates from avoiding leaf vs root scaling (optimistic) -- this would be adjusted by the Lua on detecting a leaf.
-* * Many of the rest of the gates can be eliminated with factorio 2 decider combinator
+* * Many of the rest of the gates can be eliminated with Factorio2's fancy decider combinator
 * Pro: faster convergence
 * Pro: don't need a diode entity, can just autodetect it
 * Con: need on-build handler to trace the belts for connect/disconnect
@@ -105,18 +103,18 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 ## Non-smart routers
 
 * Make blueprintable
-* Make less ugly
 * Set control behavior of lamps so they aren't "disabled by control behavior".
 * Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
 * Allow <0 instead of >0 as port condition? ... Like I dunno, shift-R?
 
 ## Graphics
 
-* Make graphics for smart routers.  These don't have to overlap as much anymore due to use of underneathies.
-* Make graphics for I/O ports
+* Make real graphics for smart routers
+* Make graphics for I/O ports.  These don't have to overlap as much anymore because of underneathies
 * Make graphics for regular routers
 * Make wire connection points
 * Make lamp glows
-* Try to animate stuff when possible?
+* Try to animate stuff when possible
+* Add blinkenlights
 * Add shadows to the graphics
 * Adjust the patched underneathies so they don't cast a weird shadow.

@@ -68,6 +68,45 @@ M.table = {
         }
     }
 }
+-- Krastorio2 support
+if data.raw.item["kr-superior-transport-belt"] then
+  M.table["kr-advanced-"] = {
+    tint = util.color("3ade21D1"),
+    prerequisites = {"kr-logistic-4","kr-ai-core"},
+    manual_ingredients = { {"ai-core",4} },
+    smart_ingredients =  { {"ai-core",6} },
+    io_ingredients    =  { {"ai-core",2} },
+    tech_costs = {
+        count = 750,
+        ingredients =
+        {
+            { "automation-science-pack", 1 },
+            { "logistic-science-pack", 1 },
+            { "chemical-science-pack", 1 },
+            { "production-science-pack", 1 },
+            { "utility-science-pack", 1 },
+        },
+        time = 15
+    },
+  }
+  M.table["kr-superior-"] = {
+    prerequisites = {"kr-logistic-5"},
+    tint = util.color("a30bd6D1"),
+    manual_ingredients = { {"ai-core",10} },
+    smart_ingredients  = { {"ai-core",20} },
+    io_ingredients     = { {"ai-core",5} },
+    tech_costs = {
+        count = 1000,
+        ingredients =
+        {
+            { "production-science-pack", 1 },
+            { "utility-science-pack", 1 },
+            { "advanced-tech-card", 1}
+        },
+        time = 15
+    },
+  }
+end
 
 -- Fixup: add automatic ingredients
 for prefix,router in pairs(M.table) do

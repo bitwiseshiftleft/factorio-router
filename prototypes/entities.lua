@@ -233,7 +233,6 @@ local super_inserter = util.merge{hidden_widget_proto,{
     rotation_speed = 2,
     pickup_position = {0, 0},
     insert_position = {0, 0},
-    filter_count = 5,
     draw_held_item = false,
     draw_inserter_arrow = false,
     circuit_wire_max_distance = 9,
@@ -242,9 +241,9 @@ local super_inserter = util.merge{hidden_widget_proto,{
     platform_picture = empty_sheet_4
 }}
 local super_inserter_nonfilter = util.merge{super_inserter,{
-    name = "router-component-nonfilter-inserter",
-    filter_count = 0
+    name = "router-component-nonf-inserter"
 }}
+super_inserter.filter_count = 5
 
 local indicator_inserter = util.merge{super_inserter,{
     name = "router-component-indicator-inserter",
