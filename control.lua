@@ -6,7 +6,7 @@ local SOUTH = defines.direction.south;
 local EAST  = defines.direction.east;
 local WEST  = defines.direction.west;
 
--- TODO: have multiple and look up from table
+-- FUTURE: could have multiple shapes and look up in a table
 local router_component_table = {
     offset = { x=-1.5, y=-1.5 },
     contents_offset = {x=0, y=0},
@@ -41,7 +41,6 @@ local function relative_location(epos, orientation, data)
     local im = ({[0]=0, [0.25]=1, [0.5]=0, [0.75]=-1})[orientation]
     local data_offset = (data and data.offset) or {x=0,y=0}
     local function inner(obj_offset)
-        -- TODO: take direction of entity into account
         local rel_offset = vector_add(obj_offset, data_offset)
         return {
             x=epos.x + re*rel_offset.x - im*rel_offset.y,
@@ -292,18 +291,20 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
 
     for i=1,n_lanes do
         output_belts[i] = entity.surface.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
+            name = "router-component-" .. prefix .. "underground-belt",
             position = relative({x=i-0.5,y=0}),
             direction = my_orientation,
             force = entity.force,
-            fast_replace = is_fast_replace
+            fast_replace = is_fast_replace,
+            type = "output"
         }
         input_belts[i] = entity.surface.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
+            name = "router-component-" .. prefix .. "underground-belt",
             position = relative({x=0.5-i,y=0}),
             direction = opposite_orientation,
             force = entity.force,
-            fast_replace = is_fast_replace
+            fast_replace = is_fast_replace,
+            type = "input"
         }
     end
 
@@ -332,15 +333,15 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
         direction = orientation,
         position = relative({x=0,y=0})
     }
-    port.connect_neighbour{wire=circuit.GREEN,target_entity=output_belts[1]}
     local control = port.get_or_create_control_behavior()
     control.use_colors = true
     control.circuit_condition = {condition = {comparator="!=",first_signal=circuit.COUNT,second_constant=0}}
 
     -- Create the comms and port control network
     local comm_circuit = circuit.create_smart_comms_io(
-        entity, builder, input_belts, output_belts,chest_inventory,demand,threshold_trim
+        entity, builder,chest_inventory,demand,threshold_trim
     )
+    comm_circuit.outreg.connect_neighbour{wire=circuit.GREEN,source_circuit_id=circuit.OUTPUT,target_entity=port}
 
     -- Create the movement inserters
     for i=1,n_lanes do
@@ -360,7 +361,9 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
             control.circuit_hand_read_mode = circuit.PULSE
             ins.connect_neighbour{wire=circuit.RED,target_entity=comm_circuit.input,target_circuit_id=circuit.INPUT}
 
-            -- TODO: disable if not connected
+            -- TODO: disable input inserters (and belt??) if not connected?
+            -- Or route belt sideways (but draw sprites normally)
+            -- Or just make the port bigger
 
             -- Output inserter
             ins = entity.surface.create_entity({
@@ -373,8 +376,11 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
             ins.drop_position = relative({x=i+lane/2-1.25,y=0})
             control = ins.get_or_create_control_behavior()
             ins.inserter_filter_mode = "whitelist"
+            control.circuit_read_hand_contents = true
+            control.circuit_hand_read_mode = circuit.PULSE
             control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
             ins.connect_neighbour{wire=circuit.GREEN, target_entity=comm_circuit.output, target_circuit_id=circuit.OUTPUT}
+            ins.connect_neighbour{wire=circuit.RED,   target_entity=comm_circuit.outreg, target_circuit_id=circuit.INPUT}
         end
     end
 end

@@ -34,7 +34,7 @@ function create_belt(belt_type)
     entity.name           = "router-component-"  .. belt_type
     entity.minable.result = nil
     entity.selectable_in_game = false
-    entity.flags = { "not-rotatable", "not-blueprintable" }
+    entity.flags = { "not-rotatable", "not-blueprintable", "hidden" }
     entity.destructible = false
     entity.draw_circuit_wires = false
 
@@ -82,5 +82,20 @@ function create_belt(belt_type)
     return entity
 end
 
+function create_underneathie(belt_type)
+    local entity = table.deepcopy(data.raw["underground-belt"][belt_type])
+    entity.name = "router-component-"  .. belt_type
+    entity.max_distance = 0
+    entity.minable.result = nil
+    entity.selectable_in_game = false
+    entity.flags = { "not-rotatable", "not-blueprintable", "hidden" }
+    entity.destructible = false
+    entity.collision_mask = { "transport-belt-layer" }
+    entity.next_upgrade = nil
+    entity.fast_replaceable_group = "router-component-underground-belt"
+    return entity
+end
+
 M.create_belt = create_belt
+M.create_underneathie = create_underneathie
 return M

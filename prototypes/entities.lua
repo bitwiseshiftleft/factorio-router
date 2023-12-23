@@ -365,6 +365,10 @@ function create_belt_components(prefix)
     data:extend({belt_with_no_frames.create_belt(prefix.."transport-belt")})
 end
 
+function create_underground_components(prefix)
+    data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt")})
+end
+
 function create_router(size,prefix,tint)
     create_belt_components(prefix)
     -- doodad is a constant combinator that can't have wires connected to it
@@ -426,6 +430,7 @@ function create_router(size,prefix,tint)
         }}}
     end
     if protos.enable_smart then
+        create_underground_components(prefix)
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."smart",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },

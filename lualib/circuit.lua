@@ -407,31 +407,73 @@ local function create_smart_comms(builder,input_belts,output_belts)
 end
 
 local function create_smart_comms_io(
-    entity,builder,input_belts,output_belts,chest,demand,threshold_trim
+    entity,builder,chest,demand,threshold_trim
 )
+    ----------------------------
+    -- Design of this circuit
+    ----------------------------
+    --[[
+    Unlike the regular design, we are going to use underneathies here.
+    This allows the I/O port to be only 1 deep without letting things
+    pass through to the other side.
+
+    Since underneathies can't connect to the circuit network, we need
+    to read info from the inserters.
+
+    For the "in"serters sending things to the chest, this is fine: they
+    aren't filter inserters anyway, and don't have an enable condition,
+    so they can all be wired together without interfering
+
+    For the "out"serters sending things from the chest, it's tricky.
+    The problem is that one inserter's hand read will send a positive
+    signal to the other inserter, thus causing it to trigger when
+    perhaps it shouldn't.  This is only a problem for things that
+    are in the chest: if something isn't in the chest, the signal is
+    only transient, so it will only clog the filter list for one tick.
+
+    To mitigate this issue, we want to set everything that's in supply
+    to a negative value.  The way I chose is to set it to:
+    
+        -MAX   if supply >  my_demand
+        -MAX/2 if supply <  my_demand
+        0      if supply == my_demand
+    
+    +   -MAX/2 if threshold != 0 and their_demand >= threshold
+
+    This wraps around to be positive if both are satisfied, and is
+    definitely negative if supply < my_demand.
+
+    It's still not quite safe to connect the outserters directly
+    to the bus, but maybe almost? (FUTURE?) The basic problem is
+    if an item arrives this tick, and the bus requests (or sends it
+    to me) this tick, then it will be set in the filter with no
+    convenient way to suppress it.  Therefore the outserters are
+    buffered onto the bus.
+    
+    --]]
+
+
     -- TODO: add reset control
 
+    -- Outreg drives the bus (on green)
+    -- Outreg is driven by the outserters (on red)
+    -- (This is set up in control.lua)
+    local outreg = builder:combi{op="+",R=0}
+
     -- Construct the inbound counter counter
-    -- Inbound counter = sum(outbound - inbound) if > RESET
-    -- Normally RESET == 0, so this leaves positive items, reducing effective demand
-    -- This reduces effective demand because demands are negative
-    -- (This is unlike in the non-IO smart_comms where outputting an item removes
-    -- it from an incoming belt, so it counts as -2 instead of -1)
-    local inbound_neg   = builder:combi{op="*",R=-1,red=output_belts}
-    for i,the_belt in ipairs(output_belts) do
-        -- Configure the output belts
-        local control = the_belt.get_or_create_control_behavior()
-        control.enable_disable = false
-        control.read_contents = true
-        control.read_contents_mode = PULSE
-    end
-    local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green=output_belts}
+    -- Counts +1 on bus % DEMAND_FACTOR
+    -- Counts -1 on outreg [red, so it's not connected to the bus]
+    -- Counts -1 on inbound stuff (connected by control)
+    local inbound_neg   = builder:combi{op="*",R=-1,red={outreg}}
+    local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green={outreg}}
     local inbound_count = builder:combi{op=">",R=RESET,green={ITSELF,inbound_neg,inbound_and}}
 
     -- burst suppression
     local BURST_FACTOR = 2
     local BURST_FALLOFF = 4
-    local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR, red={output_belts[1]}}
+    local MINUS_HMAX = -0x40000000
+    local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR}
+    builder:connect_inputs(scale_before_burst,outreg,RED) -- connected to outserters
     local burst_hold = builder:combi{op="+", R=1, green={scale_before_burst,ITSELF}}
     local burst_falloff = builder:combi{op="/", R=-BURST_FALLOFF, green={scale_before_burst,ITSELF}}
 
@@ -442,26 +484,38 @@ local function create_smart_comms_io(
     local demand2        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}} -- separate to not mix with inbound_count
     -- demand each item whose net supply is < 0
     local supply_neg     = builder:combi{op="<",R=0,green={chest},red={inbound_count,internal_combi,demand1}}
-    local supply_pos1    = builder:combi{op=">",R=0,red={demand2},set_one=true}
-    builder:connect_inputs(supply_neg,supply_pos1,GREEN)
+
+    -- If 0 < x < 0x40000000 then x | MINUS_HMAX = (x + MINUS_HMAX)
+    -- If MINUS_HMAX <= x < 0 then x | MINUS_HMAX = x
+    -- Thus (MINUS_HMAX - x) + (x | MINUS_HMAX) = {
+    --   MINUS_MAX if 0 < x < 0x40000000
+    --   MINUS_HMAX if MINUS_HMAX <= x < 0
+    --   0 if x isn't in the combinator
+    -- }
+    local mm_one         = builder:combi{op="OR", L=MINUS_HMAX,R=EACH,green={chest},red={demand2}}
+    local mm_two         = builder:combi{op="-",  L=MINUS_HMAX,R=EACH,green={chest},red={demand2}}
+    builder:connect_outputs(mm_one,mm_two,GREEN)
 
     -- Scale threshold by DEMAND, and trim by -DEMAND
     local trim_scaler = builder:combi{op="*",R=-DEMAND_FACTOR,green={threshold_trim}}
     local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=2*DEMAND_FACTOR,out=THRESHOLD,green={threshold_trim}}
 
+    -- Set threshold = -HMAX if threshold != 0
+    local threshold_positive = builder:combi{op="!=",L=THRESHOLD,R=0,out=THRESHOLD,set_one=true,green={threshold_trim}}
+    local threshold_test     = builder:combi{op="*",L=THRESHOLD,R=MINUS_HMAX-1,out=THRESHOLD,green={threshold_positive}}
+
     -- drive the bus according to demand
     local driver        = builder:combi{op="*",R=-DEMAND_FACTOR,green={supply_neg}}
-    driver.connect_neighbour{wire=GREEN,target_entity=inbound_and,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
+    builder:connect_outputs(driver,outreg,GREEN)
+
+    -- output MINUS_HMAX if > threshold
     local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={
         threshold_scaler,trim_scaler,burst_hold,scale_before_burst
     },set_one=true}
+    local in_demand_2   = builder:combi{op="*",R=THRESHOLD,green={in_demand_1,threshold_test}}
+    builder:connect_outputs(mm_one,in_demand_2,GREEN)
 
-    -- drive according to in demand and in supply, i.e. >= 2
-    -- disable if thershold <= 0
-    local ret  = builder:combi{op=">",L=THRESHOLD,R=0,out=EVERYTHING,green={in_demand_1,supply_pos1}}
-    local ret2 = builder:combi{op="OR",R=-1,green={in_demand_1,supply_pos1}}
-    builder:connect_outputs(ret,ret2,GREEN)
-    return {output=ret, input=inbound_neg}
+    return {output=in_demand_2, outreg=outreg, input=inbound_neg}
 end
 
 -- Construct module

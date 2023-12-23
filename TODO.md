@@ -24,12 +24,13 @@ restrictive.
 * Proper packaging
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * Test fast-replacing ghosts
+* Set dependencies
+* Make the stations use (a lot of) power somehow, or else add solar to the recipe
 
 Reverse the orders: it's currently express - fast - regular
 
 Refactor lua slightly
 * Move subroutines out of control.lua
-* Move relative movement into builder
 * Use builder more extensively
 * Use util.add_shift instead of vector_add
 
@@ -37,8 +38,6 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 
 Add a design doc
 * Maybe note in game not to mess with certain signals
-
-Make other router shapes, e.g. 3 <=> 3??
 
 ## Integration
 
@@ -59,12 +58,13 @@ Make other router shapes, e.g. 3 <=> 3??
 ## Smart routers
 
 Implement smart I/O ports
+* Make an icon
+* Wire connection points
 * Lamps for defaultness, disablement.
 * Rotate to disable output / set defaultness to 100?
 * Do we want to provide limiting loaders for the I/O ports?  Eg with an amount to cache
 * Autoconnect chests, maybe pursuant to startup option
 * Copy-paste, auto deconstruct, undo etc.
-* Create filtered-slot chests for the I/O ports??
 
 Buffered routers?
 * These would set the default signal?
@@ -76,7 +76,7 @@ Add a reset switch somehow in case the system goes haywire
 
 Make the routers leak a little less: signals don't propagate far enough.
 
-Wider smart routers??  Probably needs buffer/splitter for perf.
+Other shapes?? Wider smart routers? Probably needs buffer/splitter for perf.
 
 Design a diode
 * I have a circuit design, but need to implement it and make the entities
@@ -105,6 +105,18 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 ## Non-smart routers
 
 * Make blueprintable
+* Make less ugly
 * Set control behavior of lamps so they aren't "disabled by control behavior".
 * Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
 * Allow <0 instead of >0 as port condition? ... Like I dunno, shift-R?
+
+## Graphics
+
+* Make graphics for smart routers.  These don't have to overlap as much anymore due to use of underneathies.
+* Make graphics for I/O ports
+* Make graphics for regular routers
+* Make wire connection points
+* Make lamp glows
+* Try to animate stuff when possible?
+* Add shadows to the graphics
+* Adjust the patched underneathies so they don't cast a weird shadow.
