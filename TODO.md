@@ -21,10 +21,9 @@ restrictive.
 ## General
 * Document how the circuits work
 * Remove unused icons
-* Proper packaging
+* Proper packaging for upload to mod portal
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * Test fast-replacing ghosts
-* Set dependencies
 * Make the stations use (a lot of) power somehow, or else add solar to the recipe
 
 Reverse the orders: it's currently express - fast - regular
@@ -42,20 +41,17 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 * Test what happens when you place a router on a spaceship, or just ban that
 * Integrate with SE (deep space belts woo)
 * Space routers should be placeable in space
-* Integrate with K2 -- need to add extra inserters for speed
+* Integrate with K2 -- needs more testing
 * Integrate with Py
 * Integrate with AngelBobs
 * Integrate with IR
 * Integrate with Exotic
 * Integrate with 248k
 * Integrate with Ultimate belts
-* Create inserters as necessary for higher-speed versions
-* Create/destroy extra inserters on fast replace
 
 ## Smart routers
 
 Implement smart I/O ports
-* Make an icon
 * Wire connection points
 * Lamps for defaultness, disablement.
 * Rotate to disable output / set defaultness to 100?

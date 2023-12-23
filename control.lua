@@ -50,6 +50,103 @@ local function relative_location(epos, orientation, data)
     return inner
 end
 
+local function fixup_extra_inserters(surface, force, area, prefix, buffer)
+    local multiplier = math.ceil(game.entity_prototypes[prefix.."transport-belt"].belt_speed * 8) - 1
+
+    -- game.print("Multiplier = "..tostring(multiplier))
+    
+    local function idx(e)
+        local ret = ""
+        ret = ret .. tostring(e.position.x)..","
+        ret = ret .. tostring(e.position.y)..","
+        ret = ret .. tostring(e.pickup_position.x)..","
+        ret = ret .. tostring(e.pickup_position.y)..","
+        ret = ret .. tostring(e.drop_position.x)..","
+        ret = ret .. tostring(e.drop_position.y)..","
+        return ret
+    end
+
+    -- Inserter types we care about
+    for _,name in ipairs{"router-component-inserter","router-component-nonf-inserter"} do
+        local added = 0
+        local extras = 0
+        local removed =0
+        local count_table = {}
+        local entities = surface.find_entities_filtered{area=area,force=force,name=name}
+
+        -- Count the entities with each pickup/dropoff position
+        for _,e in ipairs(entities) do
+            local the_idx = idx(e)
+            if count_table[the_idx] ~= nil then
+                count_table[the_idx].count = count_table[the_idx].count + 1
+            else 
+                count_table[the_idx] = {entity=e, count=1}
+            end
+        end
+
+        -- Multiply the expected counts by the multiplier
+        for _,j in pairs(count_table) do
+            j.count = j.count*multiplier
+        end
+        
+        -- Count the extras
+        entities = surface.find_entities_filtered{force=force,area=area,name=name.."-extra"}
+
+        -- Count the entities with each pickup/dropoff position
+        for _,e in ipairs(entities) do
+            local the_idx = idx(e)
+            extras = extras + 1
+            if count_table[the_idx] then
+                if count_table[the_idx].count <= 0 then
+                    -- We have too many of them ... destroy!
+                    if buffer then buffer.insert(e.held_stack) end
+                    e.destroy()
+                    removed = removed + 1
+                else
+                    -- Just count down
+                    count_table[the_idx].count = count_table[the_idx].count - 1
+                end
+            else
+                -- What?  This shouldn't even be here...
+                if buffer then buffer.insert(e.held_stack) end
+                e.destroy()
+                removed = removed + 1
+            end
+        end
+
+        -- Create extra entities as necessary
+        for the_idx,j in pairs(count_table) do
+            for c=1,j.count do
+                local ins = surface.create_entity({
+                    name = name.."-extra",
+                    position = j.entity.position,
+                    force = force
+                })
+                for _,p in ipairs{"pickup_position","drop_position","inserter_stack_size_override"} do
+                    ins[p] = j.entity[p]
+                end
+                if ins.filter_slot_count and ins.filter_slot_count > 0 then
+                    ins.inserter_filter_mode = j.entity.inserter_filter_mode
+                end
+                local con1 = j.entity.get_or_create_control_behavior()
+                local con2 = ins.get_or_create_control_behavior()
+                for _,p in ipairs{
+                    "circuit_mode_of_operation","circuit_read_hand_contents",
+                    "circuit_hand_read_mode","circuit_set_stack_size","circuit_stack_control_signal"
+                } do
+                    if con1[p] then con2[p] = con1[p] end
+                end
+
+                added = added+1
+
+                ins.connect_neighbour{wire=circuit.RED,  target_entity=j.entity}
+                ins.connect_neighbour{wire=circuit.GREEN,target_entity=j.entity}
+            end
+        end
+        -- game.print("Added "..tostring(added)..", found " .. tostring(extras)..", removed "..tostring(removed))
+    end
+end
+
 -- Adjustments for outserters to output to different lanes
 local lane_adj = {}
 lane_adj[NORTH] = {x= 0.25,y=0}
@@ -57,7 +154,7 @@ lane_adj[SOUTH] = lane_adj[NORTH]
 lane_adj[EAST]  = {x=0, y=0.25}
 lane_adj[WEST]  = lane_adj[EAST]
 
-local function create_router(prefix, entity, is_fast_replace)
+local function create_router(prefix, entity, is_fast_replace, buffer)
     entity.operable = false -- disable its gui
 
     -- The tricky part: constructing the router
@@ -172,9 +269,10 @@ local function create_router(prefix, entity, is_fast_replace)
             end
         end
     end
+    fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
 end
 
-local function create_smart_router(prefix, entity, is_fast_replace)
+local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     entity.operable = false -- disable its gui
 
     local epos = entity.position
@@ -229,7 +327,10 @@ local function create_smart_router(prefix, entity, is_fast_replace)
 
     -- Fast replace: all the electronics should exist: we're done here!
     -- TODO: make extra inserters / or cull
-    if is_fast_replace then return end
+    if is_fast_replace then
+        fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
+        return
+    end
 
     -- Create the comms and port control network
     local passbands = circuit.create_smart_comms(builder, input_belts, output_belts)
@@ -263,12 +364,12 @@ local function create_smart_router(prefix, entity, is_fast_replace)
             end
         end
     end
+    fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
 end
 
-local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
+local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, buffer)
     -- entity.operable = false -- Nope, GUI is enabled
     -- TODO: custom GUI?
-
     entity.rotatable = false
 
     n_lanes = n_lanes or 1
@@ -310,7 +411,10 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
 
     -- Fast replace: all the electronics should exist: we're done here!
     -- TODO: make extra inserters / or cull
-    if is_fast_replace then return end
+    if is_fast_replace then
+        fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
+        return
+    end
 
     -- TODO: auto-connect on place
     local chest_inventory = builder:create_or_find_entity{
@@ -383,6 +487,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
             ins.connect_neighbour{wire=circuit.RED,   target_entity=comm_circuit.outreg, target_circuit_id=circuit.INPUT}
         end
     end
+    fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
 end
 
 -- If not nil: we think this is a fast upgrade
@@ -442,6 +547,7 @@ local function on_robot_mined(ev)
 end
 
 local function on_built(ev)
+    local buffer = ev.buffer
     local entity = ev.created_entity
     if entity == nil then entity = ev.entity end
 
@@ -455,15 +561,15 @@ local function on_built(ev)
     if entity and entity.type ~= "entity-ghost" and is_router_outer(entity) then
         local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
         prefix = string.gsub(prefix, "router$", "")
-        create_router(prefix, entity, is_fast_replace)
+        create_router(prefix, entity, is_fast_replace, buffer)
     elseif entity and entity.type ~= "entity-ghost" and is_router_smart(entity) then
         local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
         prefix = string.gsub(prefix, "smart$", "")
-        create_smart_router(prefix, entity, is_fast_replace)
+        create_smart_router(prefix, entity, is_fast_replace, buffer)
     elseif entity and entity.type ~= "entity-ghost" and is_router_io(entity) then
         local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
         prefix = string.gsub(prefix, "io$", "")
-        create_smart_router_io(prefix, entity, is_fast_replace)
+        create_smart_router_io(prefix, entity, is_fast_replace, buffer)
     end
     fast_replace_state = nil -- we got the built event; clear it
 end

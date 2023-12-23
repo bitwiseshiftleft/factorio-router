@@ -245,6 +245,14 @@ local super_inserter_nonfilter = util.merge{super_inserter,{
 }}
 super_inserter.filter_count = 5
 
+-- These are the same but for "extra" inserters on super-fast belts
+local super_inserter_2 = util.merge{super_inserter,{
+    name = "router-component-inserter-extra"
+}}
+local super_inserter_nonfilter_2 = util.merge{super_inserter_nonfilter,{
+    name = "router-component-nonf-inserter-extra"
+}}
+
 local indicator_inserter = util.merge{super_inserter,{
     name = "router-component-indicator-inserter",
     flags = { "hidden", "not-blueprintable" },
@@ -274,7 +282,7 @@ if protos.enable_manual or protos.enable_smart then
         hidden_arith, hidden_decider,
 
         -- Super filter inserters
-        super_inserter
+        super_inserter, super_inserter_2
     }
 end
 
@@ -356,7 +364,7 @@ if protos.enable_smart then
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
             fast_replaceable_group = "router-component-port-control-combinator"
         }},
-        super_inserter_nonfilter
+        super_inserter_nonfilter, super_inserter_nonfilter_2
     }
 end
 
@@ -368,15 +376,11 @@ function create_underground_components(prefix)
     data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt")})
 end
 
-function create_router(size,prefix,tint)
+function create_router(size,prefix,tint,next_upgrade)
     create_belt_components(prefix)
     -- doodad is a constant combinator that can't have wires connected to it
 
     local base_underground_item = data.raw["transport-belt"][prefix .. "transport-belt"]
-    local next_upgrade = base_underground_item and base_underground_item.next_upgrade
-    if next_upgrade then
-        next_upgrade = string.gsub(next_upgrade, "-?transport%-belt$", "")
-    end
 
     local fake_combinator = {
         type = "constant-combinator",
@@ -425,7 +429,7 @@ function create_router(size,prefix,tint)
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
             },
             fast_replaceable_group = "router-"..size.."-router",
-            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-router")
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "router")
         }}}
     end
     if protos.enable_smart then
@@ -440,7 +444,7 @@ function create_router(size,prefix,tint)
                 {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
             },
             fast_replaceable_group = "router-"..size.."-smart",
-            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-smart")
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "smart")
         }}}
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."io",
@@ -455,12 +459,12 @@ function create_router(size,prefix,tint)
             collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
             selection_box = {{-1.75, -0.5}, {1.75, 0.5}},
             fast_replaceable_group = "router-"..size.."-io",
-            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "-io"),
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10
         }}}
     end
 end
 
 for prefix,router in pairs(protos.table) do
-    create_router("4x4",prefix,router.tint)
+    create_router("4x4",prefix,router.tint,router.next_upgrade)
 end

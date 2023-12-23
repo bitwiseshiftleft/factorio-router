@@ -68,8 +68,10 @@ M.table = {
         }
     }
 }
+
 -- Krastorio2 support
-if data.raw.item["kr-superior-transport-belt"] then
+local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
+if have_k2 then
   M.table["kr-advanced-"] = {
     tint = util.color("3ade21D1"),
     prerequisites = {"kr-logistic-4","kr-ai-core"},
@@ -122,8 +124,10 @@ end
 for prefix,router in pairs(M.table) do
     local base_underground_item = data.raw["transport-belt"][prefix .. "transport-belt"]
     local next_upgrade = base_underground_item and base_underground_item.next_upgrade
+    if have_k2 and prefix == "express-" then next_upgrade = "kr-advanced-" end
     if next_upgrade then
         next_upgrade = string.gsub(next_upgrade, "transport%-belt$", "")
+        router.next_upgrade = next_upgrade
         local next_table = next_upgrade and M.table[next_upgrade]
         if next_table then
             -- add it as a prereq techonology
