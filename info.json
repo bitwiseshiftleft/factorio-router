@@ -9,6 +9,7 @@
     "dependencies": [
       "? boblogistics >= 1.1.0",
       "? FactorioExtended-Plus-Transport >= 0.1.5",
+      "? space-exploration >= 0.6.100",
       "? Krastorio2 >= 1.3.0",
       "? UltimateBelts >= 1.1.1",
       "? UltimateBelts_Owoshima_And_Pankeko-Mod >= 1.1.0"

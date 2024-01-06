@@ -28,8 +28,9 @@ local invisible_sheet = {
     width = 34
 }
 
-function create_belt(belt_type)
-    local entity = table.deepcopy(data.raw["transport-belt"][belt_type])
+function create_belt(belt_type,postfix)
+    local postfix = postfix or ""
+    local entity = table.deepcopy(data.raw["transport-belt"][belt_type .. postfix])
 
     entity.name           = "router-component-"  .. belt_type
     entity.minable.result = nil
@@ -82,8 +83,9 @@ function create_belt(belt_type)
     return entity
 end
 
-function create_underneathie(belt_type)
-    local entity = table.deepcopy(data.raw["underground-belt"][belt_type])
+function create_underneathie(belt_type,postfix)
+    local postfix = postfix or ""
+    local entity = table.deepcopy(data.raw["underground-belt"][belt_type .. postfix])
     entity.name = "router-component-"  .. belt_type
     entity.max_distance = 0
     entity.minable.result = nil

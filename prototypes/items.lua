@@ -10,8 +10,9 @@ if protos.enable_manual or protos.enable_smart then
     }}
 end
 
-function create_router_item(size,prefix,tint)
-    local base_entity = data.raw.item[prefix.."transport-belt"]
+function create_router_item(size,prefix,tint,postfix)
+    local postfix = postfix or ""
+    local base_entity = data.raw.item[prefix.."transport-belt"..postfix]
     local order = base_entity.order
     if protos.enable_manual then
         data:extend{{
@@ -56,7 +57,7 @@ function create_router_item(size,prefix,tint)
 end
 
 for prefix,router in pairs(protos.table) do
-    create_router_item("4x4",prefix,router.tint)
+    create_router_item("4x4",prefix,router.tint,router.postfix)
 end
 
 if protos.enable_smart then

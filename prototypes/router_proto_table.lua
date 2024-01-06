@@ -1,6 +1,9 @@
 local M = {}
 
 local sizes = {"4x4"}
+-- Krastorio2 and SE support
+local have_se = data.raw.item["se-space-transport-belt"] ~= nil
+local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
 
 M.table = {
     [""] = {
@@ -49,7 +52,11 @@ M.table = {
         tech_costs = {
             count = 500,
             ingredients =
-            {
+            have_se and  {
+                { "automation-science-pack", 1 },
+                { "logistic-science-pack", 1 },
+                { "chemical-science-pack", 1 }
+            } or {
                 { "automation-science-pack", 1 },
                 { "logistic-science-pack", 1 },
                 { "chemical-science-pack", 1 },
@@ -70,8 +77,52 @@ M.table = {
 }
 
 -- Krastorio2 support
-local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
-if have_k2 then
+if have_k2 and have_se then
+  M.table["kr-advanced-"] = {
+    tint = util.color("3ade21D1"),
+    prerequisites = {"kr-logistic-4","se-energy-science-pack-1"},
+    manual_ingredients = { {"imersium-gear-wheel",4}, {"se-energy-catalogue-1", 8} },
+    smart_ingredients =  { {"imersium-gear-wheel",6}, {"se-energy-catalogue-1", 12} },
+    io_ingredients    =  { {"imersium-gear-wheel",2}, {"se-energy-catalogue-1", 4} },
+    tech_costs = {
+      count = 750,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 },
+        { "utility-science-pack", 1 },
+        { "space-science-pack", 1 },
+        { "se-energy-science-pack-1", 1 },
+        { "se-material-science-pack-1", 1 },
+      },
+      time = 15
+    },
+  }
+  M.table["kr-superior-"] = {
+    prerequisites = {"kr-logistic-5","kr-ai-core"},
+    tint = util.color("a30bd6D1"),
+    manual_ingredients = { {"ai-core",10}, {"se-material-catalogue-2", 10} },
+    smart_ingredients  = { {"ai-core",20}, {"se-material-catalogue-2", 20} },
+    io_ingredients     = { {"ai-core",5} , {"se-material-catalogue-2", 50} },
+    tech_costs = {
+      count = 1000,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 },
+        { "utility-science-pack", 1 },
+        { "space-science-pack", 1 },
+        { "se-energy-science-pack-3", 1 },
+        { "se-biological-science-pack-3", 1 },
+        { "se-material-science-pack-2", 1 },
+        { "kr-optimization-tech-card", 1 }
+      },
+      time = 15
+    },
+  }
+elseif have_k2 then
   M.table["kr-advanced-"] = {
     tint = util.color("3ade21D1"),
     prerequisites = {"kr-logistic-4","kr-ai-core"},
@@ -79,16 +130,15 @@ if have_k2 then
     smart_ingredients =  { {"ai-core",6} },
     io_ingredients    =  { {"ai-core",2} },
     tech_costs = {
-        count = 750,
-        ingredients =
-        {
-            { "automation-science-pack", 1 },
-            { "logistic-science-pack", 1 },
-            { "chemical-science-pack", 1 },
-            { "production-science-pack", 1 },
-            { "utility-science-pack", 1 },
-        },
-        time = 15
+      count = 750,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 },
+        { "utility-science-pack", 1 },
+      },
+      time = 15
     },
   }
   M.table["kr-superior-"] = {
@@ -98,26 +148,77 @@ if have_k2 then
     smart_ingredients  = { {"ai-core",20} },
     io_ingredients     = { {"ai-core",5} },
     tech_costs = {
-        count = 1000,
+      count = 1000,
+      ingredients = {
+          { "production-science-pack", 1 },
+          { "utility-science-pack", 1 },
+          { "advanced-tech-card", 1}
+      },
+      time = 15
+    },
+  }
+end
+
+if have_se then
+    M.table["se-space-"] = {
+      tint = util.color("ffffff"),
+      prerequisites = {"se-space-belt","router-express-router","space-science-pack"},
+      manual_ingredients = { {"processing-unit",40} },
+      smart_ingredients =  { {"processing-unit",60} },
+      io_ingredients    =  { {"processing-unit",20} },
+      tech_costs = {
+        count = 750,
         ingredients =
         {
-            { "production-science-pack", 1 },
-            { "utility-science-pack", 1 },
-            { "advanced-tech-card", 1}
+            { "automation-science-pack", 1 },
+            { "logistic-science-pack", 1 },
+            { "chemical-science-pack", 1 },
+            { "se-rocket-science-pack", 1 },
+            { "space-science-pack", 1 },
         },
         time = 15
+      },
+      is_space = true,
+      -- Nah, SE does this manually and so can we
+      -- next_upgrade = "se-deep-space-"
+    }
+
+  M.table["se-deep-space-"] = {
+    tint = util.color("00ffff"), -- idk cyan
+    postfix = "-cyan",
+    prerequisites = {"se-deep-space-transport-belt","router-se-space-router"},
+    manual_ingredients = { {"se-nanomaterial",20}, {"se-heavy-bearing",20}, {"se-naquium-plate", 20}, {"se-aeroframe-scaffold", 20} },
+    smart_ingredients =  { {"se-nanomaterial",30}, {"se-heavy-bearing",30}, {"se-naquium-plate", 30}, {"se-aeroframe-scaffold", 30} },
+    io_ingredients    =  { {"se-nanomaterial",10}, {"se-heavy-bearing",10}, {"se-naquium-plate", 10}, {"se-aeroframe-scaffold", 10} },
+    tech_costs = {
+      count = 750,
+      ingredients =
+      {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "se-rocket-science-pack", 1 },
+        { "se-astronomic-science-pack-4", 1 },
+        { "se-energy-science-pack-4", 1 },
+        { "se-material-science-pack-4", 1 },
+        { "se-biological-science-pack-4", 1 },
+        { "se-deep-space-science-pack-2", 1 },
+      },
+      time = 15
     },
+    is_space = true
   }
 end
 
 -- Fixup: add automatic ingredients
 for prefix,router in pairs(M.table) do
-    table.insert(router.manual_ingredients, { prefix.."transport-belt", 8 })
-    table.insert(router.manual_ingredients, { prefix.."splitter", 8 })
-    table.insert(router.smart_ingredients,  { prefix.."transport-belt", 8 })
-    table.insert(router.smart_ingredients,  { prefix.."splitter", 8 })
-    table.insert(router.io_ingredients,     { prefix.."transport-belt", 2 })
-    table.insert(router.io_ingredients,     { prefix.."splitter", 2 })
+    local postfix = router.postfix or ""
+    table.insert(router.manual_ingredients, { prefix.."transport-belt"..postfix or "", 8 })
+    table.insert(router.manual_ingredients, { prefix.."splitter"..postfix, 8 })
+    table.insert(router.smart_ingredients,  { prefix.."transport-belt"..postfix, 8 })
+    table.insert(router.smart_ingredients,  { prefix.."splitter"..postfix, 8 })
+    table.insert(router.io_ingredients,     { prefix.."transport-belt"..postfix, 2 })
+    table.insert(router.io_ingredients,     { prefix.."splitter"..postfix, 2 })
 end
 
 -- Fixup: add automatic prerequisites for upgrades
@@ -127,7 +228,7 @@ for prefix,router in pairs(M.table) do
     if have_k2 and prefix == "express-" then next_upgrade = "kr-advanced-" end
     if next_upgrade then
         next_upgrade = string.gsub(next_upgrade, "transport%-belt$", "")
-        router.next_upgrade = next_upgrade
+        if router.next_upgrade == nil then router.next_upgrade = next_upgrade end
         local next_table = next_upgrade and M.table[next_upgrade]
         if next_table then
             -- add it as a prereq techonology

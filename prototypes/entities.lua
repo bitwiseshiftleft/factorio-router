@@ -368,19 +368,20 @@ if protos.enable_smart then
     }
 end
 
-function create_belt_components(prefix)
-    data:extend({belt_with_no_frames.create_belt(prefix.."transport-belt")})
+function create_belt_components(prefix,postfix)
+    data:extend({belt_with_no_frames.create_belt(prefix.."transport-belt",postfix)})
 end
 
-function create_underground_components(prefix)
-    data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt")})
+function create_underground_components(prefix,postfix)
+    data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt",postfix)})
 end
 
-function create_router(size,prefix,tint,next_upgrade)
-    create_belt_components(prefix)
+function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
+    create_belt_components(prefix,postfix)
     -- doodad is a constant combinator that can't have wires connected to it
 
     local base_underground_item = data.raw["transport-belt"][prefix .. "transport-belt"]
+    local space = (is_space and "space-") or ""
 
     local fake_combinator = {
         type = "constant-combinator",
@@ -397,6 +398,10 @@ function create_router(size,prefix,tint,next_upgrade)
         circuit_wire_max_distance = 0,
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
+    if is_space then
+        -- Not placeable on land
+        fake_combinator.collision_mask = {"floor-layer", "object-layer", "water-tile", spaceship_collision_layer}
+    end
 
     local wow_smart = {
         layers = {{
@@ -428,12 +433,13 @@ function create_router(size,prefix,tint,next_upgrade)
                 {icon="__router__/graphics/router-icon.png", icon_size=128,},
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
             },
-            fast_replaceable_group = "router-"..size.."-router",
-            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "router")
+            fast_replaceable_group = "router-"..space..size.."-router",
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "router"),
+            se_allow_in_space = is_space
         }}}
     end
     if protos.enable_smart then
-        create_underground_components(prefix)
+        create_underground_components(prefix,postfix)
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."smart",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },
@@ -443,8 +449,9 @@ function create_router(size,prefix,tint,next_upgrade)
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
                 {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
             },
-            fast_replaceable_group = "router-"..size.."-smart",
-            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "smart")
+            fast_replaceable_group = "router-"..space..size.."-smart",
+            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "smart"),
+            se_allow_in_space = is_space
         }}}
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."io",
@@ -458,13 +465,14 @@ function create_router(size,prefix,tint,next_upgrade)
             item_slot_count=20,
             collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
             selection_box = {{-1.75, -0.5}, {1.75, 0.5}},
-            fast_replaceable_group = "router-"..size.."-io",
+            fast_replaceable_group = "router-"..space..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
-            circuit_wire_max_distance = 10
+            circuit_wire_max_distance = 10,
+            se_allow_in_space = is_space
         }}}
     end
 end
 
 for prefix,router in pairs(protos.table) do
-    create_router("4x4",prefix,router.tint,router.next_upgrade)
+    create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "")
 end
