@@ -161,18 +161,19 @@ local function create_router(prefix, entity, is_fast_replace, buffer)
     local epos = entity.position
     local data = router_component_table
     local relative = relative_location(epos, entity.orientation, data)
+    local my_orientation = entity.orientation*8
 
     local input_ports = {}
 
     -- Create the input belts
     for i,ipt in ipairs(data.input) do
-        input_ports[i] = entity.surface.create_entity({
+        input_ports[i] = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(ipt.b),
-            direction = ipt.d,
+            direction = (my_orientation + ipt.d)%8,
             force = entity.force,
             fast_replace = is_fast_replace
-        })
+        }
     end
 
     local passbands
@@ -195,7 +196,7 @@ local function create_router(prefix, entity, is_fast_replace, buffer)
         local output_belt = entity.surface.create_entity({
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(opt.b),
-            direction = opt.d,
+            direction = (my_orientation+opt.d)%8,
             force = entity.force,
             fast_replace = is_fast_replace
         })
@@ -279,6 +280,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     local data = router_component_table -- TODO: make multiple of these
     local builder=circuit.Builder:new(entity.surface,entity.position,entity.force)
     local relative = relative_location(epos, entity.orientation, data)
+    local my_orientation = entity.orientation*8
     local input_belts = {}
     local output_belts = {}
     
@@ -295,7 +297,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         input_belts[i] = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(ipt.b),
-            direction = ipt.d,
+            direction = (my_orientation + ipt.d)%8,
             force = entity.force,
             fast_replace = is_fast_replace
         }
@@ -304,7 +306,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         output_belts[i] = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(opt.b),
-            direction = opt.d,
+            direction = (my_orientation + opt.d)%8,
             force = entity.force,
             fast_replace = is_fast_replace
         }
@@ -328,12 +330,16 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     -- Fast replace: all the electronics should exist: we're done here!
     -- TODO: make extra inserters / or cull
     if is_fast_replace then
+        circuit.fixup_power_consumption(
+            builder, entity,
+            "router-component-"..prefix.."power-combinator-smart"
+        )
         fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
         return
     end
 
     -- Create the comms and port control network
-    local passbands = circuit.create_smart_comms(builder, input_belts, output_belts)
+    local passbands = circuit.create_smart_comms(builder, prefix, input_belts, output_belts)
 
     -- Create the movement inserters
     for i,opt in ipairs(data.output) do
@@ -411,6 +417,10 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     -- Fast replace: all the electronics should exist: we're done here!
     -- TODO: make extra inserters / or cull
     if is_fast_replace then
+        circuit.fixup_power_consumption(
+            builder, entity,
+            "router-component-"..prefix.."power-combinator-io"
+        )
         fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
         return
     end
@@ -418,7 +428,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     -- TODO: auto-connect on place
     local chest_inventory = builder:create_or_find_entity{
         name = "router-component-chest-contents-lamp",
-        direction = orientation,
+        direction = my_orientation,
         position = relative({x=-n_lanes-0.3,y=0.2})
     }
     chest_inventory.get_or_create_control_behavior().circuit_condition = {
@@ -427,13 +437,13 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     chest_inventory.operable = false
     local threshold_trim = builder:create_or_find_entity{
         name = "router-component-port-trim-combinator",
-        direction = orientation,
+        direction = my_orientation,
         position = relative({x=n_lanes+0.3,y=0.2})
     }
     threshold_trim.get_or_create_control_behavior().set_signal(1,{signal=circuit.THRESHOLD,count=10})
     local port = builder:create_or_find_entity{
         name = "router-component-smart-port-lamp",
-        direction = orientation,
+        direction = my_orientation,
         position = relative({x=0,y=0})
     }
     local control = port.get_or_create_control_behavior()
@@ -445,7 +455,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
 
     -- Create the comms and port control network
     local comm_circuit = circuit.create_smart_comms_io(
-        entity, builder,chest_inventory,demand,threshold_trim
+        prefix, entity, builder,chest_inventory,demand,threshold_trim,my_orientation
     )
     comm_circuit.outreg.connect_neighbour{wire=circuit.GREEN,source_circuit_id=circuit.OUTPUT,target_entity=port}
 
@@ -462,10 +472,12 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
             ins.inserter_stack_size_override = 1 -- TODO: but perf...
             ins.drop_position = relative({x=0.5-i,y=1}) -- box
             control = ins.get_or_create_control_behavior()
-            control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.none
+            control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.enable_disable
+            control.circuit_condition = {condition={comparator="!=",first_signal=circuit.POWER}}
             control.circuit_read_hand_contents = true
             control.circuit_hand_read_mode = circuit.PULSE
             ins.connect_neighbour{wire=circuit.RED,target_entity=comm_circuit.input,target_circuit_id=circuit.INPUT}
+            ins.connect_neighbour{wire=circuit.GREEN,target_entity=comm_circuit.power,target_circuit_id=circuit.OUTPUT}
 
             -- TODO: disable input inserters (and belt??) if not connected?
             -- Or route belt sideways (but draw sprites normally)

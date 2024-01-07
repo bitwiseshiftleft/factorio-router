@@ -1,5 +1,5 @@
-local se_data_util = require("__space-exploration__.data_util")
 if mods["space-exploration"] then
+    local se_data_util = require("__space-exploration__.data_util")
     -- Ban routers for being placed in space etc.
     for name, prototype in pairs(data.raw["constant-combinator"]) do
         if string.find(name, '^router%-.*router$') ~= nil

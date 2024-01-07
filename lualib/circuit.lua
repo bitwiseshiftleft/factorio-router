@@ -21,6 +21,7 @@ local OUTPUT = defines.circuit_connector_id.combinator_output
 local RESET = {type="virtual",name="signal-red"}
 local COUNT = {type="virtual",name="router-signal-link"}
 local LEAF  = {type="virtual",name="router-signal-leaf"}
+local POWER = LEAF -- I guess
 
 local PULSE = defines.control_behavior.transport_belt.content_read_mode.pulse
 local HOLD  = defines.control_behavior.transport_belt.content_read_mode.hold
@@ -58,16 +59,17 @@ function Builder:combi(args)
     local name, parameters, is_arithmetic
     local op = args.op or "+"
     if string.find("+-*/ANDORXOR",op) or op==">>" or op=="<<" then
-        name = (args.visible and "arithmetic-combinator") or "router-component-arithmetic-combinator"
+        name = args.combinator_name or (args.visible and "arithmetic-combinator") or "router-component-arithmetic-combinator"
         parameters = {operation=op}
         is_arithmetic = true
     else
-        name = (args.visible and "decider-combinator") or "router-component-decider-combinator"
+        name = args.combinator_name or (args.visible and "decider-combinator") or "router-component-decider-combinator"
         parameters = {comparator=op, copy_count_from_input=not args.set_one}
     end
     parameters.output_signal = args.out or EACH
     local entity = self.surface.create_entity{
-        name=name, position=self.position, force=self.force
+        name=name, position=self.position, force=self.force,
+        direction = args.orientation or 0
     }
 
     -- Set left and right params
@@ -163,6 +165,43 @@ function Builder:create_or_find_entity(args)
     )
 end
 
+-- Make a circuit that draws power, and outputs on GREEN based on power.
+-- The outputs are based on the offset arg
+--   (offset ^ INT_MAX) if power; offset if no power
+--   default offset = INT_MAX
+local function power_consumption_combi(builder, prefix, suffix, orientation, offset)
+    local name = "router-component-"..prefix.."power-combinator-"..suffix
+    local c1 = builder:combi{
+        combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
+        orientation = orientation
+    }
+    local c2 = builder:combi{op="+",L=offset or -0x80000000,R=POWER,out=POWER,red={c1}}
+    builder:connect_outputs(c1,c2,GREEN)
+    return c2
+end
+
+-- 
+local function fixup_power_consumption(builder, entity, name)
+    for _,e in ipairs(entity.surface.find_entities_filtered{
+        type="arithmetic-combinator",
+        area=entity.bounding_box,
+        force=builder.force
+    }) do
+        if string.find(e.name,"power%-combinator") then
+            local c1 = builder:combi{
+                combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
+                orientation = 8*entity.orientation
+            }
+            local c2 = e.circuit_connected_entities.green[1]
+            builder:connect_outputs(c1,c2,GREEN)
+            c1.connect_neighbour{target_entity=c2,wire=RED,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
+            e.destroy()
+            return true
+        end
+    end
+    return false
+end
+
 -- TODO: rename
 local function create_passband(builder,input_belts,n_outputs)
     -- Create a passband for user-controlled routers that sets the belts
@@ -233,7 +272,7 @@ end
 -- Must be > 2 * maximum number of items that can be placed per tick
 local DEMAND_FACTOR = 16
 
-local function create_smart_comms(builder,input_belts,output_belts)
+local function create_smart_comms(builder,prefix,input_belts,output_belts)
     -- Create communications system.
 
     -- For each output belt, set its mode to {don't enable or disable; read=pulse}
@@ -292,6 +331,8 @@ local function create_smart_comms(builder,input_belts,output_belts)
         op="*",R=DEMAND_FACTOR,
         red={nega_average_negative,const_count_one}
     }
+    
+    local power_on = power_consumption_combi(builder, prefix, "smart")
 
     -----------------------------------------
     -- Input measurement
@@ -300,14 +341,16 @@ local function create_smart_comms(builder,input_belts,output_belts)
     for i,the_belt in ipairs(input_belts) do
         -- First, configure the belt
         local control = the_belt.get_or_create_control_behavior()
-        control.enable_disable = false
+        -- control.enable_disable = true
         control.read_contents = true
+        control.circuit_condition = {condition={comparator="=",first_signal=POWER}}
         control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.hold
 
         -- Calculate ((-1 for all requested items) + (this belt contents))>>31
         -- = -1 for all requested items that aren't on this belt
         ret.output_pickup[i] = builder:combi{op=">>",R=31,red={the_belt},green={nega_one_all_requests}}
     end
+
 
     -- Unhandled inputs tracking: 
     --   -1 if on any belt or requested (requests are positive so they can't cancel?)
@@ -317,6 +360,7 @@ local function create_smart_comms(builder,input_belts,output_belts)
         op=">>",L=-1,
         green=input_belts, red={plus_one_all_requests}
     }
+    power_on.connect_neighbour{target_entity=minus_one_unhandled,wire=GREEN,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
     local minus_one_unhandled_2 = builder:combi{
         op="!=", R=0,
         set_one=true, red={plus_one_all_requests}
@@ -387,7 +431,6 @@ local function create_smart_comms(builder,input_belts,output_belts)
         --   Present but unhandled = Port wants default = -1
         --
         -- And of course default=1
-        --   TODO: make default not an item so that it won't use a filter slot.
         local handle_by_default = builder:combi{
             op="=", R=DEFAULT, set_one=true,
             green={gt_zero}, red={minus_one_unhandled}
@@ -407,7 +450,7 @@ local function create_smart_comms(builder,input_belts,output_belts)
 end
 
 local function create_smart_comms_io(
-    entity,builder,chest,demand,threshold_trim
+    prefix,entity,builder,chest,demand,threshold_trim,orientation
 )
     ----------------------------
     -- Design of this circuit
@@ -455,10 +498,15 @@ local function create_smart_comms_io(
 
     -- TODO: add reset control
 
+    local MINUS_HMAX = -0x40000000
+    local MINUS_MAX  = -0x80000000
+
     -- Outreg drives the bus (on green)
     -- Outreg is driven by the outserters (on red)
     -- (This is set up in control.lua)
     local outreg = builder:combi{op="+",R=0}
+
+    local power = power_consumption_combi(builder, prefix, "io", orientation, 0)
 
     -- Construct the inbound counter counter
     -- Counts +1 on bus % DEMAND_FACTOR
@@ -471,7 +519,6 @@ local function create_smart_comms_io(
     -- burst suppression
     local BURST_FACTOR = 2
     local BURST_FALLOFF = 4
-    local MINUS_HMAX = -0x40000000
     local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR}
     builder:connect_inputs(scale_before_burst,outreg,RED) -- connected to outserters
     local burst_hold = builder:combi{op="+", R=1, green={scale_before_burst,ITSELF}}
@@ -485,6 +532,12 @@ local function create_smart_comms_io(
     -- demand each item whose net supply is < 0
     local supply_neg     = builder:combi{op="<",R=0,green={chest},red={inbound_count,internal_combi,demand1}}
 
+    -- Set one output control according to supply and demand
+    -- The setting is MINUS_MAX for things the network demands more than us
+    -- and MINUS_HMAX for things we demand more
+    -- This will be added to { -HMAX if threshold > 0 } resulting in underflow
+    --    ==> positive ==> filter will be set
+    --
     -- If 0 < x < 0x40000000 then x | MINUS_HMAX = (x + MINUS_HMAX)
     -- If MINUS_HMAX <= x < 0 then x | MINUS_HMAX = x
     -- Thus (MINUS_HMAX - x) + (x | MINUS_HMAX) = {
@@ -500,33 +553,41 @@ local function create_smart_comms_io(
     local trim_scaler = builder:combi{op="*",R=-DEMAND_FACTOR,green={threshold_trim}}
     local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=2*DEMAND_FACTOR,out=THRESHOLD,green={threshold_trim}}
 
-    -- Set threshold = -HMAX if threshold != 0
-    local threshold_positive = builder:combi{op="!=",L=THRESHOLD,R=0,out=THRESHOLD,set_one=true,green={threshold_trim}}
-    local threshold_test     = builder:combi{op="*",L=THRESHOLD,R=MINUS_HMAX-1,out=THRESHOLD,green={threshold_positive}}
+    -- Set threshold = -HMAX-1 if threshold != 0
+    -- This will get added to +1 below, resulting in -HMAX
+    -- = -HMAX-1 if power is on
+    -- = -1 if power is off
+    local power_adjust = builder:combi{op=">>",L=POWER,R=1,out=POWER,green={power}} -- -HMAX if power is off
+    local power_adjust_2 = builder:constant_combi{{signal=POWER,count=-1}}
+    local threshold_nonzero = builder:combi{op="!=",L=THRESHOLD,R=0,out=THRESHOLD,set_one=true,green={threshold_trim}}
+    local threshold_test     = builder:combi{op="*",L=THRESHOLD,R=POWER,out=THRESHOLD,green={threshold_nonzero},red={power_adjust,power_adjust_2}}
 
     -- drive the bus according to demand
     local driver        = builder:combi{op="*",R=-DEMAND_FACTOR,green={supply_neg}}
     builder:connect_outputs(driver,outreg,GREEN)
 
-    -- output MINUS_HMAX if > threshold
+    -- output MINUS_HMAX if > threshold and threshold != 0
     local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={
         threshold_scaler,trim_scaler,burst_hold,scale_before_burst
     },set_one=true}
     local in_demand_2   = builder:combi{op="*",R=THRESHOLD,green={in_demand_1,threshold_test}}
     builder:connect_outputs(mm_one,in_demand_2,GREEN)
 
-    return {output=in_demand_2, outreg=outreg, input=inbound_neg}
+    return {output=in_demand_2, outreg=outreg, input=inbound_neg, power=power}
 end
 
 -- Construct module
 M.create_passband = create_passband
 M.create_smart_comms = create_smart_comms
 M.create_smart_comms_io = create_smart_comms_io
+M.power_consumption_combi = power_consumption_combi
+M.fixup_power_consumption = fixup_power_consumption
 M.RED = RED
 M.GREEN = GREEN
 M.DEFAULT = DEFAULT
 M.INPUT = INPUT
 M.OUTPUT = OUTPUT
+M.POWER = POWER
 M.EACH = EACH
 M.ANYTHING = ANYTHING
 M.EVERYTHING = EVERYTHING

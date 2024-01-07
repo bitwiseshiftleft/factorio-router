@@ -20,12 +20,12 @@ restrictive.
 
 ## General
 * Document how the circuits work
+* Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
+* More testing with copy-paste, undo, etc.
+* Test fast-replacing ghosts
+* Make the routers and I/O ports indicate how much power they consume (the power is consumed by a sub-entity).
 * Remove unused icons
 * Proper packaging for upload to mod portal
-* Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
-* Test fast-replacing ghosts
-* Make the stations use (a lot of) power somehow, or else add solar to the recipe
-* Retest without K2/SE
 
 Refactor lua slightly
 * Move subroutines out of control.lua
@@ -33,20 +33,23 @@ Refactor lua slightly
 * Use util.add_shift instead of vector_add
 * Don't hard-code names in the picker-dolly banning code
 
+Make sure the collision masks are good.
+
 Refine the recipes -- add some kind of circuits or filter inserters?
 
 ## Integration
 
 * Add soft dependencies on other mods
-* Integrate with SE (deep space belts woo).  Ban placing them on spaceships.
-* Space routers should be placeable in space
-* Integrate with K2 -- needs more testing
+* More testing on K2
+* More testing on SE
+* Test with Vanilla again too
 * Integrate with Py
-* Integrate with AngelBobs
-* Integrate with IR
+* Integrate with AngelBobs / SeaBlock
+* Integrate with IR3
 * Integrate with Exotic
 * Integrate with 248k
 * Integrate with Ultimate belts
+* Prevent lamp colors from being overridden
 
 ## Smart routers
 
@@ -56,21 +59,21 @@ Implement smart I/O terminals
 * Rotate to disable output / set defaultness to 100?
 * Do we want to provide limiting loaders for the I/O terminals?  Eg with an amount to cache
 * Autoconnect chests, maybe pursuant to startup option
-* Copy-paste, auto deconstruct, undo etc.
+* Auto deconstruct and undo.
 * Test throughput when a terminal is connected to another terminal
 
 Buffered routers?
 * These would set the default signal?
 * Compare performance.  If it's much better then maybe all routers should be buffered?
-* Or maybe just make buffers a regular I/O node.
 
 Add a reset switch somehow in case the system goes haywire
 * Possibly add a signal definition for that
 
 Make the routers leak a little less: signals don't propagate far enough.
 
-Other shapes?? Wider smart routers?
-* Wider smart routers probably would use a filter for perf.
+Wider smart routers?
+* Wider smart routers probably would use a splitter or chest for perf.
+* A splitter would fit.
 
 Design a diode
 * I have a circuit design, but need to implement it and make the entities

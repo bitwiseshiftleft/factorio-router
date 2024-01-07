@@ -139,11 +139,12 @@ local connector_definitions = circuit_connector_definitions.create(
 local hidden_combinator = {
     destructible = false,
     max_health = 1,
-    flags = { "hidden", "not-blueprintable", "hide-alt-info" },
+    flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid" },
     selectable_in_game = false,
     energy_source = {type = "void"},
     active_energy_usage = "1J",
-    collision_box = {{0,0},{0,0}},
+    collision_box = {{-0.1,-0.1},{0.1,0.1}},
+    selection_box = {{-0.1,-0.1},{0.1,0.1}},
     collision_mask = {},
     input_connection_bounding_box = {{0,0},{0,0}},
     output_connection_bounding_box = {{0,0},{0,0}},
@@ -228,7 +229,7 @@ local super_inserter = util.merge{hidden_widget_proto,{
     allow_custom_vectors = true,
     energy_per_movement = "1J",
     energy_per_rotation = "1J",
-    energy_source = { type = "void", }, -- TODO: require power
+    energy_source = { type = "void", },
     extension_speed = 2,
     rotation_speed = 2,
     pickup_position = {0, 0},
@@ -377,11 +378,12 @@ function create_underground_components(prefix,postfix)
 end
 
 if mods["space-exploration"] then
+    empty_space_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("empty-space-tile")
     space_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("space-tile")
     spaceship_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("moving-tile")
 end
 
-function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
+function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
     create_belt_components(prefix,postfix)
     -- doodad is a constant combinator that can't have wires connected to it
 
@@ -404,10 +406,10 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
     if is_space then
-        fake_combinator.collision_mask = {"player-layer", "water-tile", spaceship_collision_layer}
+        fake_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, spaceship_collision_layer}
     elseif mods["space-exploration"] then
         -- Not placeable in space
-        fake_combinator.collision_mask = {"player-layer", "water-tile", space_collision_layer, spaceship_collision_layer}
+        fake_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, space_collision_layer, spaceship_collision_layer}
     end
 
     local wow_smart = {
@@ -459,15 +461,13 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
             fast_replaceable_group = "router-"..space..size.."-smart",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "smart"),
             se_allow_in_space = is_space
-        }}}
-        data:extend{util.merge{fake_combinator,{
+        }}, util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."io",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."io" },
             sprites = mk_io_sprites(tint),
             icons = {
-                {icon="__router__/graphics/router-icon.png", icon_size=128,},
-                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
-                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+                {icon="__router__/graphics/io-icon.png", icon_size=128,},
+                {icon="__router__/graphics/io-icon-mask.png", icon_size=128, tint=tint}
             },
             item_slot_count=20,
             collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
@@ -476,10 +476,35 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10,
             se_allow_in_space = is_space
+        }}, util.merge{hidden_combinator,{
+            type = "arithmetic-combinator",
+            name = "router-component-"..prefix.."power-combinator-smart",
+            selection_box = {{-1.9, -1.9}, {1.9, 1.9}},
+            collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
+            localised_name = {"entity-name.router-"..space..size.."-smart"},
+            icons = {
+                {icon="__router__/graphics/router-icon.png", icon_size=128,},
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
+                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+            },
+            energy_source = {type = "electric", usage_priority="secondary-input"},
+            active_energy_usage = tostring(power).."000W"
+        }}, util.merge{hidden_combinator,{
+            type = "arithmetic-combinator",
+            name = "router-component-"..prefix.."power-combinator-io",
+            selection_box = {{-1.7, -0.45}, {1.7, 0.45}},
+            collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
+            icons = {
+                {icon="__router__/graphics/io-icon.png", icon_size=128,},
+                {icon="__router__/graphics/io-icon-mask.png", icon_size=128, tint=tint}
+            },
+            localised_name = {"entity-name.router-"..space..size.."-io"},
+            energy_source = {type = "electric", usage_priority="secondary-input"},
+            active_energy_usage = tostring(math.floor(power/2)).."000W"
         }}}
     end
 end
 
 for prefix,router in pairs(protos.table) do
-    create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "")
+    create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "",router.power)
 end

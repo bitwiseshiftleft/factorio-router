@@ -210,7 +210,8 @@ if have_se then
   }
 end
 
--- Fixup: add automatic ingredients
+-- Fixup: add automatic ingredients and power consumption
+local power_scale =  settings.startup["router-power-scale"].value
 for prefix,router in pairs(M.table) do
     local postfix = router.postfix or ""
     table.insert(router.manual_ingredients, { prefix.."transport-belt"..postfix or "", 8 })
@@ -219,6 +220,8 @@ for prefix,router in pairs(M.table) do
     table.insert(router.smart_ingredients,  { prefix.."splitter"..postfix, 8 })
     table.insert(router.io_ingredients,     { prefix.."transport-belt"..postfix, 2 })
     table.insert(router.io_ingredients,     { prefix.."splitter"..postfix, 2 })
+    local speed = data.raw["transport-belt"][prefix.."transport-belt"..postfix].speed
+    router.power = router.power or math.floor(speed * speed * 480 * 480 * power_scale / 100)
 end
 
 -- Fixup: add automatic prerequisites for upgrades
