@@ -45,7 +45,6 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 * Add soft dependencies on other mods
 * More testing on K2
 * More testing on SE
-* Make space routers in SE have more components (e.g. combinators)
 * Test with Vanilla again too
 * Integrate with Py
 * Integrate with AngelBobs / SeaBlock

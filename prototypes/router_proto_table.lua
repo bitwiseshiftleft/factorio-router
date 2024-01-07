@@ -163,9 +163,9 @@ if have_se then
     M.table["se-space-"] = {
       tint = util.color("ffffff"),
       prerequisites = {"se-space-belt","router-express-router","space-science-pack"},
-      manual_ingredients = { {"processing-unit",40} },
-      smart_ingredients =  { {"processing-unit",60} },
-      io_ingredients    =  { {"processing-unit",20} },
+      manual_ingredients = { {"processing-unit",40}, {"electric-engine-unit",8}, {"low-density-structure",15}, {"decider-combinator", 20} },
+      smart_ingredients =  { {"processing-unit",60}, {"electric-engine-unit",12}, {"low-density-structure",20}, {"arithmetic-combinator", 20} },
+      io_ingredients    =  { {"processing-unit",20}, {"electric-engine-unit",4}, {"low-density-structure",10}, {"arithmetic-combinator", 10} },
       tech_costs = {
         count = 750,
         ingredients =
