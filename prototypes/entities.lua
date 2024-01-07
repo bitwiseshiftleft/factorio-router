@@ -329,10 +329,11 @@ if protos.enable_smart then
             name = "router-component-smart-port-lamp",
             picture_off = light_off,
             picture_on = util.merge{light_on,{apply_runtime_tint=true}},
-            signal_to_color_mapping = {
-                {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
-                {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
-            },
+            -- Done in data-final-fixes so that Dectorio and similar can't change it
+            -- signal_to_color_mapping = {
+            --     {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
+            --     {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
+            -- },
             fast_replaceable_group = "router-component-smart-port-lamp"
         }},
         -- Input for the chest contents

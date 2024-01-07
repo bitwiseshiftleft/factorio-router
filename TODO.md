@@ -32,6 +32,8 @@ Refactor lua slightly
 * Use builder more extensively
 * Use util.add_shift instead of vector_add
 * Don't hard-code names in the picker-dolly banning code
+* Use {"entity-name.blah"} in localization instead of duplicating them.
+* Use parameterized entity names / descriptions instead of duplicating them.
 
 Make sure the collision masks are good.
 
@@ -49,7 +51,6 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 * Integrate with Exotic
 * Integrate with 248k
 * Integrate with Ultimate belts
-* Prevent lamp colors from being overridden
 
 ## Smart routers
 
