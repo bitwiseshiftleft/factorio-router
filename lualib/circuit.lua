@@ -142,7 +142,7 @@ function Builder:create_or_find_entity(args)
     
     -- Is it already there?
     local entity = self.surface.find_entity(args.name,position)
-    if entity and position == entity.position then return entity end
+    if entity then return entity end
 
     -- Is it a ghost?
     entity = self.surface.find_entities_filtered{

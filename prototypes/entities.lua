@@ -376,6 +376,11 @@ function create_underground_components(prefix,postfix)
     data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt",postfix)})
 end
 
+if mods["space-exploration"] then
+    space_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("space-tile")
+    spaceship_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("moving-tile")
+end
+
 function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
     create_belt_components(prefix,postfix)
     -- doodad is a constant combinator that can't have wires connected to it
@@ -399,8 +404,10 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix)
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
     if is_space then
-        -- Not placeable on land
-        fake_combinator.collision_mask = {"floor-layer", "object-layer", "water-tile", spaceship_collision_layer}
+        fake_combinator.collision_mask = {"player-layer", "water-tile", spaceship_collision_layer}
+    elseif mods["space-exploration"] then
+        -- Not placeable in space
+        fake_combinator.collision_mask = {"player-layer", "water-tile", space_collision_layer, spaceship_collision_layer}
     end
 
     local wow_smart = {

@@ -1,4 +1,4 @@
-local util = require"__core__.lualib.util"
+local util = require "__core__.lualib.util"
 local circuit = require "lualib.circuit"
 
 local NORTH = defines.direction.north;
@@ -651,3 +651,31 @@ register_event(defines.events.script_raised_destroy, on_died)
 
 -- register_event(defines.events.on_entity_settings_pasted, on_settings_pasted)
 register_event(defines.events.on_player_rotated_entity, on_rotated)
+
+local function disable_picker_dollies()
+    if remote.interfaces["PickerDollies"] and remote.interfaces["PickerDollies"]["add_blacklist_name"] then
+        local to_blacklist = {
+            "","fast-","express-","se-space-","se-deep-space","kr-advanced-","kr-superior-"
+        }
+        local sizes = { "4x4" }
+        local suffixes = { "io", "smart", "router" }
+        for _,prefix in ipairs(to_blacklist) do
+            for _,size in ipairs(sizes) do
+                for _,suffix in ipairs(suffixes) do
+                    remote.call("PickerDollies", "add_blacklist_name", "router-"..size.."-"..prefix..suffix, true)
+                end
+            end
+        end
+        local others = {"port-control-combinator", "contents-indicator-lamp", "output-indicator-lamp",
+            "chest-contents-lamp", "is-default-lamp", "port-trim-combinator"}
+        for _,other in ipairs(others) do
+            remote.call("PickerDollies", "add_blacklist_name", "router-"..other, true)
+        end
+    end
+end
+
+local function init()
+    disable_picker_dollies()
+end
+
+script.on_load(init)

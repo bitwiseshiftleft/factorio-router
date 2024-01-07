@@ -67,6 +67,7 @@ function create_belt(belt_type,postfix)
     entity.collision_mask = { "transport-belt-layer" }
     entity.next_upgrade = nil
     entity.fast_replaceable_group = "router-component-transport-belt"
+    entity.se_allow_in_space = true -- Not really: just so that it won't collide with land-based routers
 
     wirepoints = table.deepcopy(entity.circuit_wire_connection_points)
     for index,point in ipairs(wirepoints) do
