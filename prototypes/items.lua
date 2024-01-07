@@ -24,7 +24,7 @@ function create_router_item(size,prefix,tint,postfix)
             },
             subgroup = "router-items",
             place_result = "router-"..size.."-"..prefix.."router",
-            order = order:gsub("belt]%-", "belt]-a["..size.."manual]-"),
+            order = order:gsub("belt]", "belt]-a["..size.."manual]"),
             stack_size = 10
         }}
     end
@@ -39,7 +39,7 @@ function create_router_item(size,prefix,tint,postfix)
             },
             subgroup = "router-items",
             place_result = "router-"..size.."-"..prefix.."smart",
-            order = order:gsub("belt]%-", "belt]-b["..size.."-smart]-"),
+            order = order:gsub("belt]", "belt]-b["..size.."-smart]"),
             stack_size = 10
         },{
             type = "item",
@@ -49,7 +49,7 @@ function create_router_item(size,prefix,tint,postfix)
                 {icon="__router__/graphics/io-icon-mask.png", icon_size=128, tint=tint}
             },
             subgroup = "router-items",
-            order = order:gsub("belt]%-", "belt]-c["..size.."-io]-"),
+            order = order:gsub("belt]", "belt]-c["..size.."-io]"),
             place_result = "router-"..size.."-"..prefix.."io",
             stack_size = 10
     }}

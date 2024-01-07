@@ -23,6 +23,7 @@ restrictive.
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
+* Test rotating ghosts
 * Make the routers and I/O ports indicate how much power they consume (the power is consumed by a sub-entity).
 * Remove unused icons
 * Proper packaging for upload to mod portal
@@ -44,6 +45,7 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 * Add soft dependencies on other mods
 * More testing on K2
 * More testing on SE
+* Make space routers in SE have more components (e.g. combinators)
 * Test with Vanilla again too
 * Integrate with Py
 * Integrate with AngelBobs / SeaBlock
@@ -55,22 +57,22 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 ## Smart routers
 
 Implement smart I/O terminals
-* Wire connection points
 * Lamps for defaultness, disablement.
-* Rotate to disable output / set defaultness to 100?
 * Do we want to provide limiting loaders for the I/O terminals?  Eg with an amount to cache
 * Autoconnect chests, maybe pursuant to startup option
-* Auto deconstruct and undo.
+* Undo construct -> deconstruct; undo deconstruct -> construct
 * Test throughput when a terminal is connected to another terminal
 
 Buffered routers?
-* These would set the default signal?
+* These might set the default signal?
 * Compare performance.  If it's much better then maybe all routers should be buffered?
 
 Add a reset switch somehow in case the system goes haywire
 * Possibly add a signal definition for that
 
 Make the routers leak a little less: signals don't propagate far enough.
+
+Try to make the signaling more stable if possible, so that the network can quiesce.
 
 Wider smart routers?
 * Wider smart routers probably would use a splitter or chest for perf.
@@ -83,8 +85,8 @@ Design a diode
 * What about long-distance link situations?  May want a version which can be proxied by radio
 
 
-Some sort of history buffer instead of / in addition to defaults?
-* So that e.g. iron can still go to the iron station if we sent too much.
+Some sort of history buffer instead of / in addition to defaulting?
+* So that e.g. if we send too much iron, it will go to the iron station even though there is no more demand.
 * It's not obvious that this is stable, but it might be.
 
 ## Smart router autoconnect
@@ -107,6 +109,8 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 
 ## Non-smart routers
 
+* Backport changes
+* Cause to have power consumption
 * Make blueprintable
 * Set control behavior of lamps so they aren't "disabled by control behavior".
 * Make default-ness affect the graphics (re-add indicator lamp?) since it's not an item anymore
@@ -115,7 +119,7 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 ## Graphics
 
 * Make real graphics for smart routers
-* Make graphics for I/O ports.  These don't have to overlap as much anymore because of underneathies
+* Make graphics for I/O ports.  These don't have to overlap as much anymore because the belts are replaced by underneathies.
 * Make graphics for regular routers
 * Make wire connection points
 * Make lamp glows
