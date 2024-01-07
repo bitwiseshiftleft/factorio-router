@@ -25,11 +25,13 @@ restrictive.
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * Test fast-replacing ghosts
 * Make the stations use (a lot of) power somehow, or else add solar to the recipe
+* Retest without K2/SE
 
 Refactor lua slightly
 * Move subroutines out of control.lua
 * Use builder more extensively
 * Use util.add_shift instead of vector_add
+* Don't hard-code names in the picker-dolly banning code
 
 Refine the recipes -- add some kind of circuits or filter inserters?
 
