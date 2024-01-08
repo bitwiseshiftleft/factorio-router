@@ -29,7 +29,8 @@ local function create_router_technology(prefix, tint, prerequisites, cost)
         effects = effects,
         prerequisites = prerequisites,
         unit = cost,
-        order = name
+        order = name,
+        localised_description = {"?", {"router-technology-description."..name}, {"router-technology-description.generic"}}
     }
 
     data:extend{technology}

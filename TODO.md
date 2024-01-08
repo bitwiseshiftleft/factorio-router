@@ -24,7 +24,6 @@ restrictive.
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
 * Test rotating ghosts
-* Make the routers and I/O ports indicate how much power they consume (the power is consumed by a sub-entity).
 * Remove unused icons
 * Proper packaging for upload to mod portal
 
@@ -33,8 +32,6 @@ Refactor lua slightly
 * Use builder more extensively
 * Use util.add_shift instead of vector_add
 * Don't hard-code names in the picker-dolly banning code
-* Use {"entity-name.blah"} in localization instead of duplicating them.
-* Use parameterized entity names / descriptions instead of duplicating them.
 
 Make sure the collision masks are good.
 
@@ -43,6 +40,7 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 ## Integration
 
 * Add soft dependencies on other mods
+* Test SE without K2 ... check resource cost of space routers
 * More testing on K2
 * More testing on SE
 * Test with Vanilla again too

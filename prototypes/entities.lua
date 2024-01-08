@@ -1,4 +1,5 @@
 local util = require "__core__.lualib.util"
+local myutil = require "lualib.util"
 local protos = require "prototypes.router_proto_table"
 local belt_with_no_frames = require "prototypes.belt_with_no_frames" 
 
@@ -370,11 +371,11 @@ if protos.enable_smart then
     }
 end
 
-function create_belt_components(prefix,postfix)
+local function create_belt_components(prefix,postfix)
     data:extend({belt_with_no_frames.create_belt(prefix.."transport-belt",postfix)})
 end
 
-function create_underground_components(prefix,postfix)
+local function create_underground_components(prefix,postfix)
     data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt",postfix)})
 end
 
@@ -384,11 +385,12 @@ if mods["space-exploration"] then
     spaceship_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("moving-tile")
 end
 
-function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
+local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
     create_belt_components(prefix,postfix)
     -- doodad is a constant combinator that can't have wires connected to it
 
-    local base_underground_item = data.raw["transport-belt"][prefix .. "transport-belt"]
+    local base_underground_item = data.raw["transport-belt"][prefix .. "transport-belt"..postfix]
+    local base_name = base_underground_item.localised_name or {"entity-name."..base_underground_item.name}
     local space = (is_space and "space-") or ""
 
     local fake_combinator = {
@@ -435,6 +437,7 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
     }
 
     if protos.enable_manual then
+        local power_manual = math.floor(power)
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."router",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },
@@ -445,10 +448,17 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
             },
             fast_replaceable_group = "router-"..space..size.."-router",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "router"),
-            se_allow_in_space = is_space
+            se_allow_in_space = is_space,
+            localised_description = {
+                "router-templates.router-template",
+                base_name,
+                myutil.format_power(power_manual*1000)
+            }
         }}}
     end
     if protos.enable_smart then
+        local power_smart = math.floor(power)
+        local power_io = math.floor(power/4)
         create_underground_components(prefix,postfix)
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."smart",
@@ -461,7 +471,12 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
             },
             fast_replaceable_group = "router-"..space..size.."-smart",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "smart"),
-            se_allow_in_space = is_space
+            se_allow_in_space = is_space,
+            localised_description = {
+                "router-templates.smart-template",
+                base_name,
+                myutil.format_power(power_smart*1000)
+            }
         }}, util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."io",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."io" },
@@ -476,7 +491,12 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
             fast_replaceable_group = "router-"..space..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10,
-            se_allow_in_space = is_space
+            se_allow_in_space = is_space,
+            localised_description = {
+                "router-templates.io-template",
+                base_name,
+                myutil.format_power(power_io*1000)
+            }
         }}, util.merge{hidden_combinator,{
             type = "arithmetic-combinator",
             name = "router-component-"..prefix.."power-combinator-smart",
@@ -489,7 +509,11 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
                 {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
             },
             energy_source = {type = "electric", usage_priority="secondary-input"},
-            active_energy_usage = tostring(power).."000W"
+            active_energy_usage = tostring(power).."000W",
+            localised_description = {
+                "router-templates.smart-internal-template",
+                base_name
+            }
         }}, util.merge{hidden_combinator,{
             type = "arithmetic-combinator",
             name = "router-component-"..prefix.."power-combinator-io",
@@ -501,7 +525,11 @@ function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
             },
             localised_name = {"entity-name.router-"..space..size.."-io"},
             energy_source = {type = "electric", usage_priority="secondary-input"},
-            active_energy_usage = tostring(math.floor(power/2)).."000W"
+            active_energy_usage = tostring(math.floor(power/2)).."000W",
+            localised_description = {
+                "router-templates.io-internal-template",
+                base_name
+            }
         }}}
     end
 end

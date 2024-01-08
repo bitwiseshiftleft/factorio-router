@@ -25,7 +25,7 @@ function create_router_item(size,prefix,tint,postfix)
             subgroup = "router-items",
             place_result = "router-"..size.."-"..prefix.."router",
             order = order:gsub("belt]", "belt]-a["..size.."manual]"),
-            stack_size = 10
+            stack_size = 10,
         }}
     end
     if protos.enable_smart then
@@ -40,7 +40,7 @@ function create_router_item(size,prefix,tint,postfix)
             subgroup = "router-items",
             place_result = "router-"..size.."-"..prefix.."smart",
             order = order:gsub("belt]", "belt]-b["..size.."-smart]"),
-            stack_size = 10
+            stack_size = 10,
         },{
             type = "item",
             name = "router-"..size.."-"..prefix.."io",
@@ -51,7 +51,7 @@ function create_router_item(size,prefix,tint,postfix)
             subgroup = "router-items",
             order = order:gsub("belt]", "belt]-c["..size.."-io]"),
             place_result = "router-"..size.."-"..prefix.."io",
-            stack_size = 10
+            stack_size = 10,
     }}
     end
 end
@@ -70,21 +70,21 @@ if protos.enable_smart then
             icon = "__router__/graphics/light.png",
             icon_size = 32,
             place_result = "router-component-smart-port-lamp",
-            stack_size = 1
+            stack_size = 1,
         }, {
             type = "item",
             name = "router-component-port-trim-combinator",
             icon = "__router__/graphics/light.png", -- TODO make graphics
             icon_size = 32,
             place_result = "router-component-port-trim-combinator",
-            stack_size = 1
+            stack_size = 1,
         }, {
             type = "item",
             name = "router-component-chest-contents-lamp",
             icon = "__router__/graphics/light.png", -- TODO make graphics
             icon_size = 32,
             place_result = "router-component-chest-contents-lamp",
-            stack_size = 1
+            stack_size = 1,
         },
     })
 end
