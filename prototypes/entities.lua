@@ -28,7 +28,8 @@ local light_off = {
     priority = "very-low",
     width = 32,
     height =32,
-    frame_count = 1
+    frame_count = 1,
+    draw_as_glow = true
 }
 local light_on = {
     filename = "__router__/graphics/light.png",
@@ -36,7 +37,8 @@ local light_on = {
     width = 32,
     height =32,
     x = 32,
-    frame_count = 1
+    frame_count = 1,
+    draw_as_glow = true
 }
 
 local function mk_io_sprites(tint)
