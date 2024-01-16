@@ -1,4 +1,15 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.0.3:
+Date: 2024-01-16
+
+  Breaking change: set the DEMAND_FACTOR to 64 instead of 16.  This will break all existing
+  setups, and they will have to be reconstructed (by hand, because I don't think anyone is using
+  the mod yet except me, and it's faster than writing migration code).
+
+  This is a forward-looking change: in Factorio 2, item stacks will enable higher per-tick item
+  counts than in Factorio 1, so we need more space for them.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.0.2:
 Date: 2024-01-16
 

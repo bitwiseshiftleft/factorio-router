@@ -47,10 +47,10 @@ Smart routers are not very balanced, because they make some types of logistics p
 Each router contains several invisible very fast filter inserters, much like with the [https://mods.factorio.com/mod/miniloader](miniloaders) mod.  However, if you place many items on the port's allow-list, then simply setting the inserters' filters wouldn't be enough: inserters can only have up to 5 filters, and any other items in the allow-list would be ignored.  So each router also contains a circuit made of invisible combinators to intersect the filters with the items present on the input belts.
 
 Smart routers use extensive circuitry.  Each green wire carries the following signals:
-* For each item, the number of those items being put on the belt in that tick.  This must remain less than 16.
-* For each item, 16 times a demand factor for that item.
-* The connected signal ![connected_signal_icon](resources/connected.png) is set to -16 by each smart router.  So if it's -16 then one smart router is connected, and if it's -32 then two smart routers are connected.
-* The leaf signal ![leaf_signal_icon](resources/leaf.png) is set to 16 by each leaf (requester and/or provider) port.  This is currently only used to turn the port indicator light blue.
+* For each item, the number of those items being put on the belt in that tick.  This must remain less than 64.
+* For each item, 64 times a demand factor for that item.
+* The connected signal ![connected_signal_icon](resources/connected.png) is set to -64 by each smart router.  So if it's -64 then one smart router is connected, and if it's -32 then two smart routers are connected.
+* The leaf signal ![leaf_signal_icon](resources/leaf.png) is set to 64 by each leaf (requester and/or provider) port.  This is currently only used to turn the port indicator light blue.
 
 The item types participate in a "leaky heat equation": each smart router with N connected ports propagates slightly less than 1/Nth of its demands to each neighboring router.  You can imagine that a leaf node demanding e.g. copper is a "heat source" on the copper channel, and then heat propagates throughout the smart router network.  The heat leaks out slightly from everywhere in the network, but especially from the edges, which sets up a heat gradient.  When a router receives an item, it will be routed in a direction that has above-average heat (= demand) for that item type.
 

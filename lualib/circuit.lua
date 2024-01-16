@@ -270,7 +270,22 @@ end
 -- Smart router demand is multiplied by this
 -- Must a power of 2
 -- Must be > 2 * maximum number of items that can be placed per tick
-local DEMAND_FACTOR = 16
+-- Hopefully multiple inserters with the same drop point can't drop more
+-- than one stack per lane per tick?  If so, we would have
+-- 2 directions of communication
+-- * 2 lanes per belt
+-- * 2 belts if we do 2x2 routers
+-- * 4 items per stack (in Vanilla)
+-- = 32 items per tick
+--
+-- The leakage rate is inversely proportional to the DEMAND_FACTOR (unless
+-- I set it higher than 1, and adjust the circuit to fix the resulting bugs)
+-- Since the equilibrium value of the network is scaled by 1/leakage, the
+-- true demands are scaled by DEMAND_FACTOR for the representation, and by
+-- another DEMAND_FACTOR for 1/leakage = DEMAND_FACTOR^2 = 2^12, times another
+-- 2 for the lag combinator.  This leaves 2^18 less in a signed word.  So don't
+-- request more than 200000 of any given resource, I guess.
+local DEMAND_FACTOR = 64
 
 local function create_smart_comms(builder,prefix,input_belts,output_belts)
     -- Create communications system.
@@ -312,9 +327,13 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
     -- The above would give -(N+ports+1) for the denominator but we actually want -(N+empty ports+1)
     local n_plus_k_shim    = builder:combi{op="/",L=COUNT,R=-DEMAND_FACTOR,out=COUNT,red={const_nega_ports}}
 
+    -- Experimental: average wih a factor of the previous value.  This makes the network
+    -- slower to update but might help it quiesce?
+    local lag = builder:combi{op="/",R=2,red={const_nega_ports,n_plus_k_shim},green={ITSELF}}
+
     -- Construct combo nega_average = (each / (N*DEMAND_FACTOR + 4))
     -- Nega average is also at latency 1 after the port.
-    local nega_average = builder:combi{op="/",R=COUNT,red={const_nega_ports,n_plus_k_shim}}
+    local nega_average = builder:combi{op="/",R=COUNT,red={const_nega_ports,n_plus_k_shim},green={lag}}
 
     -- = +1 and -1 for every positive request (hooked up later)
     -- Assumption: all requests are positive!
@@ -517,8 +536,8 @@ local function create_smart_comms_io(
     local inbound_count = builder:combi{op=">",R=RESET,green={ITSELF,inbound_neg,inbound_and}}
 
     -- burst suppression
-    local BURST_FACTOR = 2
-    local BURST_FALLOFF = 4
+    local BURST_FACTOR = DEMAND_FACTOR/8
+    local BURST_FALLOFF = DEMAND_FACTOR
     local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR}
     builder:connect_inputs(scale_before_burst,outreg,RED) -- connected to outserters
     local burst_hold = builder:combi{op="+", R=1, green={scale_before_burst,ITSELF}}
