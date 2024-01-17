@@ -471,7 +471,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
                 {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
             },
-            map_color = {r=1,g=0.80,b=0.40},
+            map_color = {r=0.91,g=0.72,b=0.36},
             fast_replaceable_group = "router-"..space..size.."-smart",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "smart"),
             se_allow_in_space = is_space,
@@ -491,7 +491,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             item_slot_count=20,
             collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
             selection_box = {{-1.75, -0.5}, {1.75, 0.5}},
-            map_color = {r=1,g=0.80,b=0.40},
+            map_color = {r=0.91,g=0.72,b=0.36},
             fast_replaceable_group = "router-"..space..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10,
