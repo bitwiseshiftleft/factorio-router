@@ -28,7 +28,10 @@ local light_off = {
     priority = "very-low",
     width = 32,
     height =32,
+    tint = {1,0,0},
     frame_count = 1,
+    shift = util.by_pixel(0,-28),
+    scale = 0.5,
     draw_as_glow = true
 }
 local light_on = {
@@ -36,8 +39,9 @@ local light_on = {
     priority = "very-low",
     width = 32,
     height =32,
-    x = 32,
     frame_count = 1,
+    shift = util.by_pixel(0,-28),
+    scale = 0.5,
     draw_as_glow = true
 }
 
@@ -207,7 +211,7 @@ local interface_lamp_proto = {
     type = "lamp",
     flags = { "placeable-off-grid", "player-creation", "not-on-map" },
     collision_box = {{-0.45,-0.45},{0.45,0.45}},
-    selection_box = {{-0.5,-0.5},{0.5,0.5}},
+    selection_box = {{-0.5,-1.26},{0.5,-0.26}},
     collision_mask = {},
     allow_copy_paste = true,
     selectable_in_game = true,
@@ -216,6 +220,10 @@ local interface_lamp_proto = {
     minable = nil,
     energy_usage_per_tick = "1J",
     circuit_wire_max_distance = 16,
+    circuit_wire_connection_point = {
+        wire = { red={0,-0.64}, green={0,-0.64} },
+        shadow = { red={0.08,-0.56}, green={0.08,-0.56} },
+    },
     glow_size = 0
 }
 
@@ -417,25 +425,26 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         fake_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, space_collision_layer, spaceship_collision_layer}
     end
 
-    local wow_smart = {
-        layers = {{
-            filename = "__router__/graphics/wow-smart.png",
+    local function frame(args)
+        args.y = args.y * 320
+        return util.merge{{
+            filename = "__router__/graphics/router-entity.png",
             priority = "very-low",
-            width = 256,
-            height =256,
-            scale = 0.5,
+            width  = 416,
+            height = 320,
+            scale  = 0.5,
+            shift = util.by_pixel(16,16),
             frame_count = 1
-        },{
-            filename = "__router__/graphics/wow-smart.png",
-            priority = "very-low",
-            width = 256,
-            height =256,
-            scale = 0.5,
-            x = 0,
-            y = 256,
-            frame_count = 1,
-            tint = tint
-        }}
+        }, args}
+    end
+
+    local wow_smart = {
+        layers = {
+            frame{y=0},
+            frame{y=1, tint=tint},
+            frame{y=2, draw_as_shadow=true},
+            frame{y=3, draw_as_glow=true}
+        }
     }
 
     if protos.enable_manual then

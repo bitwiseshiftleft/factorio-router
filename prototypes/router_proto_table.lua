@@ -7,7 +7,7 @@ local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
 
 M.table = {
     [""] = {
-        tint = util.color("ffc340D1"),
+        tint = util.color("998530ff"),
         prerequisites = { "circuit-network", "logistics" },
         tech_costs = {
             count = 200,
@@ -27,7 +27,7 @@ M.table = {
         },
     },
     ["fast-"] = {
-        tint=util.color("e31717D1"),
+        tint=util.color("e31717ff"),
         prerequisites = { "logistics-2", "advanced-electronics" },
         tech_costs = {
             count = 300,
@@ -47,7 +47,7 @@ M.table = {
         }
     },
     ["express-"] = {
-        tint=util.color("43c0faD1"),
+        tint=util.color("356686ff"),
         prerequisites = { "logistics-3", "advanced-electronics-2" },
         tech_costs = {
             count = 500,
