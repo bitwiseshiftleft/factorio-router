@@ -1,6 +1,10 @@
 import bpy
 from itertools import chain
 
+# TODO: organize this better.  Less copy-paste
+
+brightenPaintFactor = 1.3
+
 (width,height) = 416,320
 (lamp_width,lamp_height) = 32,32
 (lamp_offx,lamp_offy) = 214,232
@@ -62,6 +66,21 @@ bpy.ops.render.render(write_still=True)
 lights.hide_viewport = lights.hide_render = False
 bpy.context.scene.render.filepath = 'router_shadow_glow.png'
 bpy.ops.render.render(write_still=True)
+
+# Remove the shadow plane, tie points and fine details
+o.hide_viewport = o.hide_render = True
+lights.hide_viewport = lights.hide_render = True
+lights = bpy.data.collections["TiePoints"]
+lights.hide_viewport = lights.hide_render = True
+o = bpy.context.scene.objects.get("BodyRivets")
+o.hide_viewport = o.hide_render = False
+bpy.context.scene.render.filepath = 'router_icon.png'
+bpy.ops.render.render(write_still=True)
+
+paintColor = mat.node_tree.nodes["RGB.001"].outputs[0]
+paintColor.default_value = (0, 0, 0, 1)
+bpy.context.scene.render.filepath = 'router_icon_black.png'
+bpy.ops.render.render(write_still=True)
    
 
 
@@ -79,12 +98,16 @@ def generatePixels():
     i = 0
     for y in range(height):
         for x in range(width):
-            abc = [max(g[4*i+j]-s[4*i+j],0) for j in range(3)]
+            # TODO: there's probably some kind of gamma thing going on here
+            abc = [min(
+                max(0,1-(1-g[4*i+j])/max(0.01,1-s[4*i+j])),
+                max(0,g[4*i+j]-s[4*i+j])
+            ) for j in range(3)]
             ma = max(*abc)
             if ma < 0.02: yield (0,0,0,0)
             else:
                 ma = max(ma,0.1)
-                yield tuple(max(g[4*i+j]-s[4*i+j],0)/ma for j in range(3)) + (ma,)
+                yield tuple(abc[j]/ma for j in range(3)) + (ma,)
             i += 1
 
     # shadow
@@ -106,8 +129,9 @@ def generatePixels():
         for x in range(width):
             ma = max(0,max(*(w[4*i+j]-b[4*i+j] for j in range(3))))
             ma *= (w[4*i+3]+b[4*i+3]) / 2
-            if ma < 0.1: yield (1,1,1,ma)
-            else: yield tuple((w[4*i+j]-b[4*i+j])/ma for j in range(3))+ (ma,)
+            ma0 = min(brightenPaintFactor*ma, 1)
+            if ma0 < 0.1: yield (1,1,1,ma0)
+            else: yield tuple((w[4*i+j]-b[4*i+j])/ma for j in range(3))+ (ma0,)
             i += 1
 
     # item   
@@ -128,7 +152,26 @@ def lampPixels():
         for x in range(lamp_width):
             i = 4*((y+lamp_offy)*width + (x+lamp_offx))
             yield (L[i+0],L[i+1],L[i+2],L[i+3]-C[i+3])
-delta = bpy.data.images.new("light", lamp_width, lamp_height, alpha=True)
-delta.pixels = tuple(chain.from_iterable(lampPixels()))
+lamp = bpy.data.images.new("light", lamp_width, lamp_height, alpha=True)
+lamp.pixels = tuple(chain.from_iterable(lampPixels()))
+lamp.update()
+lamp.save(filepath="light.png")
+
+
+b = bpy.data.images.load(filepath="router_icon_black.png").pixels[:4*width*height]
+w = bpy.data.images.load(filepath="router_icon.png").pixels[:4*width*height]
+delta = bpy.data.images.new("router_icon_mask", width, height, alpha=True)
+def iconPixels():
+    # mask
+    i = 0
+    for y in range(height):
+        for x in range(width):
+            ma = max(0,max(*(w[4*i+j]-b[4*i+j] for j in range(3))))
+            ma *= (w[4*i+3]+b[4*i+3]) / 2
+            ma0 = min(brightenPaintFactor*ma, 1)
+            if ma0 < 0.1: yield (1,1,1,ma0)
+            else: yield tuple((w[4*i+j]-b[4*i+j])/ma for j in range(3))+ (ma0,)
+            i += 1
+delta.pixels = tuple(chain.from_iterable(iconPixels()))
 delta.update()
-delta.save(filepath="light.png")
+delta.save(filepath="router_icon_mask.png")

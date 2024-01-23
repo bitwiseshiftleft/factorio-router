@@ -117,26 +117,21 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 ## Graphics
 
 * Make real graphics for smart routers
-* * More glowy bits (but maybe not as glowy per bit?), maybe in paint color?
-* * More detail
-* * Is there a way to make them shorter without ruining the orthographic bit?
-* * Light blending isn't additive, or something?
+* * Redesign to look more like splitters with wires between them??
+* * More detail, more contrast
+* * Is there a way to make them a little shorter without ruining the orthographic bit?
+* * Gamma correction or whatever for th eglow
 * * Make lamps not as flat
-* * Blinkenlights
-
-* Make icons as well as sprites
-* * Mipmaps
 
 * Make graphics for I/O ports
 * Make graphics for regular routers
-* Make wire connection points
+* Make icons for the wire connection points
 * Make lamp glows
 * * Separate lamp picture into glow vs render vs tint layers
 
 * Try to animate stuff when possible
-* * Animate the belt shrouds?
+* * Animate the belt shrouds, by attaching them to the belts?
 
-* Add blinkenlights from combinators
 * Adjust the patched underneathies so they don't cast a weird shadow.
 * * Integrate the rubber shroud thingies?
 * * Separate in vs out belts (with half-sized graphics)?

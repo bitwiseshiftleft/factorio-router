@@ -470,10 +470,11 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         fake_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, space_collision_layer, spaceship_collision_layer}
     end
 
+    local filename_smart = "__router__/graphics/router-entity.png"
     local function frame(args)
         args.y = args.y * 320
         return util.merge{{
-            filename = "__router__/graphics/router-entity.png",
+            filename = filename_smart,
             priority = "very-low",
             width  = 416,
             height = 320,
@@ -483,7 +484,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         }, args}
     end
 
-    local wow_smart = {
+    local sprite_smart = {
         layers = {
             frame{y=0},
             frame{y=1, tint=tint},
@@ -519,11 +520,10 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         data:extend{util.merge{fake_combinator,{
             name = "router-"..size.."-"..prefix.."smart",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },
-            sprites = {north=wow_smart,south=wow_smart,west=wow_smart,east=wow_smart},
+            sprites = {north=sprite_smart,south=sprite_smart,west=sprite_smart,east=sprite_smart},
             icons = {
                 {icon="__router__/graphics/router-icon.png", icon_size=128,},
-                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
-                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
             },
             map_color = {r=0.91,g=0.72,b=0.36},
             fast_replaceable_group = "router-"..space..size.."-smart",
@@ -563,8 +563,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             localised_name = {"entity-name.router-"..space..size.."-smart"},
             icons = {
                 {icon="__router__/graphics/router-icon.png", icon_size=128,},
-                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
-                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
             },
             energy_source = {type = "electric", usage_priority="secondary-input"},
             active_energy_usage = tostring(power).."000W",

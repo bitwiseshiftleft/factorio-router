@@ -12,10 +12,15 @@ run:
 clean:
 	rm -fr build
 
-graphics/router-entity.png graphics/light.png: graphics-blender/router.blend graphics-blender/*.py graphics-blender/*.sh
+graphics/router-entity.png graphics/light.png graphics/router-icon.png graphics/router-icon-mask.png:\
+		graphics-blender/router.blend graphics-blender/*.py graphics-blender/*.sh
 	sh graphics-blender/render.sh
 	mv graphics-blender/router.png graphics/router-entity.png
 	mv graphics-blender/light.png graphics/
+	# Extract the icon version, which has the lights present
+	convert -crop 256x256+48+0 graphics-blender/router_icon.png -resize 128x128 graphics/router-icon.png
+	convert -crop 256x256+48+0 graphics-blender/router_icon_mask.png -resize 128x128 graphics/router-icon-mask.png
+
 
 resources/default.png: graphics/default.png
 	convert $< -crop 32x32+192+0 $@

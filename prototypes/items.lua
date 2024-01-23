@@ -34,8 +34,7 @@ function create_router_item(size,prefix,tint,postfix)
             name = "router-"..size.."-"..prefix.."smart",
             icons = {
                 {icon="__router__/graphics/router-icon.png", icon_size=128},
-                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint},
-                {icon="__router__/graphics/router-icon-ring.png", icon_size=128, tint=tint}
+                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
             },
             subgroup = "router-items",
             place_result = "router-"..size.."-"..prefix.."smart",
