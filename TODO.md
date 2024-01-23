@@ -26,6 +26,7 @@ restrictive.
 * Test rotating ghosts
 * Remove unused icons
 * Proper packaging for upload to mod portal
+* Add a blocker that prevents people from inserting items into empty spaces in routers.
 
 Refactor lua slightly
 * Move subroutines out of control.lua
@@ -116,11 +117,26 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 ## Graphics
 
 * Make real graphics for smart routers
-* Make graphics for I/O ports.  These don't have to overlap as much anymore because the belts are replaced by underneathies.
+* * More glowy bits (but maybe not as glowy per bit?), maybe in paint color?
+* * More detail
+* * Is there a way to make them shorter without ruining the orthographic bit?
+* * Light blending isn't additive, or something?
+* * Make lamps not as flat
+* * Blinkenlights
+
+* Make icons as well as sprites
+* * Mipmaps
+
+* Make graphics for I/O ports
 * Make graphics for regular routers
 * Make wire connection points
 * Make lamp glows
+* * Separate lamp picture into glow vs render vs tint layers
+
 * Try to animate stuff when possible
-* Add blinkenlights
-* Add shadows to the graphics
+* * Animate the belt shrouds?
+
+* Add blinkenlights from combinators
 * Adjust the patched underneathies so they don't cast a weird shadow.
+* * Integrate the rubber shroud thingies?
+* * Separate in vs out belts (with half-sized graphics)?

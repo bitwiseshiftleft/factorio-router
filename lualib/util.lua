@@ -23,6 +23,11 @@ local function format_power(w)
     end
 end
 
+local function vector_add(v1,v2) return {x=v1.x+v2.x, y=v1.y+v2.y} end
+local function vector_sub(v1,v2) return {x=v1.x-v2.x, y=v1.y-v2.y} end
+
 M.format_power = format_power
+M.vector_add = vector_add
+M.vector_sub = vector_sub
 
 return M

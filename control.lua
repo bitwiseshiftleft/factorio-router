@@ -1,4 +1,5 @@
 local util = require "__core__.lualib.util"
+local myutil = require "lualib.util"
 local circuit = require "lualib.circuit"
 
 local NORTH = defines.direction.north;
@@ -34,8 +35,8 @@ local function is_router_smart(entity) return string.find(entity.name, '^router%
 local function is_router_io(entity)    return string.find(entity.name, '^router%-.*io$') ~= nil end
 local function is_router_component(entity)  return string.find(entity.name, '^router%-component%-') ~= nil end
 
-local function vector_add(v1,v2) return {x=v1.x+v2.x, y=v1.y+v2.y} end
-local function vector_sub(v1,v2) return {x=v1.x-v2.x, y=v1.y-v2.y} end
+local vector_add = myutil.vector_add
+local vector_sub = myutil.vector_sub
 
 local function relative_location(epos, orientation, data)
     local re = ({[0]=1, [0.25]=0, [0.5]=-1, [0.75]=0})[orientation]

@@ -28,7 +28,7 @@ local light_off = {
     priority = "very-low",
     width = 32,
     height =32,
-    tint = {1,0,0},
+    tint = {1,.35,.25},
     frame_count = 1,
     shift = util.by_pixel(0,-28),
     scale = 0.5,
@@ -165,8 +165,43 @@ local hidden_combinator = {
     activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
     activity_led_sprites = empty_sheet_4,
     screen_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
+    activity_led_hold_time = 30,
     circuit_wire_max_distance = 9
 }
+
+-- Blinkenlights version of combinator
+local blinkensprites = {
+    north = {
+        filename = "__router__/graphics/blinken.png",
+        priority = "very-low",
+        width = 3, height = 3, scale=0.5,
+        shift = util.by_pixel(9,-13),
+        tint = {0.3,0.8,0.1,1}
+    },
+    south = {
+        filename = "__router__/graphics/blinken.png",
+        priority = "very-low",
+        width = 3, height = 3, scale=0.5,
+        shift = util.by_pixel(9,-13),
+        tint = {0.3,0.7,0.1,1}
+    },
+    east = {
+        filename = "__router__/graphics/blinken.png",
+        priority = "very-low",
+        width = 3, height = 3, scale=0.5,
+        shift = util.by_pixel(9,-13),
+        tint = {0.2,0.8,0.1,1}
+    },
+    west = {
+        filename = "__router__/graphics/blinken.png",
+        priority = "very-low",
+        width = 3, height = 3, scale=0.5,
+        shift = util.by_pixel(9,-13),
+        tint = {0.8,0.8,0.6,1}
+    },
+}
+local hidden_combinator_blinkenlights = util.merge{hidden_combinator,{}}
+hidden_combinator_blinkenlights.activity_led_sprites = blinkensprites
 
 local hidden_arith = util.merge{hidden_combinator,{
     type = "arithmetic-combinator",
@@ -175,6 +210,15 @@ local hidden_arith = util.merge{hidden_combinator,{
 local hidden_decider = util.merge{hidden_combinator,{
     type = "decider-combinator",
     name = "router-component-decider-combinator"
+}}
+
+local hidden_arith_blinken = util.merge{hidden_combinator_blinkenlights,{
+    type = "arithmetic-combinator",
+    name = "router-component-arithmetic-combinator-blinken"
+}}
+local hidden_decider_blinken = util.merge{hidden_combinator_blinkenlights,{
+    type = "decider-combinator",
+    name = "router-component-decider-combinator-blinken"
 }}
 
 -- Prototype base for hidden widgets
@@ -292,6 +336,7 @@ if protos.enable_manual or protos.enable_smart then
 
         -- Hidden combinators
         hidden_arith, hidden_decider,
+        hidden_arith_blinken, hidden_decider_blinken,
 
         -- Super filter inserters
         super_inserter, super_inserter_2

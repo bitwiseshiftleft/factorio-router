@@ -11,6 +11,8 @@ bpy.ops.wm.open_mainfile(filepath="router.blend")
 mat = bpy.data.materials["Painted metal"]
 clip = bpy.data.materials.get("Clip")
 lamp = bpy.data.materials.get("IndicatorLight")
+o = bpy.context.scene.objects.get("ShadowPlane")
+o.hide_viewport = o.hide_render = True
 
 
 # Render with xy plane to catch shadow and glow
@@ -38,16 +40,6 @@ paintColor.default_value = (1, 1, 1, 1)
 bpy.context.scene.render.filepath = 'router_white.png'
 bpy.ops.render.render(write_still=True)
 
-# Render with xy plane to catch shadow and glow
-o = bpy.context.scene.objects.get("ShadowPlane")
-o.hide_viewport = o.hide_render = False
-bpy.context.scene.render.filepath = 'router_shadow.png'
-bpy.ops.render.render(write_still=True)
-
-lights.hide_viewport = lights.hide_render = False
-bpy.context.scene.render.filepath = 'router_shadow_glow.png'
-bpy.ops.render.render(write_still=True)
-
 # with lights on instead of clip.  First make the lamps still clip, but a little bigger...
 bulbs_big = bpy.data.collections["BulbsBig"]
 bulbs_big.hide_viewport = bulbs_big.hide_render = False
@@ -59,6 +51,16 @@ bpy.ops.render.render(write_still=True)
 for bulb in bulbs_big.objects:
     bulb.data.materials[0] = lamp
 bpy.context.scene.render.filepath = 'router_with_lamps.png'
+bpy.ops.render.render(write_still=True)
+
+# Render with xy plane to catch shadow and glow
+o = bpy.context.scene.objects.get("ShadowPlane")
+o.hide_viewport = o.hide_render = False
+bpy.context.scene.render.filepath = 'router_shadow.png'
+bpy.ops.render.render(write_still=True)
+
+lights.hide_viewport = lights.hide_render = False
+bpy.context.scene.render.filepath = 'router_shadow_glow.png'
 bpy.ops.render.render(write_still=True)
    
 

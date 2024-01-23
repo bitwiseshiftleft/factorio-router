@@ -1,4 +1,5 @@
-local util = require"__core__.lualib.util"
+local util = require "__core__.lualib.util"
+local myutil = require "lualib.util"
 local M = {}
 
 
@@ -58,18 +59,40 @@ function Builder:combi(args)
     -- Make either a decider or arithmetic combinator
     local name, parameters, is_arithmetic
     local op = args.op or "+"
+    local blinken = args.blinken
+    local blinken_suffix = blinken and "-blinken" or ""
     if string.find("+-*/ANDORXOR",op) or op==">>" or op=="<<" then
-        name = args.combinator_name or (args.visible and "arithmetic-combinator") or "router-component-arithmetic-combinator"
+        name = args.combinator_name or (args.visible and "arithmetic-combinator") or "router-component-arithmetic-combinator" .. blinken_suffix
         parameters = {operation=op}
         is_arithmetic = true
     else
-        name = args.combinator_name or (args.visible and "decider-combinator") or "router-component-decider-combinator"
+        name = args.combinator_name or (args.visible and "decider-combinator") or "router-component-decider-combinator" .. blinken_suffix
         parameters = {comparator=op, copy_count_from_input=not args.set_one}
     end
     parameters.output_signal = args.out or EACH
+
+    -- Lay out blinkenlights on a grid
+    local x_offset, y_offset, orientation = 0
+    if blinken then
+        x_offset = self.blinken_base_x + self.blinken_offset_x*self.blinken_xi
+        y_offset = self.blinken_base_y + self.blinken_offset_y*self.blinken_yi
+        self.blinken_xi = self.blinken_xi + 1
+        if self.blinken_xi >= self.blinken_cols then
+            self.blinken_xi = 0
+            self.blinken_yi = self.blinken_yi + 1
+        end
+
+        -- arbitrary
+        orientation = (self.rngstate*2) % 8
+        self.rngstate = bit32.bxor(bit32.lrotate(self.rngstate,3),self.rngstate + 0xb96e43d2)
+    else
+        x_offset = 0
+        y_offset = 0
+    end
+
     local entity = self.surface.create_entity{
-        name=name, position=self.position, force=self.force,
-        direction = args.orientation or 0
+        name=name, position=myutil.vector_add(self.position,{x=x_offset,y=y_offset}), force=self.force,
+        direction = args.orientation or orientation
     }
 
     -- Set left and right params
@@ -135,6 +158,14 @@ function Builder:new(surface,position,force)
     local o = {surface=surface,position=position,force=force}
     setmetatable(o, self)
     self.__index = self
+    self.blinken_xi = 0
+    self.blinken_yi = 0
+    self.blinken_cols = 8
+    self.blinken_base_x = 0
+    self.blinken_base_y = 0
+    self.blinken_offset_x = 0
+    self.blinken_offset_y = 0
+    self.rngstate = 0x6ff4cd3d
     return o
 end
 
@@ -301,14 +332,21 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
         output_dropoff = {}
     }
 
+
+    builder.blinken_cols = 8
+    builder.blinken_base_x = 0.43
+    builder.blinken_base_y = 0.33
+    builder.blinken_offset_x = 0.06
+    builder.blinken_offset_y = 0.050
+
     -----------------------------------------
     -- Construct the counter
     -----------------------------------------
     -- Inbound counter = sum(outbound - inbound) if > RESET
     -- Normally RESET == 0, so this leaves positive items, reducing effective demand
     -- This reduces effective demand because demands are negative
-    local inbound_dbl   = builder:combi{op="*",R=-2,red=output_belts}
-    local inbound_count = builder:combi{op=">",R=RESET,red={inbound_dbl,ITSELF}}
+    local inbound_dbl   = builder:combi{blinken=true,op="*",R=-2,red=output_belts}
+    local inbound_count = builder:combi{blinken=true,op=">",R=RESET,red={inbound_dbl,ITSELF}}
 
     -- Decay depends on DECAY_FACTOR / DEMAND_FACTOR.  Tested only with 1.
     local DECAY_FACTOR  = 1
@@ -325,28 +363,29 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
     )
 
     -- The above would give -(N+ports+1) for the denominator but we actually want -(N+empty ports+1)
-    local n_plus_k_shim    = builder:combi{op="/",L=COUNT,R=-DEMAND_FACTOR,out=COUNT,red={const_nega_ports}}
+    local n_plus_k_shim    = builder:combi{blinken=true,op="/",L=COUNT,R=-DEMAND_FACTOR,out=COUNT,red={const_nega_ports}}
 
     -- Experimental: average wih a factor of the previous value.  This makes the network
     -- slower to update but might help it quiesce?
-    local lag = builder:combi{op="/",R=2,red={const_nega_ports,n_plus_k_shim},green={ITSELF}}
+    local lag = builder:combi{blinken=true,op="/",R=2,red={const_nega_ports,n_plus_k_shim},green={ITSELF}}
 
     -- Construct combo nega_average = (each / (N*DEMAND_FACTOR + 4))
     -- Nega average is also at latency 1 after the port.
-    local nega_average = builder:combi{op="/",R=COUNT,red={const_nega_ports,n_plus_k_shim},green={lag}}
+    local nega_average = builder:combi{blinken=true,op="/",R=COUNT,red={const_nega_ports,n_plus_k_shim},green={lag}}
 
     -- = +1 and -1 for every positive request (hooked up later)
     -- Assumption: all requests are positive!
-    local nega_one_all_requests = builder:combi{op="OR",L=-1,red={const_nega_ports}}
-    local plus_one_all_requests = builder:combi{op=">", R=0,set_one=true,red={const_nega_ports}}
+    local nega_one_all_requests = builder:combi{blinken=true,op="OR",L=-1,red={const_nega_ports}}
+    local plus_one_all_requests = builder:combi{blinken=true,op=">", R=0,set_one=true,red={const_nega_ports}}
 
     -- Same but only if it's < 0
-    local nega_average_negative = builder:combi{op="<",R=0,green={nega_average,inbound_count}}
+    local nega_average_negative = builder:combi{blinken=true,op="<",R=0,green={nega_average,inbound_count}}
     
     -- Nega_output_driver = average_negative * DEMAND_FACTOR
     -- Cancels out values that we drive on the regular output drivers
     -- Because the <0 check filters out COUNT=1, need to re-add it here with const_count_one
     local nega_output_driver = builder:combi{
+        blinken=true,
         op="*",R=DEMAND_FACTOR,
         red={nega_average_negative,const_count_one}
     }
@@ -367,7 +406,7 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
 
         -- Calculate ((-1 for all requested items) + (this belt contents))>>31
         -- = -1 for all requested items that aren't on this belt
-        ret.output_pickup[i] = builder:combi{op=">>",R=31,red={the_belt},green={nega_one_all_requests}}
+        ret.output_pickup[i] = builder:combi{blinken=true,op=">>",R=31,red={the_belt},green={nega_one_all_requests}}
     end
 
 
@@ -376,11 +415,13 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
     --   +1 if requested
     --   Sum: -1 if on any belt and unrequested
     local minus_one_unhandled = builder:combi{
+        blinken=true,
         op=">>",L=-1,
         green=input_belts, red={plus_one_all_requests}
     }
     power_on.connect_neighbour{target_entity=minus_one_unhandled,wire=GREEN,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
     local minus_one_unhandled_2 = builder:combi{
+        blinken=true,
         op="!=", R=0,
         set_one=true, red={plus_one_all_requests}
     }
@@ -406,12 +447,12 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
         control.read_contents_mode = PULSE
 
         -- bus & DEMAND_FACTOR-1 = inbound items pulse
-        local inbound_pulse = builder:combi{op="AND",R=DEMAND_FACTOR-1,green={bus}}
+        local inbound_pulse = builder:combi{blinken=true,op="AND",R=DEMAND_FACTOR-1,green={bus}}
         inbound_pulse.connect_neighbour{wire=RED, target_entity=inbound_count,
             source_circuit_id=OUTPUT, target_circuit_id=INPUT}
 
         -- bus & -DEMAND_FACTOR = demand from that port
-        local inbound_demand = builder:combi{op="AND",R=-DEMAND_FACTOR,red={nega_output_driver},green={bus}}
+        local inbound_demand = builder:combi{blinken=true,op="AND",R=-DEMAND_FACTOR,red={nega_output_driver},green={bus}}
 
         -- On the red side, connect to the average input
         inbound_demand.connect_neighbour{wire=RED, target_entity=nega_average,
@@ -421,16 +462,16 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
         -- on the green side, pass through:
         -- x / DEMAND_FACTOR, always
         -- x itself iff COUNT = 0. (i.e. if it's a leaf)
-        local port_value = builder:combi{op="/", R=(DEMAND_FACTOR-LIBERALIZE), green={inbound_demand}}
-        local leaf_value = builder:combi{op="=", L=COUNT, R=0, out=EVERYTHING, green={inbound_demand}}
+        local port_value = builder:combi{blinken=true,op="/", R=(DEMAND_FACTOR-LIBERALIZE), green={inbound_demand}}
+        local leaf_value = builder:combi{blinken=true,op="=", L=COUNT, R=0, out=EVERYTHING, green={inbound_demand}}
         builder:connect_outputs(port_value,leaf_value,GREEN)
 
         -- Outputs of this net:
         --   Port wants it: 1
         --   Port doesn't want it: -BIG or 1-BIG
         --   Unhandled (or handled but rounds to zero in average): 0
-        local gt_zero = builder:combi{op=">",   R=0, set_one=true, green={port_value}}
-        local gt_mean = builder:combi{op="AND", R=MINUS_BIG,       green={port_value}, red={nega_average}}
+        local gt_zero = builder:combi{blinken=true,op=">",   R=0, set_one=true, green={port_value}}
+        local gt_mean = builder:combi{blinken=true,op="AND", R=MINUS_BIG,       green={port_value}, red={nega_average}}
         builder:connect_outputs(gt_zero,gt_mean)
 
         -- Inputs to this combinator:
@@ -451,6 +492,7 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
         --
         -- And of course default=1
         local handle_by_default = builder:combi{
+            blinken=true,
             op="=", R=DEFAULT, set_one=true,
             green={gt_zero}, red={minus_one_unhandled}
         }
@@ -460,7 +502,7 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
         ret.output_dropoff[i] = gt_zero
 
         -- Drive output to the bus (also drives const_count_one which is already hooked up)
-        local output_driver = builder:combi{op="*",R=-DEMAND_FACTOR,red={nega_average_negative}}
+        local output_driver = builder:combi{blinken=true,op="*",R=-DEMAND_FACTOR,red={nega_average_negative}}
         output_driver.connect_neighbour{wire=GREEN, target_entity=bus, source_circuit_id=OUTPUT}
     end
 
