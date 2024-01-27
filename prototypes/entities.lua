@@ -201,7 +201,9 @@ local blinkensprites = {
     },
 }
 local hidden_combinator_blinkenlights = util.merge{hidden_combinator,{}}
-hidden_combinator_blinkenlights.activity_led_sprites = blinkensprites
+if settings.startup["router-enable-blinkenlights"].value then
+    hidden_combinator_blinkenlights.activity_led_sprites = blinkensprites
+end
 
 local hidden_arith = util.merge{hidden_combinator,{
     type = "arithmetic-combinator",

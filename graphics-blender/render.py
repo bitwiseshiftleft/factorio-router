@@ -4,6 +4,7 @@ from itertools import chain
 # TODO: organize this better.  Less copy-paste
 
 brightenPaintFactor = 1.3
+brightenLightFactor = 0.4
 
 (width,height) = 416,320
 (lamp_width,lamp_height) = 32,32
@@ -102,7 +103,7 @@ def generatePixels():
             abc = [min(
                 max(0,1-(1-g[4*i+j])/max(0.01,1-s[4*i+j])),
                 max(0,g[4*i+j]-s[4*i+j])
-            ) for j in range(3)]
+            )*brightenLightFactor for j in range(3)]
             ma = max(*abc)
             if ma < 0.02: yield (0,0,0,0)
             else:

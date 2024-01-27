@@ -23,10 +23,10 @@ restrictive.
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
-* Test rotating ghosts
+* When a router ghost is built/removed, remove any stray ghost interface ports
 * Remove unused icons
 * Proper packaging for upload to mod portal
-* Add a blocker that prevents people from inserting items into empty spaces in routers.
+* Set consumption color
 
 Refactor lua slightly
 * Move subroutines out of control.lua
