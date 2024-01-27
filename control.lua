@@ -22,10 +22,10 @@ local router_component_table = {
         {d=EAST,  b={x=0, y=2}, i={x=1,y=2}}
     },
     output = {
-        {d=SOUTH, b={x=1, y=3}, ind={x=1, y=3}, control={x=1, y=3}, pulse={x=0, y=3}, lamp={x=1.5, y=2.3485}},
-        {d=EAST,  b={x=3, y=2}, ind={x=3, y=2}, control={x=3, y=2}, pulse={x=3, y=3}, lamp={x=2.3485, y=1.5}},
-        {d=NORTH, b={x=2, y=0}, ind={x=2, y=0}, control={x=2, y=0}, pulse={x=3, y=0}, lamp={x=1.5, y=0.6515}},
-        {d=WEST,  b={x=0, y=1}, ind={x=0, y=1}, control={x=0, y=1}, pulse={x=0, y=0}, lamp={x=0.6515, y=1.5}}
+        {d=SOUTH, b={x=1, y=3}, ind={x=1, y=3}, control={x=1, y=3}, pulse={x=0, y=3}, lamp={x=1.5, y=2.3359375}},
+        {d=EAST,  b={x=3, y=2}, ind={x=3, y=2}, control={x=3, y=2}, pulse={x=3, y=3}, lamp={x=2.3359375, y=1.5}},
+        {d=NORTH, b={x=2, y=0}, ind={x=2, y=0}, control={x=2, y=0}, pulse={x=3, y=0}, lamp={x=1.5, y=0.6640625}},
+        {d=WEST,  b={x=0, y=1}, ind={x=0, y=1}, control={x=0, y=1}, pulse={x=0, y=0}, lamp={x=0.6640625, y=1.5}}
     },
     lamp_distance = 0.86
 }

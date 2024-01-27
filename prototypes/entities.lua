@@ -165,7 +165,7 @@ local hidden_combinator = {
     activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
     activity_led_sprites = empty_sheet_4,
     screen_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
-    activity_led_hold_time = 30,
+    activity_led_hold_time = 60,
     circuit_wire_max_distance = 9
 }
 
@@ -448,7 +448,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     local base_name = base_underground_item.localised_name or {"entity-name."..base_underground_item.name}
     local space = (is_space and "space-") or ""
 
-    local fake_combinator = {
+    local holding_entity_as_combinator = {
         type = "constant-combinator",
         flags = { "player-creation", "hide-alt-info" },
 		max_health = 40,
@@ -463,11 +463,27 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         circuit_wire_max_distance = 0,
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
+
+    local holding_entity_as_lamp = {
+        type = "lamp",
+        flags = { "player-creation", "hide-alt-info" },
+		max_health = 40,
+        always_on = true,
+        energy_source = { type = "void", },
+        energy_usage_per_tick = "1J",
+		collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
+		selection_box = {{-2, -2}, {2, 2}},
+        selection_priority = 30,
+        selectable_in_game = true,
+        circuit_wire_max_distance = 0,
+        circuit_wire_connection_points = { wire={}, shadow={}},
+        activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
+    }
     if is_space then
-        fake_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, spaceship_collision_layer}
+        holding_entity_as_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, spaceship_collision_layer}
     elseif mods["space-exploration"] then
         -- Not placeable in space
-        fake_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, space_collision_layer, spaceship_collision_layer}
+        holding_entity_as_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, space_collision_layer, spaceship_collision_layer}
     end
 
     local filename_smart = "__router__/graphics/router-entity.png"
@@ -495,7 +511,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
 
     if protos.enable_manual then
         local power_manual = math.floor(power)
-        data:extend{util.merge{fake_combinator,{
+        data:extend{util.merge{holding_entity_as_combinator,{
             name = "router-"..size.."-"..prefix.."router",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },
             sprites = {north=wow,south=wow,west=wow,east=wow},
@@ -517,10 +533,11 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         local power_smart = math.floor(power)
         local power_io = math.floor(power/4)
         create_underground_components(prefix,postfix)
-        data:extend{util.merge{fake_combinator,{
+        data:extend{util.merge{holding_entity_as_lamp,{
             name = "router-"..size.."-"..prefix.."smart",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."smart" },
-            sprites = {north=sprite_smart,south=sprite_smart,west=sprite_smart,east=sprite_smart},
+            picture_on = sprite_smart,
+            picture_off = sprite_smart,
             icons = {
                 {icon="__router__/graphics/router-icon.png", icon_size=128,},
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
@@ -534,7 +551,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
                 base_name,
                 myutil.format_power(power_smart*1000)
             }
-        }}, util.merge{fake_combinator,{
+        }}, util.merge{holding_entity_as_combinator,{
             name = "router-"..size.."-"..prefix.."io",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."io" },
             sprites = mk_io_sprites(tint),
