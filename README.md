@@ -85,3 +85,4 @@ See TODO.md on the github.  Some notable todo items:
 * Integration with K2 and SE (working but needs more testing), pY, IR, AB, 248k, EI, etc
 * Test and polish interactions
 * Allow manual routers to request items when negative instead of positive, in the style of LTN
+* Add routers with 2 lanes in each direction?  This is even more unbalanced but probably doesn't hurt UPS much.

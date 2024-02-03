@@ -3,7 +3,7 @@ from itertools import chain
 
 # TODO: organize this better.  Less copy-paste
 
-brightenPaintFactor = 1.3
+brightenPaintFactor = 1.5
 brightenLightFactor = 0.4
 
 (width,height) = 416,320
