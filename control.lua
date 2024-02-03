@@ -1,4 +1,5 @@
 local util = require "__core__.lualib.util"
+local math2d = require "__core__.lualib.math2d"
 local myutil = require "lualib.util"
 local circuit = require "lualib.circuit"
 
@@ -375,6 +376,55 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
 end
 
+local function autoconnect_router_io(routers, chests)
+    -- automatically connect each of the given routers to
+    -- each of the given chests, as appropriate
+    local router_tbl = {}
+    for i,router in ipairs(routers) do
+        if is_router_io(router) then
+            table.insert(router_tbl,{
+                router = router,
+                inserters = router.surface.find_entities_filtered{
+                    area = router.bounding_box,
+                    name = "router-component-nonf-inserter"
+                },
+                outserters = router.surface.find_entities_filtered{
+                    area = router.bounding_box,
+                    name = "router-component-inserter"
+                },
+                connectors = router.surface.find_entities_filtered{
+                    area = router.bounding_box,
+                    name = "router-component-chest-contents-lamp"
+                }
+            })
+        end
+    end
+    for _,chest in ipairs(chests) do
+        -- lazy logic: connect the chest if its bounding box contains the inserters drop points
+        -- or the outserters pickup points
+        for _,router in ipairs(router_tbl) do
+            local do_connect = false
+            for _,ins in ipairs(router.inserters) do
+                if math2d.bounding_box.contains_point(chest.bounding_box, ins.drop_position) then
+                    do_connect = true
+                    break
+                end
+            end
+            for _,ins in ipairs(router.outserters) do
+                if math2d.bounding_box.contains_point(chest.bounding_box, ins.pickup_position) then
+                    do_connect = true
+                    break
+                end
+            end
+            if do_connect then
+                for _,c in ipairs(router.connectors) do
+                    c.connect_neighbour{target_entity=chest,wire=circuit.GREEN}
+                end
+            end
+        end
+    end
+end
+
 local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, buffer)
     -- entity.operable = false -- Nope, GUI is enabled
     -- TODO: custom GUI?
@@ -417,7 +467,6 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     end
 
     -- Fast replace: all the electronics should exist: we're done here!
-    -- TODO: make extra inserters / or cull
     if is_fast_replace then
         circuit.fixup_power_consumption(
             builder, entity,
@@ -491,9 +540,9 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
                 position = output_belts[i].position,
                 force = entity.force
             })
-            ins.pickup_position = relative({x=i-0.5,y=1})
+            ins.pickup_position = relative{x=i-0.5,y=1}
             ins.inserter_stack_size_override = 1 -- TODO: but perf...
-            ins.drop_position = relative({x=i+lane/2-1.25,y=0})
+            ins.drop_position = relative{x=i+lane/2-1.25,y=0}
             control = ins.get_or_create_control_behavior()
             ins.inserter_filter_mode = "whitelist"
             control.circuit_read_hand_contents = true
@@ -502,6 +551,19 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
             ins.connect_neighbour{wire=circuit.GREEN, target_entity=comm_circuit.output, target_circuit_id=circuit.OUTPUT}
             ins.connect_neighbour{wire=circuit.RED,   target_entity=comm_circuit.outreg, target_circuit_id=circuit.INPUT}
         end
+    end
+    if settings.global["router-auto-connect"].value then
+        local p1 = relative{x=n_lanes-0.5,y=1}
+        local p2 = relative{x=0.5-n_lanes,y=1}
+        local box = {
+            left_top={x=math.min(p1.x,p2.x),y=math.min(p1.y,p2.y)},
+            right_bottom={x=math.max(p1.x,p2.x),y=math.max(p1.y,p2.y)}
+        }
+        autoconnect_router_io({entity},entity.surface.find_entities_filtered{
+            type="container",
+            area=box,
+            force=entity.force
+        })
     end
     fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
 end
@@ -586,6 +648,22 @@ local function on_built(ev)
         local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
         prefix = string.gsub(prefix, "io$", "")
         create_smart_router_io(prefix, entity, is_fast_replace, buffer)
+    elseif entity and entity.type ~= "entity-ghost" and entity.type == "container" and settings.global["router-auto-connect"].value then
+        -- Look for router IO points in a 1x1 wider radius around this
+        local box = {
+            left_top={
+                x=entity.bounding_box.left_top.x-1,
+                y=entity.bounding_box.left_top.y-1
+            }, right_bottom={
+                x=entity.bounding_box.right_bottom.x+1,
+                y=entity.bounding_box.right_bottom.y+1
+            }
+        }
+        autoconnect_router_io(entity.surface.find_entities_filtered{
+            type="constant-combinator", -- autoconnect_router_io filters for the io points
+            area=box,
+            force=entity.force
+        }, {entity})
     end
     fast_replace_state = nil -- we got the built event; clear it
 end

@@ -1,4 +1,4 @@
-# Factorio smart routers TODO list
+# Factorio smart routers TODO list and ideas for future work
 
 ## Suggestions to consider
 
@@ -40,11 +40,6 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 
 ## Integration
 
-* Add soft dependencies on other mods
-* Test SE without K2 ... check resource cost of space routers
-* More testing on K2
-* More testing on SE
-* Test with Vanilla again too
 * Integrate with Py
 * Integrate with AngelBobs / SeaBlock
 * Integrate with IR3
@@ -120,7 +115,7 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 * * Redesign to look more like splitters with wires between them??
 * * More detail, more contrast
 * * Is there a way to make them a little shorter without ruining the orthographic bit?
-* * Gamma correction or whatever for th eglow
+* * Gamma correction or whatever for the glow
 * * Make lamps not as flat
 
 * Make graphics for I/O ports
