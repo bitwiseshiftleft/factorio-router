@@ -38,6 +38,8 @@ Smart routers use a fancy communication protocol over the green wires.  It is re
 Since the circuit network doesn't update instantaneously, it is possible that slightly too many of an item will be sent.  Reducing this problem is part of the purpose of the request threshold ![threshold_signal_igon](resources/threshold.png).  If extra items are sent, they would normally have nowhere to go, and so would clog up the network until someone requests them.  However, extra items can be sent to
 *buffer terminals*.  Buffer terminals additionally request all types of resources that aren't requested elsewhere, by using the default signal ![default_signal_icon](resources/default.png).  Just set ![default_signal_icon](resources/default.png) on a terminal to some positive value (say, 100) and any extra items will be routed to that terminal.
 
+I/O terminals automatically connect to adjacent chests, unless this is disabled in the map settings.
+
 ## Balancing
 
 Smart routers are not very balanced, because they make some types of logistics prolems significantly easier.  However, they are fairly expensive and use a lot of power.
