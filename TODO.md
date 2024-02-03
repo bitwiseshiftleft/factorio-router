@@ -52,7 +52,7 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 Implement smart I/O terminals
 * Lamps for defaultness, disablement.
 * Do we want to provide limiting loaders for the I/O terminals?  Eg with an amount to cache
-* Autoconnect chests, maybe pursuant to startup option
+* Suppress autoconnection in some cases?  Eg when a blueprint with both the chest and router is created
 * Undo construct -> deconstruct; undo deconstruct -> construct
 * Test throughput when a terminal is connected to another terminal
 
