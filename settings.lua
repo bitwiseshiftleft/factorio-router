@@ -4,6 +4,7 @@ data:extend{
         name = "router-enable-manual",
         setting_type = "startup",
         default_value = false,
+        hidden = true, -- TODO: re-enable
         order = "a"
     },
     {

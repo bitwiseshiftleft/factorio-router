@@ -26,7 +26,6 @@ restrictive.
 * When a router ghost is built/removed, remove any stray ghost interface ports
 * Remove unused icons
 * Proper packaging for upload to mod portal
-* Set consumption color
 
 Refactor lua slightly
 * Move subroutines out of control.lua

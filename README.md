@@ -21,7 +21,7 @@ Manual routers are controlled by a constant combinator on each port.  Every item
 
 Manual routers do not have any form of priority.  An item is either requested by a port, or it is not.
 
-Manual routers are currently in a rougher state than smart ones, and are not enabled by default.
+Manual routers are currently in a rougher state than smart ones, and are disabled.
 
 ## Smart routers and I/O terminals
 
@@ -68,6 +68,13 @@ It is possible that Factorio 2 will enable this mod to have better performance, 
 to replace several combinators with one smarter one, such as the Decider Combinator 2.0.
 
 The trick of channeling everything over one green wire costs some performance.  It is possible that a future version will use hidden connections with multiple wires instead.
+
+## Limitations
+
+The design of routers, and especially smart routers, has many limitations, both inherently and due to my scripting skills.  Because they are very complex compound entities, there are likely to be bugs around building, destroying and blueprinting routers.  In particular:
+* If you remove a router, then undoing the removal with control-Z won't restore its connections.
+* If you remove a router I/O point, then undoing the removal with control-Z won't restore its connections or its trim settings (but will restore its request list).
+* The feature that automatically connects router I/O points to chests triggers (when turned on in map settings) even when the router and chest were built from a blueprint where they're intentionally not connected.
 
 ## TODO list
 
