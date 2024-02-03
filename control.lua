@@ -17,10 +17,18 @@ local router_component_table = {
         -- d = direction
         -- b = belt location
         -- i = inserter location
-        {d=NORTH, b={x=2, y=3}, i={x=2,y=2}},
-        {d=WEST,  b={x=3, y=1}, i={x=2,y=1}},
-        {d=SOUTH, b={x=1, y=0}, i={x=1,y=1}},
-        {d=EAST,  b={x=0, y=2}, i={x=1,y=2}}
+        {d=NORTH, b={x=2, y=2}, i={x=2,y=1}},
+        {d=WEST,  b={x=2, y=1}, i={x=1,y=1}},
+        {d=SOUTH, b={x=1, y=1}, i={x=1,y=2}},
+        {d=EAST,  b={x=1, y=2}, i={x=2,y=2}}
+    },
+    xbelts  = {
+        -- d = direction
+        -- b = belt location
+        {d=NORTH, b={x=2, y=3}},
+        {d=WEST,  b={x=3, y=1}},
+        {d=SOUTH, b={x=1, y=0}},
+        {d=EAST,  b={x=0, y=2}}
     },
     output = {
         {d=SOUTH, b={x=1, y=3}, ind={x=1, y=3}, control={x=1, y=3}, pulse={x=0, y=3}, lamp={x=1.5, y=2.3359375}},
@@ -178,6 +186,16 @@ local function create_router(prefix, entity, is_fast_replace, buffer)
             fast_replace = is_fast_replace
         }
     end
+    -- Create the extra input belts
+    for _,ipt in ipairs(data.xbelts) do
+        entity.surface.create_entity{
+            name = "router-component-" .. prefix .. "transport-belt",
+            position = relative(ipt.b),
+            direction = (my_orientation + ipt.d)%8,
+            force = entity.force,
+            fast_replace = is_fast_replace
+        }
+    end
 
     local passbands
     local contents_indicator
@@ -296,6 +314,15 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     end
 
     -- Create the input and output belts, and lamps
+    for _,ipt in ipairs(data.xbelts) do
+        entity.surface.create_entity{
+            name = "router-component-" .. prefix .. "transport-belt",
+            position = relative(ipt.b),
+            direction = (my_orientation + ipt.d)%8,
+            force = entity.force,
+            fast_replace = is_fast_replace
+        }
+    end
     for i,ipt in ipairs(data.input) do
         input_belts[i] = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
@@ -759,9 +786,9 @@ local function disable_picker_dollies()
             end
         end
         local others = {"port-control-combinator", "contents-indicator-lamp", "output-indicator-lamp",
-            "chest-contents-lamp", "is-default-lamp", "port-trim-combinator"}
+            "chest-contents-lamp", "is-default-lamp", "port-trim-combinator", "smart-port-lamp"}
         for _,other in ipairs(others) do
-            remote.call("PickerDollies", "add_blacklist_name", "router-"..other, true)
+            remote.call("PickerDollies", "add_blacklist_name", "router-component-"..other, true)
         end
     end
 end
