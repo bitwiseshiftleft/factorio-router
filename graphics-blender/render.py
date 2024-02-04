@@ -1,7 +1,7 @@
 import bpy
 from itertools import chain
-
-# TODO: organize this better.  Less copy-paste
+from math import pi
+from mathutils import Euler
 
 brightenPaintFactor = 1.5
 brightenLightFactor = 0.4
@@ -26,17 +26,16 @@ o.hide_viewport = o.hide_render = True
 def entrance_lights_visible(visible=True):
     lights = bpy.data.collections["Entrance lights"]
     lights.hide_viewport = lights.hide_render = not visible
+    lights = bpy.data.collections["IOPointlights"]
+    lights.hide_viewport = lights.hide_render = not visible
 entrance_lights_visible(False)
 
 def set_bulb_texture(texture):
-    bulbs = bpy.data.collections["Bulbs"]
-    for bulb in bulbs.objects:
-        if bulb.data.materials: bulb.data.materials[0] = texture
-        else: bulb.data.materials.append(texture)
-
-    bulbs_big = bpy.data.collections["BulbsBig"]
-    for bulb in bulbs_big.objects:
-        bulb.data.materials[0] = texture
+    for bulbGroup in ["Bulbs","BulbsBig","IoPointBulb"]:
+        bulbs = bpy.data.collections[bulbGroup]
+        for bulb in bulbs.objects:
+            if bulb.data.materials: bulb.data.materials[0] = texture
+            else: bulb.data.materials.append(texture)
 
 def set_paint(value):
     paintColor = mat.node_tree.nodes["RGB.001"].outputs[0]
@@ -45,12 +44,12 @@ def set_paint(value):
 # Render with black paint
 set_bulb_texture(clip)
 set_paint(0)
-bpy.context.scene.render.filepath = 'router_black.png'
+bpy.context.scene.render.filepath = "output/router_black.png"
 bpy.ops.render.render(write_still=True)
 
 # Render with white paint
 set_paint(1)
-bpy.context.scene.render.filepath = 'router_white.png'
+bpy.context.scene.render.filepath = "output/router_white.png"
 bpy.ops.render.render(write_still=True)
 
 # with lights on instead of clip.  First make the lamps still clip, but a little bigger...
@@ -58,12 +57,12 @@ def big_bulbs_visible(visible=True):
     bulbs_big = bpy.data.collections["BulbsBig"]
     bulbs_big.hide_viewport = bulbs_big.hide_render = not visible
 big_bulbs_visible(True)
-bpy.context.scene.render.filepath = 'router_with_clips.png'
+bpy.context.scene.render.filepath = "output/router_with_clips.png"
 bpy.ops.render.render(write_still=True)
 
 # Next just render them
 set_bulb_texture(lamp)
-bpy.context.scene.render.filepath = 'router_with_lamps.png'
+bpy.context.scene.render.filepath = "output/router_with_lamps.png"
 bpy.ops.render.render(write_still=True)
 
 # Render with xy plane to catch shadow and glow
@@ -71,18 +70,26 @@ def shadow_plane_visible(visible=True):
     o = bpy.context.scene.objects.get("ShadowPlane")
     o.hide_viewport = o.hide_render = not visible
 shadow_plane_visible(True)
-bpy.context.scene.render.filepath = 'router_shadow.png'
+bpy.context.scene.render.filepath = "output/router_shadow.png"
 bpy.ops.render.render(write_still=True)
 
 # Render with entrance lights
 entrance_lights_visible(True)
-bpy.context.scene.render.filepath = 'router_shadow_glow.png'
+bpy.context.scene.render.filepath = "output/router_shadow_glow.png"
 bpy.ops.render.render(write_still=True)
 
 # Remove the shadow plane, tie points and fine details
 def tie_points_visible(visible=True):
-    tie_points = bpy.data.collections["TiePoints"]
-    tie_points.hide_viewport = tie_points.hide_render = not visible
+    for grp in ["TiePoints","ConnNorth","ConnWest","ConnCenter"]:
+        tie_points = bpy.data.collections[grp]
+        tie_points.hide_viewport = tie_points.hide_render = not visible
+
+def rotated_tie_points(direction = None):
+    directions = [] if direction is None else [direction]
+    for grp in ["ConnNorth","ConnWest"]:
+        tie_points = bpy.data.collections[grp]
+        tie_points.hide_viewport = tie_points.hide_render = grp not in directions
+
 
 def body_rivets_visible(visible=True):
     o = bpy.context.scene.objects.get("BodyRivets")
@@ -94,22 +101,23 @@ tie_points_visible(False)
 body_rivets_visible(False)
 # In white...
 set_paint(1)
-bpy.context.scene.render.filepath = 'router_icon.png'
+bpy.context.scene.render.filepath = "output/router_icon_white.png"
 bpy.ops.render.render(write_still=True)
 
 # And in black
 set_paint(0)
-bpy.context.scene.render.filepath = 'router_icon_black.png'
+bpy.context.scene.render.filepath = "output/router_icon_black.png"
 bpy.ops.render.render(write_still=True)
 
-def composite(width, imgData, offX, offY, f, *images):
+def composite(width, imgData, offX, offY, f, *images, size=None, off=None):
     """
     Main subroutine to combine images into imgData
     """
-    subw = subh = None
+    subw,subh = (None,None) if size is None else size
+    subx,suby = (0,0) if off is None else off
     pixels = []
     for file in images:
-        img = bpy.data.images.load(filepath=file)
+        img = bpy.data.images.load(filepath="output/"+file)
         w,h = img.size
         pixels.append((w,h, img.pixels[:]))
         if subw is None:
@@ -121,7 +129,7 @@ def composite(width, imgData, offX, offY, f, *images):
     for y in range(subh):
         for x in range(subw):
             local_pixels = [
-                pix[4*(y*w+x):4*(y*w+x+1)]
+                pix[4*((suby+y)*w+x+subx):4*((suby+y)*w+x+subx+1)]
                 for w,_,pix in pixels
             ]
             imgData[
@@ -162,10 +170,10 @@ composite(width, imgData, 0, 2*height, composite_mask,   "router_white.png", "ro
 composite(width, imgData, 0, 3*height, lambda x:x,       "router_black.png" )
 delta.pixels = tuple(imgData)
 delta.update()
-delta.save(filepath="router.png")
+delta.save(filepath="output/router.png")
 
-C = bpy.data.images.load(filepath="router_with_clips.png").pixels[:4*width*height]
-L = bpy.data.images.load(filepath="router_with_lamps.png").pixels[:4*width*height]
+C = bpy.data.images.load(filepath="output/router_with_clips.png").pixels[:4*width*height]
+L = bpy.data.images.load(filepath="output/router_with_lamps.png").pixels[:4*width*height]
 lamp = bpy.data.images.new("light", lamp_width, lamp_height, alpha=True)
 lamp.pixels = tuple(
     P
@@ -175,12 +183,92 @@ lamp.pixels = tuple(
     for P in (L[i+0],L[i+1],L[i+2],L[i+3]-C[i+3])
 )
 lamp.update()
-lamp.save(filepath="light.png")
+lamp.save(filepath="output/light.png")
 
 
 delta = bpy.data.images.new("router_icon_mask", width, height, alpha=True)
 imgData = [0]*(4*width*height)
 composite(width, imgData, 0, 0, composite_mask, "router_icon_white.png", "router_icon_black.png" )
-delta.pixels = tuple(chain.from_iterable(imgData))
+delta.pixels = tuple(imgData)
 delta.update()
-delta.save(filepath="router_icon_mask.png")
+delta.save(filepath="output/router_icon_mask.png")
+
+
+###################################
+# I/O ports
+###################################
+
+def hub_visible(visible=True):
+    hub = bpy.data.collections["Hub"]
+    hub.hide_viewport = hub.hide_render = not visible
+def io_visible(visible=True):
+    io = bpy.data.collections["IOPoint"]
+    io.hide_viewport = io.hide_render = not visible
+hub_visible(False)
+io_visible(True)
+tie_points_visible(True)
+body_rivets_visible(True)
+set_bulb_texture(clip)
+
+rot_mat = Euler((0, 0, pi/2)).to_matrix().to_4x4()
+for dir in ["North","East","South","West"]:
+    shadow_plane_visible(False)
+    entrance_lights_visible(False)
+
+    if dir in ["North","South"]: rotated_tie_points("ConnNorth")
+    else: rotated_tie_points("ConnWest")
+    set_paint(1)
+    bpy.context.scene.render.filepath = "output/io_%s_white.png" % dir
+    bpy.ops.render.render(write_still=True)
+
+    set_paint(0)
+    bpy.context.scene.render.filepath = "output/io_%s_black.png" % dir
+    bpy.ops.render.render(write_still=True)
+
+    shadow_plane_visible(True)
+    bpy.context.scene.render.filepath = "output/io_%s_shadow.png" % dir
+    bpy.ops.render.render(write_still=True)
+
+    entrance_lights_visible(True)
+    bpy.context.scene.render.filepath = "output/io_%s_shadow_glow.png" % dir
+    bpy.ops.render.render(write_still=True)
+
+    # Rotate 90 degrees
+    grp = bpy.data.collections.get("IOPoint")
+    for obj in grp.all_objects:
+        obj.matrix_world = rot_mat @ obj.matrix_world
+    grp = bpy.data.collections.get("Tunnel items")
+    for obj in grp.all_objects:
+        obj.matrix_world = rot_mat @ obj.matrix_world
+
+north_width = 320
+east_width = 256
+east_height = 256
+north_height = 160
+west_ox = east_ox = 64
+north_ox,north_oy,south_oy = 48,128,112
+io_width = 2*north_width+4*east_width
+io_height = 4*north_height
+delta = bpy.data.images.new("io", io_width, io_height, alpha=True)
+imgData = [0]*(4*io_width*io_height)
+for (dir,offo,offy) in [("North",0,north_oy),("South",north_width,south_oy)]:
+    composite(io_width, imgData, offo, 0*north_height, composite_glow,   "io_%s_shadow_glow.png"%dir, "io_%s_shadow.png"%dir,
+        size=(north_width,north_height),off=(north_ox,offy))
+    composite(io_width, imgData, offo, 1*north_height, composite_shadow, "io_%s_black.png"%dir, "io_%s_shadow.png"%dir,
+        size=(north_width,north_height),off=(north_ox,offy))
+    composite(io_width, imgData, offo, 2*north_height, composite_mask,   "io_%s_white.png"%dir, "io_%s_black.png"%dir,
+        size=(north_width,north_height),off=(north_ox,offy))
+    composite(io_width, imgData, offo, 3*north_height, lambda x:x,       "io_%s_black.png"%dir,
+        size=(north_width,north_height),off=(north_ox,offy))
+for (dir,offo,offy) in [("East",2*north_width,east_ox),("West",2*north_width+2*east_width,west_ox)]:
+    composite(io_width, imgData, offo, 0*east_height, composite_glow,   "io_%s_shadow_glow.png"%dir, "io_%s_shadow.png"%dir,
+        size=(east_width,east_height),off=(north_ox,offy))
+    composite(io_width, imgData, offo, 1*east_height, composite_shadow, "io_%s_black.png"%dir, "io_%s_shadow.png"%dir,
+        size=(east_width,east_height),off=(north_ox,offy))
+    composite(io_width, imgData, offo+east_width, 0*east_height, composite_mask,   "io_%s_white.png"%dir, "io_%s_black.png"%dir,
+        size=(east_width,east_height),off=(north_ox,offy))
+    composite(io_width, imgData, offo+east_width, 1*east_height, lambda x:x,       "io_%s_black.png"%dir,
+        size=(east_width,east_height),off=(north_ox,offy))
+delta.pixels = tuple(imgData)
+delta.update()
+delta.save(filepath="output/io.png")

@@ -46,90 +46,34 @@ local light_on = {
 }
 
 local function mk_io_sprites(tint)
-    local file = "__router__/graphics/io.png"
+    local file = "__router__/graphics/io-entity.png"
+    local ns = {filename=file,priority="very-low",width=320,height=160,scale=0.5,frame_count=1}
+    local ew = {filename=file,priority="very-low",width=256,height=256,scale=0.5,frame_count=1}
     return {
-        south = {
-            layers = {{
-                filename = file,
-                priority = "very-low",
-                width = 256,
-                height =128,
-                scale = 0.5,
-                x=0, y=0,
-                frame_count = 1
-            },{
-                filename = file,
-                priority = "very-low",
-                width = 256,
-                height =128,
-                scale = 0.5,
-                x = 0,
-                y = 128,
-                frame_count = 1,
-                tint = tint
-            }}
-        }, 
-        north = {
-            layers = {{
-                filename = file,
-                priority = "very-low",
-                width = 256,
-                height =128,
-                scale = 0.5,
-                x=256, y=0,
-                frame_count = 1
-            },{
-                filename = file,
-                priority = "very-low",
-                width = 256,
-                height =126,
-                scale = 0.5,
-                x = 256,
-                y = 128,
-                frame_count = 1,
-                tint = tint
-            }}
-        },
-        west = {
-            layers = {{
-                filename = file,
-                priority = "very-low",
-                width =  96,
-                height = 256,
-                scale = 0.5,
-                x=512, y=0,
-                frame_count = 1
-            },{
-                filename = file,
-                priority = "very-low",
-                width = 96,
-                height =256,
-                scale = 0.5,
-                x = 608, y = 0,
-                frame_count = 1,
-                tint = tint
-            }}
-        },
-        east = {
-            layers = {{
-                filename = file,
-                priority = "very-low",
-                width =  96,
-                height = 256,
-                scale = 0.5,
-                x=704, y=0,
-                frame_count = 1
-            },{
-                filename = file,
-                priority = "very-low",
-                width = 96,
-                height =256,
-                scale = 0.5,
-                x = 800, y = 0,
-                frame_count = 1,
-                tint = tint
-            }}
-        },
+        south = {layers = {
+            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=0}},
+            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=160,tint=tint}},
+            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=320,draw_as_shadow=true}},
+            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=480,draw_as_glow=true}},
+        }},
+        north = {layers = {
+            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=0}},
+            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=160,tint=tint}},
+            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=320,draw_as_shadow=true}},
+            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=480,draw_as_glow=true}},
+        }}, 
+        east = {layers = {
+            util.merge{ew,{x=896,y=128}},
+            util.merge{ew,{x=896,y=384,tint=tint}},
+            util.merge{ew,{x=640,y=128,draw_as_shadow=true}},
+            util.merge{ew,{x=640,y=384,draw_as_glow=true}},
+        }}, 
+        west = {layers = {
+            util.merge{ew,{x=1408,y=128}},
+            util.merge{ew,{x=1408,y=384,tint=tint}},
+            util.merge{ew,{x=1152,y=128,draw_as_shadow=true}},
+            util.merge{ew,{x=1152,y=384,draw_as_glow=true}},
+        }}, 
     }
 end
 
