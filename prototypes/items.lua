@@ -66,22 +66,22 @@ if protos.enable_smart then
         {
             type = "item",
             name = "router-component-smart-port-lamp",
-            icon = "__router__/graphics/light.png",
-            icon_size = 32,
+            icon = "__router__/graphics/connected.png",
+            icon_size = 128,
             place_result = "router-component-smart-port-lamp",
             stack_size = 1,
         }, {
             type = "item",
             name = "router-component-port-trim-combinator",
-            icon = "__router__/graphics/light.png", -- TODO make graphics
-            icon_size = 32,
+            icon = "__router__/graphics/threshold.png",
+            icon_size = 128,
             place_result = "router-component-port-trim-combinator",
             stack_size = 1,
         }, {
             type = "item",
             name = "router-component-io-connection-lamp",
-            icon = "__router__/graphics/light.png", -- TODO make graphics
-            icon_size = 32,
+            icon = "__router__/graphics/leaf.png",
+            icon_size = 128,
             place_result = "router-component-io-connection-lamp",
             stack_size = 1,
         },

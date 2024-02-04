@@ -349,6 +349,7 @@ if protos.enable_smart then
                 wire = { red={0,-0.64}, green={0,-0.64} },
                 shadow = { red={0.08,-0.56}, green={0.08,-0.56} },
             },
+            icon = "__router__/graphics/connected.png", icon_size=128,
             fast_replaceable_group = "router-component-smart-port-lamp"
         }},
         -- IO port lamp.  Invisible but can be interacted with.
@@ -362,6 +363,7 @@ if protos.enable_smart then
                 wire = { red={0,-0.40}, green={0,-0.35} },
                 shadow = { red={0.08,-0.35}, green={0.08,-0.30} },
             },
+            icon = "__router__/graphics/leaf.png", icon_size=128,
         }},
         -- IO indicator lamp.  Visible but cannot be interacted with
         util.merge{interface_lamp_proto,{
@@ -397,7 +399,8 @@ if protos.enable_smart then
             circuit_connector_sprites = connector_definitions.sprites,
             circuit_wire_max_distance = 9,
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
-            fast_replaceable_group = "router-component-port-control-combinator"
+            fast_replaceable_group = "router-component-port-control-combinator",
+            icon = "__router__/graphics/threshold.png", icon_size=128,
         }},
         super_inserter_nonfilter, super_inserter_nonfilter_2
     }
