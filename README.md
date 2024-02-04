@@ -9,6 +9,7 @@ Please note that this is a development release, and the mod may see significant 
 This mod introduces two types of circuit-controlled belt routers for moving items around your base.  These buildings act somewhat like 4-way splitters, with belts of items going into them and coming out of them.
 
 However, there are several important differences to splitters:
+
 * Routers can have multiple filters set per port.
 * Routers can be circuit-controlled.
 * Splitters preserve lanes, but routers do not.
@@ -49,6 +50,7 @@ Smart routers are not very balanced, because they make some types of logistics p
 Each router contains several invisible very fast filter inserters, much like with the [https://mods.factorio.com/mod/miniloader](miniloaders) mod.  However, if you place many items on the port's allow-list, then simply setting the inserters' filters wouldn't be enough: inserters can only have up to 5 filters, and any other items in the allow-list would be ignored.  So each router also contains a circuit made of invisible combinators to intersect the filters with the items present on the input belts.
 
 Smart routers use extensive circuitry.  Each green wire carries the following signals:
+
 * For each item, the number of those items being put on the belt in that tick.  This must remain less than 64.
 * For each item, 64 times a demand factor for that item.
 * The connected signal ![connected_signal_icon](resources/connected.png) is set to -64 by each smart router.  So if it's -64 then one smart router is connected, and if it's -32 then two smart routers are connected.
@@ -79,6 +81,7 @@ The design of routers, and especially smart routers, has many limitations, both 
 ## Compatibility
 
 This mod should be compatible with:
+
 * Krastorio 2
 * Space Exploration
 * Pyanodon's Alternative Energy (and possibly other Py setups)
@@ -91,6 +94,7 @@ This mod should be compatible with:
 ## TODO list
 
 See TODO.md on the github.  Some notable todo items:
+
 * Better graphics
 * Bring manual routers back to the polish level of smart ones, and re-enable them.
 * Localization to languages other than English
