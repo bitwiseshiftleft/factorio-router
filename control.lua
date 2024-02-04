@@ -63,8 +63,6 @@ end
 
 local function fixup_extra_inserters(surface, force, area, prefix, buffer)
     local multiplier = math.ceil(game.entity_prototypes[prefix.."transport-belt"].belt_speed * 8) - 1
-
-    -- game.print("Multiplier = "..tostring(multiplier))
     
     local function idx(e)
         local ret = ""
@@ -142,7 +140,7 @@ local function fixup_extra_inserters(surface, force, area, prefix, buffer)
                 local con1 = j.entity.get_or_create_control_behavior()
                 local con2 = ins.get_or_create_control_behavior()
                 for _,p in ipairs{
-                    "circuit_mode_of_operation","circuit_read_hand_contents",
+                    "circuit_mode_of_operation","circuit_read_hand_contents","circuit_condition",
                     "circuit_hand_read_mode","circuit_set_stack_size","circuit_stack_control_signal"
                 } do
                     if con1[p] then con2[p] = con1[p] end

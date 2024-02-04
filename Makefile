@@ -1,4 +1,4 @@
-VERSION=0.0.3
+VERSION=0.0.4
 MODS_DIR="$(HOME)/Library/Application Support/factorio/mods"
 FILES= info.json changelog.txt *.lua prototypes graphics lualib locale README.md resources \
 	resources/default.png resources/leaf.png resources/connected.png resources/threshold.png

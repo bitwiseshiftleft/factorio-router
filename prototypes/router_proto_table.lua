@@ -4,6 +4,19 @@ local sizes = {"4x4"}
 -- Krastorio2 and SE support
 local have_se = data.raw.item["se-space-transport-belt"] ~= nil
 local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
+local have_bobs = data.raw.item["turbo-transport-belt"] ~= nil
+local have_ae3 = (
+  data.raw.technology["advanced-electronics-3"] ~= nil
+  and data.raw.item["advanced-logistic-science-pack"] ~= nil
+) 
+
+-- Copied from miniloader
+local turbo_hex
+if mods["boblogistics-belt-reskin"] then
+  turbo_hex = "df1ee5D1"
+else
+  turbo_hex = "a510e5D1"
+end
 
 M.table = {
     [""] = {
@@ -210,6 +223,79 @@ if have_se then
   }
 end
 
+if have_bobs and have_ae3 then
+  M.table["turbo-"] = {
+    tint = util.color(turbo_hex),
+    prerequisites = {"logistics-4","advanced-electronics-3"},
+    manual_ingredients = { {"advanced-processing-unit", 4} },
+    smart_ingredients =  { {"advanced-processing-unit", 6} },
+    io_ingredients    =  { {"advanced-processing-unit", 2} },
+    tech_costs = {
+      count = 300,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 },
+      },
+      time = 15
+    },
+  }
+  M.table["ultimate-"] = {
+    tint = util.color("16f263D1"),
+    prerequisites = {"logistics-5"},
+    manual_ingredients = { {"advanced-processing-unit", 12} },
+    smart_ingredients =  { {"advanced-processing-unit", 18} },
+    io_ingredients    =  { {"advanced-processing-unit", 6} },
+    tech_costs = {
+      count = 300,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 },
+        { "advanced-logistic-science-pack", 1 },
+      },
+      time = 15
+    },
+  }
+elseif have_bobs then
+  M.table["turbo-"] = {
+    tint = util.color(turbo_hex),
+    prerequisites = {"logistics-4"},
+    manual_ingredients = { {"processing-unit", 40} },
+    smart_ingredients =  { {"processing-unit", 60} },
+    io_ingredients    =  { {"processing-unit", 20} },
+    tech_costs = {
+      count = 300,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 },
+      },
+      time = 15
+    },
+  }
+  M.table["ultimate-"] = {
+    tint = util.color("16f263D1"),
+    prerequisites = {"logistics-5"},
+    manual_ingredients = { {"processing-unit", 120} },
+    smart_ingredients =  { {"processing-unit", 180} },
+    io_ingredients    =  { {"processing-unit", 60} },
+    tech_costs = {
+      count = 300,
+      ingredients = {
+        { "automation-science-pack", 1 },
+        { "logistic-science-pack", 1 },
+        { "chemical-science-pack", 1 },
+        { "production-science-pack", 1 }
+      },
+      time = 15
+    },
+  }
+end
+
 -- Fixup: add automatic ingredients and power consumption
 local power_scale =  settings.startup["router-power-scale"].value
 for prefix,router in pairs(M.table) do
@@ -231,9 +317,11 @@ for prefix,router in pairs(M.table) do
     if have_k2 and prefix == "express-" then next_upgrade = "kr-advanced-" end
     if next_upgrade then
         next_upgrade = string.gsub(next_upgrade, "transport%-belt$", "")
-        if router.next_upgrade == nil then router.next_upgrade = next_upgrade end
         local next_table = next_upgrade and M.table[next_upgrade]
         if next_table then
+            -- add it as an upgrade
+            if router.next_upgrade == nil then router.next_upgrade = next_upgrade end
+
             -- add it as a prereq techonology
             table.insert(next_table.prerequisites,"router-"..prefix.."router")
 
