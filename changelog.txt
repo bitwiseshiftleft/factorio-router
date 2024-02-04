@@ -1,4 +1,17 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.0.4:
+Date: 2024-02-04
+
+  Breaking change: I/O points use the red wire to connect to a chest.  This is connected to a
+  new entity.
+
+  Disable manual routers: they've bit-rotted.
+
+  Graphics are now almost kinda reasonable.
+
+  Integration with K2, SE, Py, IR3, Seablock.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.0.3:
 Date: 2024-01-16
 
