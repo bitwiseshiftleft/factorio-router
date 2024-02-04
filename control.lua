@@ -43,9 +43,26 @@ local function is_router_outer(entity) return string.find(entity.name, '^router%
 local function is_router_smart(entity) return string.find(entity.name, '^router%-.*smart$') ~= nil end
 local function is_router_io(entity)    return string.find(entity.name, '^router%-.*io$') ~= nil end
 local function is_router_component(entity)  return string.find(entity.name, '^router%-component%-') ~= nil end
+local function is_ghost_router_outer(entity) return string.find(entity.ghost_name, '^router%-.*router$') ~= nil end
+local function is_ghost_router_smart(entity) return string.find(entity.ghost_name, '^router%-.*smart$') ~= nil end
+local function is_ghost_router_io(entity)    return string.find(entity.ghost_name, '^router%-.*io$') ~= nil end
+local function is_ghost_router_component(entity)  return string.find(entity.ghost_name, '^router%-component%-') ~= nil end
 
 local vector_add = myutil.vector_add
 local vector_sub = myutil.vector_sub
+
+local function bust_ghosts(entity)
+    -- Delete all router component ghosts overlapping the entity.
+    for _,ghost in ipairs(entity.surface.find_entities_filtered{
+        area = entity.bounding_box,
+        force = entity.force,
+        type = "entity-ghost"
+    }) do
+        if string.find(ghost.ghost_name, '^router%-') then
+            ghost.destroy()
+        end
+    end
+end
 
 local function relative_location(epos, orientation, data)
     local re = ({[0]=1, [0.25]=0, [0.5]=-1, [0.75]=0})[orientation]
@@ -290,6 +307,7 @@ local function create_router(prefix, entity, is_fast_replace, buffer)
         end
     end
     fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
+    bust_ghosts(entity)
 end
 
 local function create_smart_router(prefix, entity, is_fast_replace, buffer)
@@ -399,6 +417,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         end
     end
     fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
+    bust_ghosts(entity)
 end
 
 local function autoconnect_router_io(routers, chests)
@@ -585,6 +604,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
         })
     end
     fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
+    bust_ghosts(entity)
 end
 
 -- If not nil: we think this is a fast upgrade
@@ -636,6 +656,12 @@ local function on_died(ev, mined_by_robot)
                 child.destroy()
             end
         end
+    elseif entity and entity.type == "entity-ghost" and (
+        is_ghost_router_outer(entity)
+        or is_ghost_router_io(entity)
+        or is_ghost_router_smart(entity)
+    ) then
+        bust_ghosts(entity)
     end
 end
 

@@ -15,13 +15,13 @@ However, there are several important differences to splitters:
 * Splitters try to divide items fairly, but routers do not.
 * Splitters can send items to a backup port if the main one is blocked, but routers cannot.
 
-## Manual routers
+## Manual routers (currently disabled)
+
+**Manual routers are currently in a rougher state than smart ones, and are disabled.**
 
 Manual routers are controlled by a constant combinator on each port.  Every item signaled as >0 on that port will be accepted.  If the default signal ![default_signal_icon](resources/default.png) is set on a port, then it will also receive any items that are not accepted by other ports.  Using the "rotate" key on a port will toggle the default signal.
 
 Manual routers do not have any form of priority.  An item is either requested by a port, or it is not.
-
-Manual routers are currently in a rougher state than smart ones, and are disabled.
 
 ## Smart routers and I/O terminals
 
