@@ -40,7 +40,8 @@ def set_bulb_texture(texture):
 
 def set_paint(value):
     paintColor = mat.node_tree.nodes["RGB.001"].outputs[0]
-    paintColor.default_value = (value, value, value, 1)
+    if isinstance(value,tuple): paintColor.default_value = value
+    else: paintColor.default_value = (value, value, value, 1)
 
 # Render with black paint
 set_bulb_texture(clip)
@@ -78,6 +79,18 @@ bpy.ops.render.render(write_still=True)
 entrance_lights_visible(True)
 bpy.context.scene.render.filepath = "output/router_shadow_glow.png"
 bpy.ops.render.render(write_still=True)
+
+###################################
+# Thumbnail
+###################################
+shadow_plane_visible(False)
+set_paint((1,0,0,1))
+bpy.context.scene.render.filepath = "output/thumbnail.png"
+bpy.ops.render.render(write_still=True)
+
+###################################
+# Icons
+###################################
 
 # Remove the shadow plane, tie points and fine details
 def tie_points_visible(visible=True):
@@ -195,6 +208,8 @@ composite(width, imgData, 0, 0, composite_mask, "router_icon_white.png", "router
 delta.pixels = tuple(imgData)
 delta.update()
 delta.save(filepath="output/router_icon_mask.png")
+
+
 
 
 ###################################

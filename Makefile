@@ -1,6 +1,6 @@
 VERSION=0.0.4
 MODS_DIR="$(HOME)/Library/Application Support/factorio/mods"
-FILES= info.json changelog.txt *.lua prototypes graphics lualib locale README.md resources \
+FILES= thumbnail.png info.json changelog.txt *.lua prototypes graphics lualib locale README.md resources \
 	resources/default.png resources/leaf.png resources/connected.png resources/threshold.png
 BLENDER= graphics/router-entity.png
 
@@ -12,7 +12,7 @@ run:
 clean:
 	rm -fr build
 
-graphics/router-entity.png graphics/light.png graphics/router-icon.png graphics/router-icon-mask.png graphics/io-entity.png:\
+thumbnail.png graphics/router-entity.png graphics/light.png graphics/router-icon.png graphics/router-icon-mask.png graphics/io-entity.png:\
 		graphics-blender/router.blend graphics-blender/*.py graphics-blender/*.sh
 	mkdir -p graphics-blender/output
 	sh graphics-blender/render.sh
@@ -24,7 +24,7 @@ graphics/router-entity.png graphics/light.png graphics/router-icon.png graphics/
 	convert -crop 256x256+48+0 graphics-blender/output/router_icon_mask.png -resize 128x128 graphics/router-icon-mask.png
 	convert -crop 192x192+80+40 graphics-blender/output/io_North_icon_white.png -resize 128x128 graphics/io-icon.png
 	convert -crop 192x192+80+40 graphics-blender/output/io_icon_mask.png -resize 128x128 graphics/io-icon-mask.png
-
+	convert -crop 288x288+32+0 graphics-blender/output/thumbnail.png -resize 144x144 thumbnail.png
 
 resources/default.png: graphics/default.png
 	convert $< -crop 32x32+192+0 $@
