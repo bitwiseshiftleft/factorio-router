@@ -5,6 +5,7 @@ from mathutils import Euler, Matrix
 
 brightenPaintFactor = 1.5
 brightenLightFactor = 0.4
+brightenLampFactor = 1.3
 
 (width,height) = 416,320
 (lamp_width,lamp_height) = 32,32
@@ -175,13 +176,14 @@ delta.save(filepath="output/router.png")
 
 C = bpy.data.images.load(filepath="output/router_with_clips.png").pixels[:4*width*height]
 L = bpy.data.images.load(filepath="output/router_with_lamps.png").pixels[:4*width*height]
+blf = brightenLampFactor
 lamp = bpy.data.images.new("light", lamp_width, lamp_height, alpha=True)
 lamp.pixels = tuple(
     P
     for y in range(lamp_height)
     for x in range(lamp_width)
     for i in [4*(width*(y+lamp_offy)+x+lamp_offx)]
-    for P in (L[i+0],L[i+1],L[i+2],L[i+3]-C[i+3])
+    for P in (min(1,blf*L[i+0]),min(1,blf*L[i+1]),min(1,blf*L[i+2]),L[i+3]-C[i+3])
 )
 lamp.update()
 lamp.save(filepath="output/light.png")
