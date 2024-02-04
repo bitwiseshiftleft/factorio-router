@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.0.4:
+Version: 0.1.0:
 Date: 2024-02-04
 
   Breaking change: I/O points use the red wire to connect to a chest.  This is connected to a
