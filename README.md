@@ -2,7 +2,7 @@
 
 ## Development version
 
-Please note that this is an early development release, and is not close to completion.  In particular, the graphics are just placeholders (and have the wrong rendering angle), except maybe for the signals.
+Please note that this is a development release, and the mod may see significant changes, possibly requiring a rebuild of your router network.
 
 ## Introduction
 
@@ -76,13 +76,25 @@ The design of routers, and especially smart routers, has many limitations, both 
 * If you remove a router I/O point, then undoing the removal with control-Z won't restore its connections or its trim settings (but will restore its request list).
 * The feature that automatically connects router I/O points to chests triggers (when turned on in map settings) even when the router and chest were built from a blueprint where they're intentionally not connected.
 
+## Compatibility
+
+This mod should be compatible with:
+* Krastorio 2
+* Space Exploration
+* Pyanodon's Alternative Energy (and possibly other Py setups)
+* Bob's Logistics
+* SeaBlock
+* Industrial Revolution 3
+* Black Rubber Belts
+* Picker Dollies
+
 ## TODO list
 
 See TODO.md on the github.  Some notable todo items:
 * Better graphics
 * Bring manual routers back to the polish level of smart ones, and re-enable them.
 * Localization to languages other than English
-* Integration with K2 and SE (working but needs more testing), pY, IR, AB, 248k, EI, etc
+* Integration with 248k, EI, etc
 * Test and polish interactions
 * Allow manual routers to request items when negative instead of positive, in the style of LTN
 * Add routers with 2 lanes in each direction?  This is even more unbalanced but probably doesn't hurt UPS much.

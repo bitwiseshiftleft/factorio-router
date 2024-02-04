@@ -3,12 +3,14 @@ local M = {}
 local sizes = {"4x4"}
 -- Krastorio2 and SE support
 local have_se = data.raw.item["se-space-transport-belt"] ~= nil
+local have_ir3 = mods["IndustrialRevolution3"]
 local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
 local have_bobs = data.raw.item["turbo-transport-belt"] ~= nil
 local have_ae3 = (
   data.raw.technology["advanced-electronics-3"] ~= nil
   and data.raw.item["advanced-logistic-science-pack"] ~= nil
 ) 
+local have_py = mods["pyhightech"]
 
 -- Copied from miniloader
 local turbo_hex
@@ -41,7 +43,7 @@ M.table = {
     },
     ["fast-"] = {
         tint=util.color("e31717ff"),
-        prerequisites = { "logistics-2", "advanced-electronics" },
+        prerequisites = { "logistics-2", (have_py and "basic-electronics") or "advanced-electronics" },
         tech_costs = {
             count = 300,
             ingredients =
@@ -88,6 +90,21 @@ M.table = {
         }
     }
 }
+
+-- Py support
+if have_py then
+  table.insert(M.table["fast-"].tech_costs.ingredients, {"py-science-pack-2",1})
+  M.table["fast-"].tech_costs.count = 1800
+  M.table["express-"].tech_costs.count = 1000
+  M.table[""].tech_costs.count = 300
+end
+
+-- IR3 support
+if have_ir3 then
+  table.insert(M.table["fast-"].tech_costs.ingredients, {"chemical-science-pack",1})
+  M.table["fast-"].tech_costs.count = 400
+  M.table["express-"].tech_costs.count = 1000
+end
 
 -- Krastorio2 support
 if have_k2 and have_se then

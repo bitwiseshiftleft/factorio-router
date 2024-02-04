@@ -39,9 +39,6 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 
 ## Integration
 
-* Integrate with Py
-* Integrate with AngelBobs / SeaBlock
-* Integrate with IR3
 * Integrate with Exotic
 * Integrate with 248k
 * Integrate with Ultimate belts
