@@ -86,6 +86,15 @@ local connector_definitions = circuit_connector_definitions.create(
     { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
   }
 )
+local connector_definitions2 = circuit_connector_definitions.create(
+  universal_connector_template,
+  {
+    { variation = 24, main_offset = {-1.2,-0.5}, shadow_offset = {-1.2,-0.5}, show_shadow = false },
+    { variation = 24, main_offset = {0.5,0.4}, shadow_offset = {0.5,0.4}, show_shadow = false },
+    { variation = 24, main_offset = {1.5,-0.4}, shadow_offset = {1.5,-0.4}, show_shadow = false },
+    { variation = 24, main_offset = {0.2,0.5}, shadow_offset = {0.2,0.5}, show_shadow = false },
+  }
+)
 
 local hidden_combinator = {
     destructible = false,
@@ -534,6 +543,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             fast_replaceable_group = "router-"..space..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10,
+            circuit_wire_connection_points = connector_definitions2.points,
             se_allow_in_space = is_space,
             localised_description = {
                 "router-templates.io-template",

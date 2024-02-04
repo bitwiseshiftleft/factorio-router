@@ -286,7 +286,7 @@ delta.save(filepath="output/io.png")
 # Icons
 # Scale it a little x-taller
 sqz_mat = Matrix.Identity(4)
-sqz_fac = 1.4
+sqz_fac = 1.3
 sqz_mat[0][0] = sqz_fac
 sqz_mat[1][1] = 1
 for grpname in ["IOPoint", "Tunnel items"]:
