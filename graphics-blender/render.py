@@ -1,7 +1,7 @@
 import bpy
 from itertools import chain
 from math import pi
-from mathutils import Euler
+from mathutils import Euler, Matrix
 
 brightenPaintFactor = 1.5
 brightenLightFactor = 0.4
@@ -211,6 +211,16 @@ body_rivets_visible(True)
 set_bulb_texture(clip)
 
 rot_mat = Euler((0, 0, pi/2)).to_matrix().to_4x4()
+sqz_fac = 1.2
+sqz_mat = Matrix.Identity(4)
+sqz_mat[0][0] = sqz_fac
+sqz_mat[1][1] = 1/sqz_fac
+
+dont_scale = set()
+for grp in ["ConnCenter","ConnWest","ConnNorth"]:
+    for obj in bpy.data.collections.get(grp).all_objects:
+        dont_scale.add(obj)
+
 for dir in ["North","East","South","West"]:
     shadow_plane_visible(False)
     entrance_lights_visible(False)
@@ -237,9 +247,11 @@ for dir in ["North","East","South","West"]:
     grp = bpy.data.collections.get("IOPoint")
     for obj in grp.all_objects:
         obj.matrix_world = rot_mat @ obj.matrix_world
+        if obj not in dont_scale: obj.matrix_world = sqz_mat @ obj.matrix_world
     grp = bpy.data.collections.get("Tunnel items")
     for obj in grp.all_objects:
         obj.matrix_world = rot_mat @ obj.matrix_world
+        if obj not in dont_scale: obj.matrix_world = sqz_mat @ obj.matrix_world
 
 north_width = 320
 east_width = 256

@@ -575,7 +575,7 @@ local function create_smart_comms_io(
     -- Counts -1 on inbound stuff (connected by control)
     local inbound_neg   = builder:combi{op="*",R=-1,red={outreg}}
     local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green={outreg}}
-    local inbound_count = builder:combi{op=">",R=RESET,green={ITSELF,inbound_neg,inbound_and}}
+    local inbound_count = builder:combi{op=">",R=RESET,green={inbound_neg,inbound_and},red={ITSELF}}
 
     -- burst suppression
     local BURST_FACTOR = DEMAND_FACTOR/8
@@ -591,7 +591,7 @@ local function create_smart_comms_io(
     local demand1        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}}
     local demand2        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}} -- separate to not mix with inbound_count
     -- demand each item whose net supply is < 0
-    local supply_neg     = builder:combi{op="<",R=0,green={chest},red={inbound_count,internal_combi,demand1}}
+    local supply_neg     = builder:combi{op="<",R=0,red={chest},green={inbound_count,internal_combi,demand1}}
 
     -- Set one output control according to supply and demand
     -- The setting is MINUS_MAX for things the network demands more than us
@@ -606,8 +606,8 @@ local function create_smart_comms_io(
     --   MINUS_HMAX if MINUS_HMAX <= x < 0
     --   0 if x isn't in the combinator
     -- }
-    local mm_one         = builder:combi{op="OR", L=MINUS_HMAX,R=EACH,green={chest},red={demand2}}
-    local mm_two         = builder:combi{op="-",  L=MINUS_HMAX,R=EACH,green={chest},red={demand2}}
+    local mm_one         = builder:combi{op="OR", L=MINUS_HMAX,R=EACH,red={chest},green={demand2}}
+    local mm_two         = builder:combi{op="-",  L=MINUS_HMAX,R=EACH,red={chest},green={demand2}}
     builder:connect_outputs(mm_one,mm_two,GREEN)
 
     -- Scale threshold by DEMAND, and trim by -DEMAND

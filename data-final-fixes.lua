@@ -10,10 +10,12 @@ if mods["space-exploration"] then
     end
 end
 
-if data.raw.lamp["router-component-smart-port-lamp"] then
-    -- Done in here instead of in entities.lua so that Dectorio can't change it
-    data.raw.lamp["router-component-smart-port-lamp"].signal_to_color_mapping = {
-        {type="virtual",name="router-signal-link",color={r=0.7,b=1,g=0.8}},
-        {type="virtual",name="router-signal-leaf",color={r=0.5,b=0.4,g=1}}
-    }
+for _,d in ipairs{"router-component-smart-port-lamp","router-component-io-indicator-lamp"} do
+    if data.raw.lamp[d] then
+        -- Done in here instead of in entities.lua so that Dectorio can't change it
+        data.raw.lamp[d].signal_to_color_mapping = {
+            {type="virtual",name="router-signal-link",color={r=0.7,b=1,g=0.8}},
+            {type="virtual",name="router-signal-leaf",color={r=0.5,b=0.4,g=1}}
+        }
+    end
 end

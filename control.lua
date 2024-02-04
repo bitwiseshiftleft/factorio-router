@@ -421,7 +421,7 @@ local function autoconnect_router_io(routers, chests)
                 },
                 connectors = router.surface.find_entities_filtered{
                     area = router.bounding_box,
-                    name = "router-component-chest-contents-lamp"
+                    name = "router-component-io-connection-lamp"
                 }
             })
         end
@@ -445,7 +445,7 @@ local function autoconnect_router_io(routers, chests)
             end
             if do_connect then
                 for _,c in ipairs(router.connectors) do
-                    c.connect_neighbour{target_entity=chest,wire=circuit.GREEN}
+                    c.connect_neighbour{target_entity=chest,wire=circuit.RED}
                 end
             end
         end
@@ -463,12 +463,6 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
     local builder=circuit.Builder:new(entity.surface,entity.position,entity.force)
     local relative = relative_location(epos, entity.orientation, data)
     
-    local count_color_combi
-    if not is_fast_replace then
-        count_color_combi = builder:constant_combi{
-            {signal=circuit.COUNT,count=circuit.DEMAND_FACTOR}
-        }
-    end
     local input_belts = {}
     local output_belts = {}
     local my_orientation = entity.orientation*8
@@ -503,37 +497,37 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
         return
     end
 
-    -- TODO: auto-connect on place
-    local chest_inventory = builder:create_or_find_entity{
-        name = "router-component-chest-contents-lamp",
-        direction = my_orientation,
-        position = relative({x=-n_lanes-0.3,y=0.2})
-    }
-    chest_inventory.get_or_create_control_behavior().circuit_condition = {
-        condition = {comparator="=",first_signal=circuit.ZERO,second_signal=circuit.ZERO}
-    }
-    chest_inventory.operable = false
     local threshold_trim = builder:create_or_find_entity{
         name = "router-component-port-trim-combinator",
-        direction = my_orientation,
-        position = relative({x=n_lanes+0.3,y=0.2})
+        -- direction = my_orientation,
+        position = relative({x=n_lanes-0.3,y=0})
     }
+    threshold_trim.direction = 0.0 -- This is so that we can displace its selection box
     threshold_trim.get_or_create_control_behavior().set_signal(1,{signal=circuit.THRESHOLD,count=10})
     local port = builder:create_or_find_entity{
-        name = "router-component-smart-port-lamp",
+        name = "router-component-io-connection-lamp",
         direction = my_orientation,
         position = relative({x=0,y=0})
     }
-    local control = port.get_or_create_control_behavior()
+
+    -- indicator lamp for condition of port
+    local count_color_combi = builder:constant_combi{
+        {signal=circuit.COUNT,count=circuit.DEMAND_FACTOR}
+    }
+    local indicator = builder:create_or_find_entity{
+        name = "router-component-io-indicator-lamp",
+        direction = my_orientation,
+        position = relative({x=0,y=0})
+    }
+    indicator.connect_neighbour{target_entity=port,wire=circuit.GREEN}
+    indicator.connect_neighbour{target_entity=count_color_combi,wire=circuit.RED}
+    local control = indicator.get_or_create_control_behavior()
     control.use_colors = true
     control.circuit_condition = {condition = {comparator="!=",first_signal=circuit.COUNT,second_signal=circuit.LEAF}}
-    if not is_fast_replace then
-        port.connect_neighbour{wire=circuit.RED, target_entity=count_color_combi}
-    end
 
     -- Create the comms and port control network
     local comm_circuit = circuit.create_smart_comms_io(
-        prefix, entity, builder,chest_inventory,demand,threshold_trim,my_orientation
+        prefix, entity, builder,port,demand,threshold_trim,my_orientation
     )
     comm_circuit.outreg.connect_neighbour{wire=circuit.GREEN,source_circuit_id=circuit.OUTPUT,target_entity=port}
 
@@ -722,6 +716,12 @@ local function on_rotated(ev)
                 end
             end
         end
+    elseif entity and (
+        entity.name == "router-component-port-trim-combinator"
+        or enty.ghost_name == "router-component-port-trim-combinator") then
+        -- Forbid rotation, so that the offset bounding box still works
+        entity.direction = 0
+        entity.orientation = 0
     end
 end
 
@@ -786,7 +786,8 @@ local function disable_picker_dollies()
             end
         end
         local others = {"port-control-combinator", "contents-indicator-lamp", "output-indicator-lamp",
-            "chest-contents-lamp", "is-default-lamp", "port-trim-combinator", "smart-port-lamp"}
+            "is-default-lamp", "port-trim-combinator", "smart-port-lamp",
+            "smart-io-indicator-lamp"}
         for _,other in ipairs(others) do
             remote.call("PickerDollies", "add_blacklist_name", "router-component-"..other, true)
         end

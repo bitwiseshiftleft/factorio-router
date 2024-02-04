@@ -79,10 +79,10 @@ if protos.enable_smart then
             stack_size = 1,
         }, {
             type = "item",
-            name = "router-component-chest-contents-lamp",
+            name = "router-component-io-connection-lamp",
             icon = "__router__/graphics/light.png", -- TODO make graphics
             icon_size = 32,
-            place_result = "router-component-chest-contents-lamp",
+            place_result = "router-component-io-connection-lamp",
             stack_size = 1,
         },
     })

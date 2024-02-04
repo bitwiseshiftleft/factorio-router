@@ -51,28 +51,28 @@ local function mk_io_sprites(tint)
     local ew = {filename=file,priority="very-low",width=256,height=256,scale=0.5,frame_count=1}
     return {
         south = {layers = {
-            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=0}},
-            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=160,tint=tint}},
-            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=320,draw_as_shadow=true}},
-            util.merge{ns,{shift=util.by_pixel(16,-8),x=0,y=480,draw_as_glow=true}},
+            util.merge{ns,{shift=util.by_pixel(16,-18),x=0,y=0}},
+            util.merge{ns,{shift=util.by_pixel(16,-18),x=0,y=160,tint=tint}},
+            util.merge{ns,{shift=util.by_pixel(16,-18),x=0,y=320,draw_as_shadow=true}},
+            util.merge{ns,{shift=util.by_pixel(16,-18),x=0,y=480,draw_as_glow=true}},
         }},
         north = {layers = {
-            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=0}},
-            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=160,tint=tint}},
-            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=320,draw_as_shadow=true}},
-            util.merge{ns,{shift=util.by_pixel(16,0),x=320,y=480,draw_as_glow=true}},
+            util.merge{ns,{shift=util.by_pixel(16,-10),x=320,y=0}},
+            util.merge{ns,{shift=util.by_pixel(16,-10),x=320,y=160,tint=tint}},
+            util.merge{ns,{shift=util.by_pixel(16,-10),x=320,y=320,draw_as_shadow=true}},
+            util.merge{ns,{shift=util.by_pixel(16,-10),x=320,y=480,draw_as_glow=true}},
         }}, 
         east = {layers = {
-            util.merge{ew,{x=896,y=128}},
-            util.merge{ew,{x=896,y=384,tint=tint}},
-            util.merge{ew,{x=640,y=128,draw_as_shadow=true}},
-            util.merge{ew,{x=640,y=384,draw_as_glow=true}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=896,y=128}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=896,y=384,tint=tint}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=640,y=128,draw_as_shadow=true}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=640,y=384,draw_as_glow=true}},
         }}, 
         west = {layers = {
-            util.merge{ew,{x=1408,y=128}},
-            util.merge{ew,{x=1408,y=384,tint=tint}},
-            util.merge{ew,{x=1152,y=128,draw_as_shadow=true}},
-            util.merge{ew,{x=1152,y=384,draw_as_glow=true}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=1408,y=128}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=1408,y=384,tint=tint}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=1152,y=128,draw_as_shadow=true}},
+            util.merge{ew,{shift=util.by_pixel(0,-10),x=1152,y=384,draw_as_glow=true}},
         }}, 
     }
 end
@@ -201,7 +201,6 @@ local interface_lamp_proto = {
     type = "lamp",
     flags = { "placeable-off-grid", "player-creation", "not-on-map" },
     collision_box = {{-0.45,-0.45},{0.45,0.45}},
-    selection_box = {{-0.5,-1.26},{0.5,-0.26}},
     collision_mask = {},
     allow_copy_paste = true,
     selectable_in_game = true,
@@ -210,10 +209,6 @@ local interface_lamp_proto = {
     minable = nil,
     energy_usage_per_tick = "1J",
     circuit_wire_max_distance = 16,
-    circuit_wire_connection_point = {
-        wire = { red={0,-0.64}, green={0,-0.64} },
-        shadow = { red={0.08,-0.56}, green={0.08,-0.56} },
-    },
     glow_size = 0
 }
 
@@ -325,6 +320,10 @@ if protos.enable_manual then
 end
 
 if protos.enable_smart then
+    local trimpoint = {
+        wire = { red={0,-0.40}, green={0,-0.35} },
+        shadow = { red={0.08,-0.35}, green={0.08,-0.30} },
+    }
     data:extend{
         -- Smart port control lamp
         util.merge{interface_lamp_proto,{
@@ -336,17 +335,37 @@ if protos.enable_smart then
             --     {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
             --     {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
             -- },
+            selection_box = {{-0.5,-1.26},{0.5,-0.26}},
+            circuit_wire_connection_point = {
+                wire = { red={0,-0.64}, green={0,-0.64} },
+                shadow = { red={0.08,-0.56}, green={0.08,-0.56} },
+            },
             fast_replaceable_group = "router-component-smart-port-lamp"
         }},
-        -- Input for the chest contents
+        -- IO port lamp.  Invisible but can be interacted with.
         util.merge{interface_lamp_proto,{
-            name = "router-component-chest-contents-lamp",
-            circuit_wire_max_distance = 4,
-            fast_replaceable_group = "router-component-chest-contents-lamp",
-            selection_box = {{-0.35,-0.35},{0.35,0.35}},
-            always_on = true,
             picture_off = util.empty_sprite(1),
-            picture_on = util.empty_sprite(1), -- TODO: add a picture_on?
+            picture_on = util.empty_sprite(1),
+            name = "router-component-io-connection-lamp",
+            fast_replaceable_group = "router-component-io-connection-lamp",
+            selection_box = {{-0.5,-1.1},{0.5,-0.1}},
+            circuit_wire_connection_point = {
+                wire = { red={0,-0.40}, green={0,-0.35} },
+                shadow = { red={0.08,-0.35}, green={0.08,-0.30} },
+            },
+        }},
+        -- IO indicator lamp.  Visible but cannot be interacted with
+        util.merge{interface_lamp_proto,{
+            name = "router-component-io-indicator-lamp",
+            selectable_in_game = false,
+            draw_circuit_wires=false,
+            picture_off = util.merge{light_off,{shift=util.by_pixel(0,-21)}},
+            picture_on = util.merge{light_on,{apply_runtime_tint=true,shift=util.by_pixel(0,-21)}},
+            -- Done in data-final-fixes so that Dectorio and similar can't change it
+            -- signal_to_color_mapping = {
+            --     {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
+            --     {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
+            -- },
         }},
         -- TODO: make sprites for this
         util.merge{interface_lamp_proto,{
@@ -359,10 +378,13 @@ if protos.enable_smart then
         util.merge{control_combinator_proto,{
             type = "constant-combinator",
             name = "router-component-port-trim-combinator",
-            selection_box = {{-0.35,-0.35},{0.35,0.35}},
+            selection_box = {{-0.25,-0.65},{0.25,-0.15}},
             item_slot_count = 20,
             sprites = empty_sheet_4,
-            circuit_wire_connection_points = connector_definitions.points,
+            rotatable = false,
+            circuit_wire_connection_points = {
+                north=trimpoint, south=trimpoint, east=trimpoint, west=trimpoint
+            },
             circuit_connector_sprites = connector_definitions.sprites,
             circuit_wire_max_distance = 9,
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
