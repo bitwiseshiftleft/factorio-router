@@ -718,7 +718,7 @@ local function on_rotated(ev)
         end
     elseif entity and (
         entity.name == "router-component-port-trim-combinator"
-        or enty.ghost_name == "router-component-port-trim-combinator") then
+        or (entity.type == "entity-ghost" and entity.ghost_name == "router-component-port-trim-combinator")) then
         -- Forbid rotation, so that the offset bounding box still works
         entity.direction = 0
         entity.orientation = 0

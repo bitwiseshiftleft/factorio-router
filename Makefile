@@ -22,6 +22,8 @@ graphics/router-entity.png graphics/light.png graphics/router-icon.png graphics/
 	# Extract the icon version, which has the lights present
 	convert -crop 256x256+48+0 graphics-blender/output/router_icon_white.png -resize 128x128 graphics/router-icon.png
 	convert -crop 256x256+48+0 graphics-blender/output/router_icon_mask.png -resize 128x128 graphics/router-icon-mask.png
+	convert -crop 192x192+80+40 graphics-blender/output/io_North_icon_white.png -resize 128x128 graphics/io-icon.png
+	convert -crop 192x192+80+40 graphics-blender/output/io_icon_mask.png -resize 128x128 graphics/io-icon-mask.png
 
 
 resources/default.png: graphics/default.png

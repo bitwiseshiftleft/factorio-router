@@ -80,7 +80,7 @@ bpy.ops.render.render(write_still=True)
 
 # Remove the shadow plane, tie points and fine details
 def tie_points_visible(visible=True):
-    for grp in ["TiePoints","ConnNorth","ConnWest","ConnCenter"]:
+    for grp in ["TiePoints","ConnNorth","ConnWest","ConnCenter","Wires"]:
         tie_points = bpy.data.collections[grp]
         tie_points.hide_viewport = tie_points.hide_render = not visible
 
@@ -92,8 +92,9 @@ def rotated_tie_points(direction = None):
 
 
 def body_rivets_visible(visible=True):
-    o = bpy.context.scene.objects.get("BodyRivets")
-    o.hide_viewport = o.hide_render = not visible
+    for obj in ["BodyRivets","IoRivets"]:
+        o = bpy.context.scene.objects.get(obj)
+        o.hide_viewport = o.hide_render = not visible
 
 shadow_plane_visible(False)
 entrance_lights_visible(False)
@@ -244,14 +245,11 @@ for dir in ["North","East","South","West"]:
     bpy.ops.render.render(write_still=True)
 
     # Rotate 90 degrees
-    grp = bpy.data.collections.get("IOPoint")
-    for obj in grp.all_objects:
-        obj.matrix_world = rot_mat @ obj.matrix_world
-        if obj not in dont_scale: obj.matrix_world = sqz_mat @ obj.matrix_world
-    grp = bpy.data.collections.get("Tunnel items")
-    for obj in grp.all_objects:
-        obj.matrix_world = rot_mat @ obj.matrix_world
-        if obj not in dont_scale: obj.matrix_world = sqz_mat @ obj.matrix_world
+    for grpname in ["IOPoint", "Tunnel items"]:
+        grp = bpy.data.collections.get(grpname)
+        for obj in grp.all_objects:
+            obj.matrix_world = rot_mat @ obj.matrix_world
+            if obj not in dont_scale: obj.matrix_world = sqz_mat @ obj.matrix_world
 
 north_width = 320
 east_width = 256
@@ -284,3 +282,34 @@ for (dir,offo,offy) in [("East",2*north_width,east_ox),("West",2*north_width+2*e
 delta.pixels = tuple(imgData)
 delta.update()
 delta.save(filepath="output/io.png")
+
+# Icons
+# Scale it a little x-taller
+sqz_mat = Matrix.Identity(4)
+sqz_fac = 1.4
+sqz_mat[0][0] = sqz_fac
+sqz_mat[1][1] = 1
+for grpname in ["IOPoint", "Tunnel items"]:
+    grp = bpy.data.collections.get(grpname)
+    for obj in grp.all_objects:
+        obj.matrix_world = sqz_mat @ obj.matrix_world
+shadow_plane_visible(False)
+entrance_lights_visible(False)
+tie_points_visible(False)
+body_rivets_visible(False)
+# In white...
+set_paint(1)
+bpy.context.scene.render.filepath = "output/io_North_icon_white.png"
+bpy.ops.render.render(write_still=True)
+
+# And in black
+set_paint(0)
+bpy.context.scene.render.filepath = "output/io_North_icon_black.png"
+bpy.ops.render.render(write_still=True)
+
+delta = bpy.data.images.new("io_icon_mask", width, height, alpha=True)
+imgData = [0]*(4*width*height)
+composite(width, imgData, 0, 0, composite_mask, "io_North_icon_white.png", "io_North_icon_black.png" )
+delta.pixels = tuple(imgData)
+delta.update()
+delta.save(filepath="output/io_icon_mask.png")

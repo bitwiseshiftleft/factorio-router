@@ -117,7 +117,6 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 * * Gamma correction or whatever for the glow
 * * Make lamps not as flat
 
-* Make graphics for I/O ports
 * Make graphics for regular routers
 * Make icons for the wire connection points
 * Make lamp glows

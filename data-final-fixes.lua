@@ -14,7 +14,7 @@ for _,d in ipairs{"router-component-smart-port-lamp","router-component-io-indica
     if data.raw.lamp[d] then
         -- Done in here instead of in entities.lua so that Dectorio can't change it
         data.raw.lamp[d].signal_to_color_mapping = {
-            {type="virtual",name="router-signal-link",color={r=0.7,b=1,g=0.8}},
+            {type="virtual",name="router-signal-link",color={r=0.6,b=1,g=0.75}},
             {type="virtual",name="router-signal-leaf",color={r=0.5,b=0.4,g=1}}
         }
     end
