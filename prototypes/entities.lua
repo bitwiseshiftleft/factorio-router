@@ -193,7 +193,7 @@ local hidden_widget_proto = {
 -- Prototype base for interface combinators
 local control_combinator_proto = {
     type = "constant-combinator",
-    flags = { "placeable-off-grid", "player-creation", "not-on-map" },
+    flags = { "placeable-off-grid", "player-creation", "not-on-map", "hide-alt-info" },
     destructible = false,
     max_health = 1,
 	minable = nil,

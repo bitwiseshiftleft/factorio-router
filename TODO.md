@@ -109,6 +109,7 @@ I could consider enabling this by creating a "routable belt/underneathie" that's
 * Make real graphics for smart routers
 * * Redesign to look more like splitters with wires between them??
 * * More detail, more contrast
+* * Maybe move the red wire on the I/O port, so that it doesn't look like it's continuing through the connection point.
 * * Is there a way to make them a little shorter without ruining the orthographic bit?
 * * Gamma correction or whatever for the glow
 * * Make lamps not as flat

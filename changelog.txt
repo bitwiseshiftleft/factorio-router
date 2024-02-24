@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.1:
+Date: 2024-02-25
+
+  Threshold trim widget no longer shows icons in alt mode
+  Make blue light slightly more blue.
+  Add missing locale string for threshold.
+  
+---------------------------------------------------------------------------------------------------
 Version: 0.1.0:
 Date: 2024-02-04
 
