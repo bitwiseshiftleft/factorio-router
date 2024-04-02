@@ -25,6 +25,10 @@ restrictive.
 * Test fast-replacing ghosts
 * Remove unused icons
 * Proper packaging for upload to mod portal
+* Prevent belt-dragging from reversing the (otherwise uninteractable) input/output belts of IO points and routers.
+* Make routers also function as a power pole?
+
+Consider a "ribbon cable" mod?
 
 Refactor lua slightly
 * Move subroutines out of control.lua
@@ -50,6 +54,7 @@ Implement smart I/O terminals
 * Suppress autoconnection in some cases?  Eg when a blueprint with both the chest and router is created
 * Undo construct -> deconstruct; undo deconstruct -> construct
 * Test throughput when a terminal is connected to another terminal
+* Request only if > some amount, maybe with hysteresis?
 
 Buffered routers?
 * These might set the default signal?
