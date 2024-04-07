@@ -39,6 +39,7 @@ local router_component_table = {
     lamp_distance = 0.86
 }
 
+local function is_router_belt(entity) return string.find(entity.name, '^router%-component%-.*belt$') ~= nil end
 local function is_router_outer(entity) return string.find(entity.name, '^router%-.*router$') ~= nil end
 local function is_router_smart(entity) return string.find(entity.name, '^router%-.*smart$') ~= nil end
 local function is_router_io(entity)    return string.find(entity.name, '^router%-.*io$') ~= nil end
@@ -200,16 +201,18 @@ local function create_router(prefix, entity, is_fast_replace, buffer)
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        input_ports[i].rotatable = false
     end
     -- Create the extra input belts
     for _,ipt in ipairs(data.xbelts) do
-        entity.surface.create_entity{
+        local extra = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(ipt.b),
             direction = (my_orientation + ipt.d)%8,
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        extra.rotatable = false
     end
 
     local passbands
@@ -236,6 +239,7 @@ local function create_router(prefix, entity, is_fast_replace, buffer)
             force = entity.force,
             fast_replace = is_fast_replace
         })
+        output_belt.rotatable = false
 
         if not is_fast_replace then
             -- Create indicator inserters
@@ -331,13 +335,14 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
 
     -- Create the input and output belts, and lamps
     for _,ipt in ipairs(data.xbelts) do
-        entity.surface.create_entity{
+        local xb = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(ipt.b),
             direction = (my_orientation + ipt.d)%8,
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        xb.rotatable = false
     end
     for i,ipt in ipairs(data.input) do
         input_belts[i] = entity.surface.create_entity{
@@ -347,6 +352,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        input_belts[i].rotatable = false
     end
     for i,opt in ipairs(data.output) do
         output_belts[i] = entity.surface.create_entity{
@@ -356,6 +362,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        output_belts[i].rotatable = false
 
         local port = builder:create_or_find_entity{
             name = "router-component-smart-port-lamp",
@@ -494,6 +501,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
             fast_replace = is_fast_replace,
             type = "output"
         }
+        output_belts[i].rotatable = false
         input_belts[i] = entity.surface.create_entity{
             name = "router-component-" .. prefix .. "underground-belt",
             position = relative({x=0.5-i,y=0}),
@@ -502,6 +510,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
             fast_replace = is_fast_replace,
             type = "input"
         }
+        input_belts[i].rotatable = false
     end
 
     -- Fast replace: all the electronics should exist: we're done here!
@@ -674,6 +683,8 @@ local function on_built(ev)
     local entity = ev.created_entity
     if entity == nil then entity = ev.entity end
 
+    -- game.print("build " .. entity.name.." "..tostring(entity.direction).." o "..tostring(entity.orientation) .. " @" .. entity.position.y)
+
     local is_fast_replace = false
     if fast_replace_state and fast_replace_state.tick == ev.tick and entity
         and fast_replace_state.position.x == entity.position.x and fast_replace_state.position.y == entity.position.y
@@ -693,7 +704,10 @@ local function on_built(ev)
         local prefix = string.gsub(entity.name, "^router%-.x.%-", "")
         prefix = string.gsub(prefix, "io$", "")
         create_smart_router_io(prefix, entity, is_fast_replace, buffer)
-    elseif entity and entity.type ~= "entity-ghost" and entity.type == "container" and settings.global["router-auto-connect"].value then
+    elseif entity and entity.type ~= "entity-ghost" and (
+            entity.type == "container" or entity.type == "logistic-container"
+            or entity.type == "infinity-container" or entity.type == "linked-container"
+    ) and settings.global["router-auto-connect"].value then
         -- Look for router IO points in a 1x1 wider radius around this
         local box = {
             left_top={
@@ -715,6 +729,8 @@ end
 
 local function on_rotated(ev)
     local entity = ev.entity
+    -- game.print(entity.name.." "..tostring(entity.direction).." o "..tostring(entity.orientation)
+    --     .. " p " .. tostring(ev.previous_direction))
     -- Rotating port control combinators: toggle whether the combinator sets DEFAULT
     if entity and entity.type ~= "entity-ghost" and entity.name == "router-component-port-control-combinator" then
         entity.orientation = 0 -- Nope, rotate it back
@@ -746,6 +762,9 @@ local function on_rotated(ev)
         -- Forbid rotation, so that the offset bounding box still works
         entity.direction = 0
         entity.orientation = 0
+    -- elseif entity and entity.type ~= "entity-ghost" and is_router_belt(entity) then
+        -- game.print("is belt")
+        -- entity.direction = ev.previous_direction
     end
 end
 

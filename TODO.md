@@ -5,6 +5,7 @@
 * Tallow: constrain the operation of the network to make it more of a puzzle.
 * For example, could require the network to be a directed or undirected tree, or a DAG.
 * VVG: consider contraining to a directed tree or similar because it's better for UPS.
+* Serjevski: diagnostic tools; mark why a route is blocked (is the IO terminal trying to push things into a container but it's full?); change graphics to have double arrows on the routers; route tracing tool.
 
 Another possibility to constrain the network more: instead of being completely free,
 there can only be one static requester for each resource (per network). This could either
@@ -25,8 +26,9 @@ restrictive.
 * Test fast-replacing ghosts
 * Remove unused icons
 * Proper packaging for upload to mod portal
-* Prevent belt-dragging from reversing the (otherwise uninteractable) input/output belts of IO points and routers.
 * Make routers also function as a power pole?
+
+Prevent belt-dragging from reversing the (otherwise uninteractable) input/output belts of IO points and routers.  This is caused by a Factorio bug: belt-dragging doesn't respect the entity's rotatable flag, and doesn't fire on_player_rotated_entity.  However, it may be possible to hack it by watching for on_pre_build{created_by_moving=true}, checking if there is a router's underneathie under the event, and then checking back one tick later and undoing the change.  Kind of a pain tho.
 
 Consider a "ribbon cable" mod?
 

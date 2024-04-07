@@ -39,7 +39,7 @@ Smart routers use a fancy communication protocol over the green wires.  It is re
 Since the circuit network doesn't update instantaneously, it is possible that slightly too many of an item will be sent.  Reducing this problem is part of the purpose of the request threshold ![threshold_signal_igon](resources/threshold.png).  If extra items are sent, they would normally have nowhere to go, and so would clog up the network until someone requests them.  However, extra items can be sent to
 *buffer terminals*.  Buffer terminals additionally request all types of resources that aren't requested elsewhere, by using the default signal ![default_signal_icon](resources/default.png).  Just set ![default_signal_icon](resources/default.png) on a terminal to some positive value (say, 100) and any extra items will be routed to that terminal.
 
-I/O terminals automatically connect to adjacent chests, unless this is disabled in the map settings.
+I/O terminals automatically connect to adjacent chests (including logistics chests, linked chests and infinity chests, at least if those objects support connections), unless this is disabled in the map settings.  They should be connected with a red wire on the chest, connecting to the port/chest connection pole on the terminal (that's the one with the big red/green lightbulb on top).
 
 ## Balancing
 
@@ -51,7 +51,7 @@ Each router contains several invisible very fast filter inserters, much like wit
 
 Smart routers use extensive circuitry.  Each green wire carries the following signals:
 
-* For each item, the number of those items being put on the belt in that tick.  This must remain less than 64.
+* For each item, the number of those items being put on the belt in that tick.  This must remain less than 64.  (In Factorio 2, this part will probably be removed, to be replaced by the ability to read the full incoming belt contents, assuming that has low enough UPS cost.)
 * For each item, 64 times a demand factor for that item.
 * The connected signal ![connected_signal_icon](resources/connected.png) is set to -64 by each smart router.  So if it's -64 then one smart router is connected, and if it's -32 then two smart routers are connected.
 * The leaf signal ![leaf_signal_icon](resources/leaf.png) is set to 64 by each leaf (requester and/or provider) port.  This is currently only used to turn the port indicator light blue.

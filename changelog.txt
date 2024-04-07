@@ -1,4 +1,19 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.2:
+Date: 2024-04-07
+
+  Make extra sure that router and I/O terminal belts/undergrounds are marked as not rotatable in
+  Lua ... but it currently ignores this when flipping underneathies using belt dragging.  :-(
+  So if you flip a belt by accident, you'll have to belt-drag in the other direction to flip it
+  back.
+
+  Minor changes thanks to Serjevski (who also suggested some bigger changes but I haven't
+  had time to try implementing them):
+
+  Automatically connect to logistic-chest, linked-chest and infinity-chest.
+  Documentation updated to describe the chest connections.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.1:
 Date: 2024-02-25
 
