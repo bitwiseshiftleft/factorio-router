@@ -5,7 +5,7 @@
 * Tallow: constrain the operation of the network to make it more of a puzzle.
 * For example, could require the network to be a directed or undirected tree, or a DAG.
 * VVG: consider contraining to a directed tree or similar because it's better for UPS.
-* Serjevski: diagnostic tools; mark why a route is blocked (is the IO terminal trying to push things into a container but it's full?); change graphics to have double arrows on the routers; route tracing tool.
+* Serjevski: diagnostic tools; mark why a route is blocked (is the IO terminal trying to push things into a container but it's full?); change graphics to have double arrows on the routers; route tracing tool.  Add a signal that forces everything to go to buffers instead of wherever it's going to (possibly bottlenecked); notification that something is stuck in the router.
 
 Another possibility to constrain the network more: instead of being completely free,
 there can only be one static requester for each resource (per network). This could either
@@ -67,6 +67,10 @@ Add a reset switch somehow in case the system goes haywire
 
 Make the routers leak a little less: signals don't propagate far enough.
 
+Consider allowing negative demand to propagate, preventing oversupply.
+
+Remember who last demanded an item, so that if excess is supplied it will end up in the right place?
+
 Try to make the signaling more stable if possible, so that the network can quiesce.
 
 Wider smart routers?
@@ -99,6 +103,8 @@ Consider not connecting with a single wire, but with several, automatically usin
 * Con: need on-build handler to trace the belts for connect/disconnect
 * Con: need complicated circuit reworking to connect things, turn leaf scaling on/off etc.
 * Con: opaque and even cheatier
+
+If automagically connecting things, consider having a global supply/demand for each resource, to further reduce the chance that too much of it enters the network.
 
 I could consider enabling this by creating a "routable belt/underneathie" that's the same as normal belts, but which must be used to connect routers.  This would both add to flavor and possibly graphics, and help the Lua avoid triggering too much on regular belts.
 
