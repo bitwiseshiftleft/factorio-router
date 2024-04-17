@@ -32,7 +32,7 @@ The screenshot shows a simple network which uses smart routers to direct the man
 
 Smart routers and I/O terminals are designed to form a network, routing items from terminals that provide them to terminals that request them.  The routers and the terminals form a network connected by green wires.  When two smart routers are connected together, their port lights will turn from red to green, and when a router port is connected to a terminal, the router's port light will turn blue.
 
-Each terminal has a set of items it requests.  You can adjust this using the constant combinator that's integrated into the terminal, or through the circuit network.  The terminal can also set the threshold at which it starts providing items, which is useful for adjusting its priority.
+Each terminal has a set of items it requests.  You can adjust this using the constant combinator that's integrated into the terminal, or through the circuit network.  External request signals must be connected to terminal *body* strictly by green wire.  The terminal can also set the threshold at which it starts providing items, which is useful for adjusting its priority.
 
 Smart routers use a fancy communication protocol over the green wires.  It is recommended not to add your own signals to these.  The routers also track how many items have been from one smart router to another, so that they don't send too many.  It is therefore important not to divert these items, either with splitters or by picking them up off the belt.
 
