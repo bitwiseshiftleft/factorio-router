@@ -27,6 +27,7 @@ restrictive.
 * Remove unused icons
 * Proper packaging for upload to mod portal
 * Make routers also function as a power pole?
+* Add filters to event listeners, for reduced UPS cost
 
 Prevent belt-dragging from reversing the (otherwise uninteractable) input/output belts of IO points and routers.  This is caused by a Factorio bug: belt-dragging doesn't respect the entity's rotatable flag, and doesn't fire on_player_rotated_entity.  However, it may be possible to hack it by watching for on_pre_build{created_by_moving=true}, checking if there is a router's underneathie under the event, and then checking back one tick later and undoing the change.  Kind of a pain tho.
 

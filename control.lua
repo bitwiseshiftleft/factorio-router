@@ -566,6 +566,10 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
                 position = input_belts[i].position,
                 force = entity.force
             })
+            if ins.filter_slot_count > 0 then
+                -- FilterInsertersBegone, or some other mod, has replaced it with a filter inserter
+                ins.inserter_filter_mode = "blacklist"
+            end
             ins.pickup_position = input_belts[i].position
             ins.inserter_stack_size_override = 1 -- TODO: but perf...
             ins.drop_position = relative({x=0.5-i,y=1}) -- box
