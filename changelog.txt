@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.4:
+Date: 2024-07-xx
+
+  Adjust the routing algorithm to avoid a condition that it routes too aggressively to a near
+  requester, starving a further one.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.1.3:
 Date: 2024-05-03
 

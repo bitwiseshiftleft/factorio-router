@@ -4,8 +4,12 @@ local M = {}
 
 
 -- Wire definitions
-local RED = defines.wire_type.red
-local GREEN = defines.wire_type.green
+local RED    = defines.wire_connector_id.circuit_red
+local GREEN  = defines.wire_connector_id.circuit_green
+local IRED   = defines.wire_connector_id.combinator_input_red
+local IGREEN = defines.wire_connector_id.combinator_input_green
+local ORED   = defines.wire_connector_id.combinator_output_red
+local OGREEN = defines.wire_connector_id.combinator_output_green
 
 -- Signal definitions
 local EACH = {type="virtual",name="signal-each"}
@@ -14,8 +18,8 @@ local EVERYTHING = {type="virtual",name="signal-everything"}
 local THRESHOLD = {type="virtual",name="router-signal-threshold"}
 local DEFAULT = {type="virtual",name="router-signal-default"}
 local ZERO = {type="virtual",name="signal-0"}
-local INPUT = defines.circuit_connector_id.combinator_input
-local OUTPUT = defines.circuit_connector_id.combinator_output
+-- local INPUT = defines.circuit_connector_id.combinator_input
+-- local OUTPUT = defines.circuit_connector_id.combinator_output
 
 -- TODO: make new virtual signal for reset
 -- (if I'm going to use it at all)
@@ -350,45 +354,42 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
 
     -- Decay depends on DECAY_FACTOR / DEMAND_FACTOR.  Tested only with 1.
     local DECAY_FACTOR  = 1
-    local MINUS_BIG = -0x40000000
+    local MINUS_BIG     = -0x40000000
+    -- local MINUS_BIGGER  = -0x80000000
 
     -----------------------------------------
     -- Construct the comms and control
     -----------------------------------------
-    -- Create COUNT = DECAY_FACTOR and COUNT = (ports+1)*DECAY_FACTOR combinators
-    local const_count_one  = builder:constant_combi({{signal=COUNT,count=DECAY_FACTOR}})
-    local const_nega_ports = builder:constant_combi({
-        {signal=COUNT,count=-#(output_belts)},
-        {signal=LEAF,count=-#(output_belts)*DEMAND_FACTOR}}
-    )
+    -- Create COUNT = +1 acombinator
+    local NPORTS = #(output_belts)
+    local count_plus_one = builder:constant_combi{{signal=COUNT,count=1}}
+    local FUDGE = 2*DECAY_FACTOR
 
-    -- The above would give -(N+ports+1) for the denominator but we actually want -(N+empty ports+1)
-    local n_plus_k_shim    = builder:combi{blinken=true,op="/",L=COUNT,R=-DEMAND_FACTOR,out=COUNT,red={const_nega_ports}}
+    -- Term to cancel reflections
+    -- Driven off the first output buffer
+    local posi_outbound_tomean     = builder:combi{blinken=true,op="/",R=2*DEMAND_FACTOR/NPORTS} -- cancels the half-effect of outbound on inbound
+    local posi_outbound            = builder:combi{blinken=true,op="/",R=DEMAND_FACTOR} -- cancels the full effect of outbound on inbound, for >0 test
+    local posi_outbound_to_rawmean = builder:combi{blinken=true,op="/",R=DEMAND_FACTOR/NPORTS} -- cancels the full effect of all outbounds on mean, for >mean test
+    builder:connect_inputs(posi_outbound,posi_outbound_tomean,RED)
+    builder:connect_inputs(posi_outbound,posi_outbound_to_rawmean,RED)
 
-    -- Experimental: average wih a factor of the previous value.  This makes the network
-    -- slower to update but might help it quiesce?
-    local lag = builder:combi{blinken=true,op="/",R=2,red={const_nega_ports,n_plus_k_shim},green={ITSELF}}
+    -- Construct combo nega_average = (sum each/2 + itself) / (#ports/2 + 1), minus a decay term
+    local nega_average = builder:combi{blinken=true,op="/",R=NPORTS/2+1,green={posi_outbound_tomean,ITSELF}}
+    local nega_average_decay = builder:combi{blinken=true,op="/",R=-NPORTS*DEMAND_FACTOR/DECAY_FACTOR}
+    builder:connect_inputs(nega_average,nega_average_decay)
 
-    -- Construct combo nega_average = (each / (N*DEMAND_FACTOR + 4))
-    -- Nega average is also at latency 1 after the port.
-    local nega_average = builder:combi{blinken=true,op="/",R=COUNT,red={const_nega_ports,n_plus_k_shim},green={lag}}
+    local nega_average_raw = builder:combi{blinken=true,op="/",R=NPORTS,green={posi_outbound_to_rawmean}} -- no decay term, no quiescence
+    builder:connect_inputs(nega_average,nega_average_raw,RED)
 
     -- = +1 and -1 for every positive request (hooked up later)
     -- Assumption: all requests are positive!
-    local nega_one_all_requests = builder:combi{blinken=true,op="OR",L=-1,red={const_nega_ports}}
-    local plus_one_all_requests = builder:combi{blinken=true,op=">", R=0,set_one=true,red={const_nega_ports}}
+    local nega_one_all_requests = builder:combi{blinken=true,op="OR",L=-1}
+    local plus_one_all_requests = builder:combi{blinken=true,op=">", R=0,set_one=true}
+    builder:connect_inputs(nega_average, nega_one_all_requests, RED)
+    builder:connect_inputs(nega_average, plus_one_all_requests, RED)
 
-    -- Same but only if it's < 0
-    local nega_average_negative = builder:combi{blinken=true,op="<",R=0,green={nega_average,inbound_count}}
-    
-    -- Nega_output_driver = average_negative * DEMAND_FACTOR
-    -- Cancels out values that we drive on the regular output drivers
-    -- Because the <0 check filters out COUNT=1, need to re-add it here with const_count_one
-    local nega_output_driver = builder:combi{
-        blinken=true,
-        op="*",R=DEMAND_FACTOR,
-        red={nega_average_negative,const_count_one}
-    }
+    -- Same but only if, after adjustment by inbound_count, it's < 0
+    local nega_average_negative = builder:combi{blinken=true,op="<",R=0,red={nega_average,nega_average_decay},green={inbound_count}}
     
     local power_on = power_consumption_combi(builder, prefix, "smart")
 
@@ -430,8 +431,7 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
     -- Add in default = -2 for reasons seen below
     local default_neg_2 = builder:constant_combi{{signal=DEFAULT,count=-2}}
     default_neg_2.connect_neighbour{wire=RED,target_entity=minus_one_unhandled,target_circuit_id=OUTPUT}
-
-    local LIBERALIZE = 0 -- A fudge factor so that things spread out a bit more
+    -- local count_neg_decay = builder:constant_combi{{signal=COUNT,count=-DECAY_FACTOR}}
 
     -----------------------------------------
     -- Bus interface and output determination
@@ -451,29 +451,16 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
         inbound_pulse.connect_neighbour{wire=RED, target_entity=inbound_count,
             source_circuit_id=OUTPUT, target_circuit_id=INPUT}
 
-        -- bus & -DEMAND_FACTOR = demand from that port
-        local inbound_demand = builder:combi{blinken=true,op="AND",R=-DEMAND_FACTOR,red={nega_output_driver},green={bus}}
+        -- bus / -COUNT = -mean(their demand, my demand) from that port
+        local inbound_demand_neg = builder:combi{blinken=true,op="/",R=COUNT,green={bus}} -- Alternate strategy: red = {count_neg_decay}
 
         -- On the red side, connect to the average input
-        inbound_demand.connect_neighbour{wire=RED, target_entity=nega_average,
-            source_circuit_id=OUTPUT, target_circuit_id=INPUT}
-
-        -- First level filtering (after the AND): x * (DEMAND_FACTOR+1 or just 1) / DEMAND_FACTOR
-        -- on the green side, pass through:
-        -- x / DEMAND_FACTOR, always
-        -- x itself iff COUNT = 0. (i.e. if it's a leaf)
-        local port_value = builder:combi{blinken=true,op="/", R=(DEMAND_FACTOR-LIBERALIZE), green={inbound_demand}}
-        local leaf_value = builder:combi{blinken=true,op="=", L=COUNT, R=0, out=EVERYTHING, green={inbound_demand}}
-        builder:connect_outputs(port_value,leaf_value,GREEN)
-
-        -- Outputs of this net:
-        --   Port wants it: 1
-        --   Port doesn't want it: -BIG or 1-BIG
-        --   Unhandled (or handled but rounds to zero in average): 0
-        local gt_zero = builder:combi{blinken=true,op=">",   R=0, set_one=true, green={port_value}}
-        local gt_mean = builder:combi{blinken=true,op="AND", R=MINUS_BIG,       green={port_value}, red={nega_average}}
+        inbound_demand_neg.connect_neighbour{wire=RED, target_entity=nega_average, source_circuit_id=OUTPUT, target_circuit_id=INPUT}
+        local inbound_demand_pos = builder:combi{blinken=true,op="*",R=-1,green={inbound_demand_neg},red={posi_outbound}}
+            
+        local gt_zero = builder:combi{blinken=true,op=">",   R=0, set_one=true, green={inbound_demand_pos}}
+        local gt_mean = builder:combi{blinken=true,op="AND", R=MINUS_BIG,       green={inbound_demand_pos}, red={nega_average_raw}}
         builder:connect_outputs(gt_zero,gt_mean)
-
         -- Inputs to this combinator:
         --   Port wants it: 1
         --   Someone else wants it more, -BIG or 1-BIG
@@ -496,14 +483,18 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
             op="=", R=DEFAULT, set_one=true,
             green={gt_zero}, red={minus_one_unhandled}
         }
-
         -- Feed it back on the red channel
         builder:connect_outputs(handle_by_default,gt_zero,RED)
         ret.output_dropoff[i] = gt_zero
-
+        
         -- Drive output to the bus (also drives const_count_one which is already hooked up)
-        local output_driver = builder:combi{blinken=true,op="*",R=-DEMAND_FACTOR,red={nega_average_negative}}
+        local output_driver = builder:combi{blinken=true,op="*",R=-DEMAND_FACTOR,red={nega_average_negative,count_plus_one}}
         output_driver.connect_neighbour{wire=GREEN, target_entity=bus, source_circuit_id=OUTPUT}
+        if i==1 then
+            -- they're all the same, but hook up to the (unused) red port of #1
+            output_driver.connect_neighbour{wire=RED, target_entity=posi_outbound,
+                source_circuit_id=OUTPUT, target_circuit_id=INPUT}
+        end
     end
 
     -- Whew

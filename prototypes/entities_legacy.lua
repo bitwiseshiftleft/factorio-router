@@ -15,14 +15,6 @@ local function mk_empty(color,size)
         frame_count = 1
     }
 end
-local wow = {
-    filename = "__router__/graphics/wow.png",
-    priority = "very-low",
-    width = 128,
-    height =128,
-    frame_count = 1
-}
-local wow_4 = { north=wow, south=wow, east=wow, west=wow }
 local light_off = {
     filename = "__router__/graphics/light.png",
     priority = "very-low",
@@ -77,44 +69,40 @@ local function mk_io_sprites(tint)
     }
 end
 
-local connector_definitions = circuit_connector_definitions.create(
-  universal_connector_template,
-  {
-    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
-    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
-    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
-    { variation = 24, main_offset = {0,0}, shadow_offset = {0,0}, show_shadow = false },
-  }
-)
-local connector_definitions2 = circuit_connector_definitions.create(
-  universal_connector_template,
-  {
-    { variation = 24, main_offset = {-1.2,-0.5}, shadow_offset = {-1.2,-0.5}, show_shadow = false },
-    { variation = 24, main_offset = {0.5,0.4}, shadow_offset = {0.5,0.4}, show_shadow = false },
-    { variation = 24, main_offset = {1.5,-0.4}, shadow_offset = {1.5,-0.4}, show_shadow = false },
-    { variation = 24, main_offset = {0.2,0.5}, shadow_offset = {0.2,0.5}, show_shadow = false },
-  }
-)
+local connection_points = {
+    {wire={}, shadow={}}, {wire={}, shadow={}}, {wire={}, shadow={}}, {wire={}, shadow={}}
+}
+local connector_definitions2 = connector_definitions
+-- circuit_connector_definitions.create_vector(
+--   universal_connector_template,
+--   {
+--     { variation = 24, main_offset = {-1.2,-0.5}, shadow_offset = {-1.2,-0.5}, show_shadow = false },
+--     { variation = 24, main_offset = {0.5,0.4}, shadow_offset = {0.5,0.4}, show_shadow = false },
+--     { variation = 24, main_offset = {1.5,-0.4}, shadow_offset = {1.5,-0.4}, show_shadow = false },
+--     { variation = 24, main_offset = {0.2,0.5}, shadow_offset = {0.2,0.5}, show_shadow = false },
+--   }
+-- )
 
 local hidden_combinator = {
     destructible = false,
     max_health = 1,
-    flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
+    flags = { "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
+    hidden = true,
     selectable_in_game = false,
     energy_source = {type = "void"},
     active_energy_usage = "1J",
     collision_box = {{-0.1,-0.1},{0.1,0.1}},
     selection_box = {{-0.1,-0.1},{0.1,0.1}},
-    collision_mask = {},
+    collision_mask = {layers={}},
     input_connection_bounding_box = {{0,0},{0,0}},
     output_connection_bounding_box = {{0,0},{0,0}},
     activity_led_offsets = {},
     rotatable = false,
     draw_circuit_wires = false,
     sprites = empty_sheet_4,
-    input_connection_points = connector_definitions.points,
-    output_connection_points = connector_definitions.points,
-    circuit_connector_sprites = connector_definitions.sprites,
+    input_connection_points = connection_points,
+    output_connection_points = connection_points,
+    circuit_connector_sprites = connection_points,
     activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
     activity_led_sprites = empty_sheet_4,
     screen_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
@@ -178,7 +166,8 @@ local hidden_decider_blinken = util.merge{hidden_combinator_blinkenlights,{
 
 -- Prototype base for hidden widgets
 local hidden_widget_proto = {
-    flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
+    flags = { "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
+    hidden = true,
     destructible = false,
     max_health = 1,
     rotatable = false,
@@ -186,7 +175,7 @@ local hidden_widget_proto = {
     selectable_in_game = false,
     collision_box = {{-0.3,-0.3},{0.3,0.3}},
     selection_box = {{-0.3,-0.3},{0.3,0.3}},
-    collision_mask = {},
+    collision_mask = {layers={}},
     draw_circuit_wires = false
 }
 
@@ -202,7 +191,7 @@ local control_combinator_proto = {
     selection_priority = 70,
     collision_box = {{-0.45,-0.45},{0.45,0.45}},
     selection_box = {{-0.5,-0.5},{0.5,0.5}},
-    collision_mask = {},
+    collision_mask = {layers={}},
     circuit_wire_max_distance = 16,
 }
 
@@ -210,7 +199,7 @@ local interface_lamp_proto = {
     type = "lamp",
     flags = { "placeable-off-grid", "player-creation", "not-on-map" },
     collision_box = {{-0.45,-0.45},{0.45,0.45}},
-    collision_mask = {},
+    collision_mask = {layers={}},
     allow_copy_paste = true,
     selectable_in_game = true,
     selection_priority = 70,
@@ -261,7 +250,8 @@ local super_inserter_nonfilter_2 = util.merge{super_inserter_nonfilter,{
 
 local indicator_inserter = util.merge{super_inserter,{
     name = "router-component-indicator-inserter",
-    flags = { "hidden", "not-blueprintable", "not-on-map" },
+    flags = { "not-blueprintable", "not-on-map" },
+    hidden = true,
     energy_source = { type = "void", },
     filter_count = 4
 }}
@@ -273,12 +263,13 @@ if protos.enable_manual or protos.enable_smart then
         util.merge{control_combinator_proto,{
             type = "constant-combinator",
             name = "router-component-hidden-constant-combinator",
-            flags = { "hidden", "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
+            flags = { "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
+            hidden = true,
             selectable_in_game = false,
             item_slot_count = 20,
             sprites = empty_sheet_4,
-            circuit_wire_connection_points = connector_definitions.points,
-            circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_connection_points = connection_points,
+            -- circuit_connector_sprites = connector_definitions.sprites,
             circuit_wire_max_distance = 4,
             draw_circuit_wires = false,
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
@@ -301,8 +292,8 @@ if protos.enable_manual then
             name = "router-component-port-control-combinator",
             item_slot_count = 20,
             sprites = empty_sheet_4,
-            circuit_wire_connection_points = connector_definitions.points,
-            circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_connection_points = connection_points,
+            -- circuit_connector_sprites = connector_definitions.sprites,
             circuit_wire_max_distance = 9,
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
             fast_replaceable_group = "router-component-port-control-combinator"
@@ -393,10 +384,11 @@ if protos.enable_smart then
             item_slot_count = 20,
             sprites = empty_sheet_4,
             rotatable = false,
-            circuit_wire_connection_points = {
-                north=trimpoint, south=trimpoint, east=trimpoint, west=trimpoint
-            },
-            circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_connection_points = connection_points,
+            -- circuit_wire_connection_points = {
+            --     north=trimpoint, south=trimpoint, east=trimpoint, west=trimpoint
+            -- },
+            -- circuit_connector_sprites = connector_definitions.sprites,
             circuit_wire_max_distance = 9,
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
             fast_replaceable_group = "router-component-port-control-combinator",
@@ -438,8 +430,8 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
 		selection_box = {{-2, -2}, {2, 2}},
         selection_priority = 30,
         selectable_in_game = true,
-        circuit_wire_connection_points = connector_definitions.points,
-        circuit_connector_sprites = connector_definitions.sprites,
+        circuit_wire_connection_points = connection_points,
+        -- circuit_connector_sprites = connector_definitions.sprites,
         circuit_wire_max_distance = 0,
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
@@ -460,10 +452,16 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
     }
     if is_space then
-        holding_entity_as_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, spaceship_collision_layer}
+        holding_entity_as_combinator.collision_mask = {
+            layers={player=true, water_tile=true, empty_space_collision_layer=true, spaceship_collision_layer=ture}
+        }
     elseif mods["space-exploration"] then
         -- Not placeable in space
-        holding_entity_as_combinator.collision_mask = {"player-layer", "water-tile", empty_space_collision_layer, space_collision_layer, spaceship_collision_layer}
+        holding_entity_as_combinator.collision_mask = {
+            layers={
+                player=true, water_tile=true, empty_space_collision_layer=true, space_collision_layer=true, spaceship_collision_layer=true
+            }
+        }
     end
 
     local filename_smart = "__router__/graphics/router-entity.png"
@@ -488,27 +486,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             frame{y=3, draw_as_glow=true}
         }
     }
-
-    if protos.enable_manual then
-        local power_manual = math.floor(power)
-        data:extend{util.merge{holding_entity_as_combinator,{
-            name = "router-"..size.."-"..prefix.."router",
-            minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."router" },
-            sprites = {north=wow,south=wow,west=wow,east=wow},
-            icons = {
-                {icon="__router__/graphics/router-icon.png", icon_size=128,},
-                {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
-            },
-            fast_replaceable_group = "router-"..space..size.."-router",
-            next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "router"),
-            se_allow_in_space = is_space,
-            localised_description = {
-                "router-templates.router-template",
-                base_name,
-                myutil.format_power(power_manual*1000)
-            }
-        }}}
-    end
+    
     if protos.enable_smart then
         local power_smart = math.floor(power)
         local power_io = math.floor(power/4)
@@ -546,7 +524,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             fast_replaceable_group = "router-"..space..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10,
-            circuit_wire_connection_points = connector_definitions2.points,
+            circuit_wire_connection_points = connection_points,
             se_allow_in_space = is_space,
             localised_description = {
                 "router-templates.io-template",

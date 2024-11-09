@@ -24,10 +24,12 @@ restrictive.
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
+* Why are "port connection" etc items (in py, with crafting combinator)?
 * Remove unused icons
 * Proper packaging for upload to mod portal
 * Make routers also function as a power pole?
 * Add filters to event listeners, for reduced UPS cost
+* Make boxes autoconnect to I/O points when placed as well as vice-versa
 
 Prevent belt-dragging from reversing the (otherwise uninteractable) input/output belts of IO points and routers.  This is caused by a Factorio bug: belt-dragging doesn't respect the entity's rotatable flag, and doesn't fire on_player_rotated_entity.  However, it may be possible to hack it by watching for on_pre_build{created_by_moving=true}, checking if there is a router's underneathie under the event, and then checking back one tick later and undoing the change.  Kind of a pain tho.
 
@@ -52,6 +54,7 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 ## Smart routers
 
 Implement smart I/O terminals
+* Routers route a little too aggressively toward I/O terminals, and not toward another router that requests resources more.
 * Lamps for defaultness, disablement.
 * Do we want to provide limiting loaders for the I/O terminals?  Eg with an amount to cache
 * Suppress autoconnection in some cases?  Eg when a blueprint with both the chest and router is created

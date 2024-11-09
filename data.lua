@@ -1,5 +1,6 @@
 local items = require "prototypes.items"
 local entities = require "prototypes.entities"
+local entities = require "prototypes.entities_legacy"
 local recipes = require "prototypes.recipes"
 local technologies = require "prototypes.technologies"
 local signals = require "prototypes.signals"

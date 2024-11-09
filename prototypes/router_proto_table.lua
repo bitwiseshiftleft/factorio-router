@@ -43,7 +43,7 @@ M.table = {
     },
     ["fast-"] = {
         tint=util.color("e31717ff"),
-        prerequisites = { "logistics-2", (have_py and "basic-electronics") or "advanced-electronics" },
+        prerequisites = { "logistics-2", (have_py and "basic-electronics") or "advanced-circuit" },
         tech_costs = {
             count = 300,
             ingredients =
@@ -63,7 +63,7 @@ M.table = {
     },
     ["express-"] = {
         tint=util.color("43c0faff"),
-        prerequisites = { "logistics-3", "advanced-electronics-2" },
+        prerequisites = { "logistics-3", "processing-unit" },
         tech_costs = {
             count = 500,
             ingredients =
