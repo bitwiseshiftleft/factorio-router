@@ -171,37 +171,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     end
 
     -- Create the comms and port control network
-    -- local passbands = circuit.create_smart_comms(builder, prefix, input_belts, output_belts)
-
-    -- Create the movement inserters
-    -- for i,opt in ipairs(data.output) do
-    --     for j,ipt in ipairs(data.input) do
-    --         for lane=1,2 do
-    --             -- Create and configure the inserter
-    --             ins = entity.surface.create_entity({
-    --                 name = "router-component-inserter",
-    --                 position = relative(ipt.i),
-    --                 force = entity.force
-    --             })
-    --             ins.pickup_position = relative(ipt.b)
-    --             ins.inserter_stack_size_override = 1 -- TODO: but perf...
-    --             if lane==1 then
-    --                 ins.drop_position = relative(vector_add(opt.b, lane_adj[opt.d]))
-    --             else
-    --                 ins.drop_position = relative(vector_sub(opt.b, lane_adj[opt.d]))
-    --             end
-
-    --             control = ins.get_or_create_control_behavior()
-    --             ins.inserter_filter_mode = "whitelist"
-    --             control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
-    --             -- control.circuit_read_hand_contents = true
-    --             -- control.circuit_hand_read_mode = defines.control_behavior.inserter.hand_read_mode.pulse
-
-    --             ins.connect_neighbour{wire=circuit.RED,   target_entity=passbands.output_dropoff[i], target_circuit_id=circuit.OUTPUT}
-    --             ins.connect_neighbour{wire=circuit.GREEN, target_entity=passbands.output_pickup[j],  target_circuit_id=circuit.OUTPUT}
-    --         end
-    --     end
-    -- end
+    circuit.create_smart_comms(builder, prefix, input_belts, input_loaders, output_loaders)
     bust_ghosts(entity)
 end
 
@@ -435,13 +405,18 @@ local function on_died(ev, mined_by_robot)
                 -- First, try to mine its contents
                 if buffer and string.match(child.name, "inserter$") ~= nil and child.held_stack.valid_for_read then
                     buffer.insert(child.held_stack)
-                elseif buffer and string.match(child.name, "transport%-belt$") ~= nil then
+                elseif buffer and (string.match(child.name, "transport%-belt$") ~= nil or string.match(child.name, "loader") ~= nil )then
                     for line_idx=1,2 do
                         local line = child.get_transport_line(line_idx)
                         for j=1,math.min(#line, 256) do
                             buffer.insert(line[j])
                         end
                         line.clear()
+                    end
+                elseif buffer and string.match(child.name, "router%-component%-container") ~= nil then
+                    local inv = child.get_inventory(defines.inventory.chest)
+                    for j=1,#inv do
+                        buffer.insert(inv[j])
                     end
                 end
                 child.destroy()

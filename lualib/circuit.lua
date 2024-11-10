@@ -322,7 +322,7 @@ end
 -- request more than 200000 of any given resource, I guess.
 local DEMAND_FACTOR = 64
 
-local function create_smart_comms(builder,prefix,input_belts,output_belts)
+local function create_smart_comms(builder,prefix,input_belts,input_loaders,output_loaders)
     -- Create communications system.
 
     -- For each output belt, set its mode to {don't enable or disable; read=pulse}
@@ -331,301 +331,300 @@ local function create_smart_comms(builder,prefix,input_belts,output_belts)
     -- Return output_pickup and output_dropoff combinators
     -- TODO: add reset control
 
-    local ret = {
-        output_pickup  = {},
-        output_dropoff = {}
-    }
+--     local ret = {
+--         output_pickup  = {},
+--         output_dropoff = {}
+--     }
 
+--     builder.blinken_cols = 8
+--     builder.blinken_base_x = 0.43
+--     builder.blinken_base_y = 0.33
+--     builder.blinken_offset_x = 0.06
+--     builder.blinken_offset_y = 0.050
 
-    builder.blinken_cols = 8
-    builder.blinken_base_x = 0.43
-    builder.blinken_base_y = 0.33
-    builder.blinken_offset_x = 0.06
-    builder.blinken_offset_y = 0.050
+--     -----------------------------------------
+--     -- Construct the counter
+--     -----------------------------------------
+--     -- Inbound counter = sum(outbound - inbound) if > RESET
+--     -- Normally RESET == 0, so this leaves positive items, reducing effective demand
+--     -- This reduces effective demand because demands are negative
+--     local inbound_dbl   = builder:combi{blinken=true,op="*",R=-2,red=output_belts}
+--     local inbound_count = builder:combi{blinken=true,op=">",R=RESET,red={inbound_dbl,ITSELF}}
 
-    -----------------------------------------
-    -- Construct the counter
-    -----------------------------------------
-    -- Inbound counter = sum(outbound - inbound) if > RESET
-    -- Normally RESET == 0, so this leaves positive items, reducing effective demand
-    -- This reduces effective demand because demands are negative
-    local inbound_dbl   = builder:combi{blinken=true,op="*",R=-2,red=output_belts}
-    local inbound_count = builder:combi{blinken=true,op=">",R=RESET,red={inbound_dbl,ITSELF}}
+--     -- Decay depends on DECAY_FACTOR / DEMAND_FACTOR.  Tested only with 1.
+--     local DECAY_FACTOR  = 1
+--     local MINUS_BIG     = -0x40000000
+--     -- local MINUS_BIGGER  = -0x80000000
 
-    -- Decay depends on DECAY_FACTOR / DEMAND_FACTOR.  Tested only with 1.
-    local DECAY_FACTOR  = 1
-    local MINUS_BIG     = -0x40000000
-    -- local MINUS_BIGGER  = -0x80000000
+--     -----------------------------------------
+--     -- Construct the comms and control
+--     -----------------------------------------
+--     -- Create COUNT = +1 acombinator
+--     local NPORTS = #(output_belts)
+--     local count_plus_one = builder:constant_combi{{signal=COUNT,count=1}}
+--     local FUDGE = 2*DECAY_FACTOR
 
-    -----------------------------------------
-    -- Construct the comms and control
-    -----------------------------------------
-    -- Create COUNT = +1 acombinator
-    local NPORTS = #(output_belts)
-    local count_plus_one = builder:constant_combi{{signal=COUNT,count=1}}
-    local FUDGE = 2*DECAY_FACTOR
+--     -- Term to cancel reflections
+--     -- Driven off the first output buffer
+--     local posi_outbound_tomean     = builder:combi{blinken=true,op="/",R=2*DEMAND_FACTOR/NPORTS} -- cancels the half-effect of outbound on inbound
+--     local posi_outbound            = builder:combi{blinken=true,op="/",R=DEMAND_FACTOR} -- cancels the full effect of outbound on inbound, for >0 test
+--     local posi_outbound_to_rawmean = builder:combi{blinken=true,op="/",R=DEMAND_FACTOR/NPORTS} -- cancels the full effect of all outbounds on mean, for >mean test
+--     builder:connect_inputs(posi_outbound,posi_outbound_tomean,RED)
+--     builder:connect_inputs(posi_outbound,posi_outbound_to_rawmean,RED)
 
-    -- Term to cancel reflections
-    -- Driven off the first output buffer
-    local posi_outbound_tomean     = builder:combi{blinken=true,op="/",R=2*DEMAND_FACTOR/NPORTS} -- cancels the half-effect of outbound on inbound
-    local posi_outbound            = builder:combi{blinken=true,op="/",R=DEMAND_FACTOR} -- cancels the full effect of outbound on inbound, for >0 test
-    local posi_outbound_to_rawmean = builder:combi{blinken=true,op="/",R=DEMAND_FACTOR/NPORTS} -- cancels the full effect of all outbounds on mean, for >mean test
-    builder:connect_inputs(posi_outbound,posi_outbound_tomean,RED)
-    builder:connect_inputs(posi_outbound,posi_outbound_to_rawmean,RED)
+--     -- Construct combo nega_average = (sum each/2 + itself) / (#ports/2 + 1), minus a decay term
+--     local nega_average = builder:combi{blinken=true,op="/",R=NPORTS/2+1,green={posi_outbound_tomean,ITSELF}}
+--     local nega_average_decay = builder:combi{blinken=true,op="/",R=-NPORTS*DEMAND_FACTOR/DECAY_FACTOR}
+--     builder:connect_inputs(nega_average,nega_average_decay)
 
-    -- Construct combo nega_average = (sum each/2 + itself) / (#ports/2 + 1), minus a decay term
-    local nega_average = builder:combi{blinken=true,op="/",R=NPORTS/2+1,green={posi_outbound_tomean,ITSELF}}
-    local nega_average_decay = builder:combi{blinken=true,op="/",R=-NPORTS*DEMAND_FACTOR/DECAY_FACTOR}
-    builder:connect_inputs(nega_average,nega_average_decay)
+--     local nega_average_raw = builder:combi{blinken=true,op="/",R=NPORTS,green={posi_outbound_to_rawmean}} -- no decay term, no quiescence
+--     builder:connect_inputs(nega_average,nega_average_raw,RED)
 
-    local nega_average_raw = builder:combi{blinken=true,op="/",R=NPORTS,green={posi_outbound_to_rawmean}} -- no decay term, no quiescence
-    builder:connect_inputs(nega_average,nega_average_raw,RED)
+--     -- = +1 and -1 for every positive request (hooked up later)
+--     -- Assumption: all requests are positive!
+--     local nega_one_all_requests = builder:combi{blinken=true,op="OR",L=-1}
+--     local plus_one_all_requests = builder:combi{blinken=true,op=">", R=0,set_one=true}
+--     builder:connect_inputs(nega_average, nega_one_all_requests, RED)
+--     builder:connect_inputs(nega_average, plus_one_all_requests, RED)
 
-    -- = +1 and -1 for every positive request (hooked up later)
-    -- Assumption: all requests are positive!
-    local nega_one_all_requests = builder:combi{blinken=true,op="OR",L=-1}
-    local plus_one_all_requests = builder:combi{blinken=true,op=">", R=0,set_one=true}
-    builder:connect_inputs(nega_average, nega_one_all_requests, RED)
-    builder:connect_inputs(nega_average, plus_one_all_requests, RED)
-
-    -- Same but only if, after adjustment by inbound_count, it's < 0
-    local nega_average_negative = builder:combi{blinken=true,op="<",R=0,red={nega_average,nega_average_decay},green={inbound_count}}
+--     -- Same but only if, after adjustment by inbound_count, it's < 0
+--     local nega_average_negative = builder:combi{blinken=true,op="<",R=0,red={nega_average,nega_average_decay},green={inbound_count}}
     
-    local power_on = power_consumption_combi(builder, prefix, "smart")
+--     local power_on = power_consumption_combi(builder, prefix, "smart")
 
-    -----------------------------------------
-    -- Input measurement
-    -----------------------------------------
-    -- Hook up the input belts to read their inputs
-    for i,the_belt in ipairs(input_belts) do
-        -- First, configure the belt
-        local control = the_belt.get_or_create_control_behavior()
-        -- control.enable_disable = true
-        control.read_contents = true
-        control.circuit_condition = {condition={comparator="=",first_signal=POWER}}
-        control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.hold
+--     -----------------------------------------
+--     -- Input measurement
+--     -----------------------------------------
+--     -- Hook up the input belts to read their inputs
+--     for i,the_belt in ipairs(input_belts) do
+--         -- First, configure the belt
+--         local control = the_belt.get_or_create_control_behavior()
+--         -- control.enable_disable = true
+--         control.read_contents = true
+--         control.circuit_condition = {condition={comparator="=",first_signal=POWER}}
+--         control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.hold
 
-        -- Calculate ((-1 for all requested items) + (this belt contents))>>31
-        -- = -1 for all requested items that aren't on this belt
-        ret.output_pickup[i] = builder:combi{blinken=true,op=">>",R=31,red={the_belt},green={nega_one_all_requests}}
-    end
+--         -- Calculate ((-1 for all requested items) + (this belt contents))>>31
+--         -- = -1 for all requested items that aren't on this belt
+--         ret.output_pickup[i] = builder:combi{blinken=true,op=">>",R=31,red={the_belt},green={nega_one_all_requests}}
+--     end
 
 
-    -- Unhandled inputs tracking: 
-    --   -1 if on any belt or requested (requests are positive so they can't cancel?)
-    --   +1 if requested
-    --   Sum: -1 if on any belt and unrequested
-    local minus_one_unhandled = builder:combi{
-        blinken=true,
-        op=">>",L=-1,
-        green=input_belts, red={plus_one_all_requests}
-    }
-    power_on.connect_neighbour{target_entity=minus_one_unhandled,wire=GREEN,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
-    local minus_one_unhandled_2 = builder:combi{
-        blinken=true,
-        op="!=", R=0,
-        set_one=true, red={plus_one_all_requests}
-    }
-    builder:connect_outputs(minus_one_unhandled,minus_one_unhandled_2,RED)
+--     -- Unhandled inputs tracking: 
+--     --   -1 if on any belt or requested (requests are positive so they can't cancel?)
+--     --   +1 if requested
+--     --   Sum: -1 if on any belt and unrequested
+--     local minus_one_unhandled = builder:combi{
+--         blinken=true,
+--         op=">>",L=-1,
+--         green=input_belts, red={plus_one_all_requests}
+--     }
+--     power_on.connect_neighbour{target_entity=minus_one_unhandled,wire=GREEN,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
+--     local minus_one_unhandled_2 = builder:combi{
+--         blinken=true,
+--         op="!=", R=0,
+--         set_one=true, red={plus_one_all_requests}
+--     }
+--     builder:connect_outputs(minus_one_unhandled,minus_one_unhandled_2,RED)
 
-    -- Add in default = -2 for reasons seen below
-    local default_neg_2 = builder:constant_combi{{signal=DEFAULT,count=-2}}
-    default_neg_2.connect_neighbour{wire=RED,target_entity=minus_one_unhandled,target_circuit_id=OUTPUT}
-    -- local count_neg_decay = builder:constant_combi{{signal=COUNT,count=-DECAY_FACTOR}}
+--     -- Add in default = -2 for reasons seen below
+--     local default_neg_2 = builder:constant_combi{{signal=DEFAULT,count=-2}}
+--     default_neg_2.connect_neighbour{wire=RED,target_entity=minus_one_unhandled,target_circuit_id=OUTPUT}
+--     -- local count_neg_decay = builder:constant_combi{{signal=COUNT,count=-DECAY_FACTOR}}
 
-    -----------------------------------------
-    -- Bus interface and output determination
-    -----------------------------------------
-    -- OK, connect up the ports and output belts,
-    -- The output belts are also (on the green wire) the bus interface
-    -- TODO: extend to multiple pairs of I/O belts?
-    for i,bus in ipairs(output_belts) do
-        -- set the belt to pulse read mode
-        local control = bus.get_or_create_control_behavior()
-        control.enable_disable = false
-        control.read_contents = true
-        control.read_contents_mode = PULSE
+--     -----------------------------------------
+--     -- Bus interface and output determination
+--     -----------------------------------------
+--     -- OK, connect up the ports and output belts,
+--     -- The output belts are also (on the green wire) the bus interface
+--     -- TODO: extend to multiple pairs of I/O belts?
+--     for i,bus in ipairs(output_belts) do
+--         -- set the belt to pulse read mode
+--         local control = bus.get_or_create_control_behavior()
+--         control.enable_disable = false
+--         control.read_contents = true
+--         control.read_contents_mode = PULSE
 
-        -- bus & DEMAND_FACTOR-1 = inbound items pulse
-        local inbound_pulse = builder:combi{blinken=true,op="AND",R=DEMAND_FACTOR-1,green={bus}}
-        inbound_pulse.connect_neighbour{wire=RED, target_entity=inbound_count,
-            source_circuit_id=OUTPUT, target_circuit_id=INPUT}
+--         -- bus & DEMAND_FACTOR-1 = inbound items pulse
+--         local inbound_pulse = builder:combi{blinken=true,op="AND",R=DEMAND_FACTOR-1,green={bus}}
+--         inbound_pulse.connect_neighbour{wire=RED, target_entity=inbound_count,
+--             source_circuit_id=OUTPUT, target_circuit_id=INPUT}
 
-        -- bus / -COUNT = -mean(their demand, my demand) from that port
-        local inbound_demand_neg = builder:combi{blinken=true,op="/",R=COUNT,green={bus}} -- Alternate strategy: red = {count_neg_decay}
+--         -- bus / -COUNT = -mean(their demand, my demand) from that port
+--         local inbound_demand_neg = builder:combi{blinken=true,op="/",R=COUNT,green={bus}} -- Alternate strategy: red = {count_neg_decay}
 
-        -- On the red side, connect to the average input
-        inbound_demand_neg.connect_neighbour{wire=RED, target_entity=nega_average, source_circuit_id=OUTPUT, target_circuit_id=INPUT}
-        local inbound_demand_pos = builder:combi{blinken=true,op="*",R=-1,green={inbound_demand_neg},red={posi_outbound}}
+--         -- On the red side, connect to the average input
+--         inbound_demand_neg.connect_neighbour{wire=RED, target_entity=nega_average, source_circuit_id=OUTPUT, target_circuit_id=INPUT}
+--         local inbound_demand_pos = builder:combi{blinken=true,op="*",R=-1,green={inbound_demand_neg},red={posi_outbound}}
             
-        local gt_zero = builder:combi{blinken=true,op=">",   R=0, set_one=true, green={inbound_demand_pos}}
-        local gt_mean = builder:combi{blinken=true,op="AND", R=MINUS_BIG,       green={inbound_demand_pos}, red={nega_average_raw}}
-        builder:connect_outputs(gt_zero,gt_mean)
-        -- Inputs to this combinator:
-        --   Port wants it: 1
-        --   Someone else wants it more, -BIG or 1-BIG
-        --   Not present: 0
-        --   Present but unhandled: -1
-        --   Unhandled is incompatible with "port wants it" and "someone else wants it more"
-        --
-        -- DEFAULT:
-        --   Port wants it: 1-2 = -1
-        --   Someone else wants it more: -BIG-2 or -1-BIG
-        --   Not present: -2
-        --   Present but unhandled: impossible
-        --
-        -- The only collision between these is:
-        --   Present but unhandled = Port wants default = -1
-        --
-        -- And of course default=1
-        local handle_by_default = builder:combi{
-            blinken=true,
-            op="=", R=DEFAULT, set_one=true,
-            green={gt_zero}, red={minus_one_unhandled}
-        }
-        -- Feed it back on the red channel
-        builder:connect_outputs(handle_by_default,gt_zero,RED)
-        ret.output_dropoff[i] = gt_zero
+--         local gt_zero = builder:combi{blinken=true,op=">",   R=0, set_one=true, green={inbound_demand_pos}}
+--         local gt_mean = builder:combi{blinken=true,op="AND", R=MINUS_BIG,       green={inbound_demand_pos}, red={nega_average_raw}}
+--         builder:connect_outputs(gt_zero,gt_mean)
+--         -- Inputs to this combinator:
+--         --   Port wants it: 1
+--         --   Someone else wants it more, -BIG or 1-BIG
+--         --   Not present: 0
+--         --   Present but unhandled: -1
+--         --   Unhandled is incompatible with "port wants it" and "someone else wants it more"
+--         --
+--         -- DEFAULT:
+--         --   Port wants it: 1-2 = -1
+--         --   Someone else wants it more: -BIG-2 or -1-BIG
+--         --   Not present: -2
+--         --   Present but unhandled: impossible
+--         --
+--         -- The only collision between these is:
+--         --   Present but unhandled = Port wants default = -1
+--         --
+--         -- And of course default=1
+--         local handle_by_default = builder:combi{
+--             blinken=true,
+--             op="=", R=DEFAULT, set_one=true,
+--             green={gt_zero}, red={minus_one_unhandled}
+--         }
+--         -- Feed it back on the red channel
+--         builder:connect_outputs(handle_by_default,gt_zero,RED)
+--         ret.output_dropoff[i] = gt_zero
         
-        -- Drive output to the bus (also drives const_count_one which is already hooked up)
-        local output_driver = builder:combi{blinken=true,op="*",R=-DEMAND_FACTOR,red={nega_average_negative,count_plus_one}}
-        output_driver.connect_neighbour{wire=GREEN, target_entity=bus, source_circuit_id=OUTPUT}
-        if i==1 then
-            -- they're all the same, but hook up to the (unused) red port of #1
-            output_driver.connect_neighbour{wire=RED, target_entity=posi_outbound,
-                source_circuit_id=OUTPUT, target_circuit_id=INPUT}
-        end
-    end
+--         -- Drive output to the bus (also drives const_count_one which is already hooked up)
+--         local output_driver = builder:combi{blinken=true,op="*",R=-DEMAND_FACTOR,red={nega_average_negative,count_plus_one}}
+--         output_driver.connect_neighbour{wire=GREEN, target_entity=bus, source_circuit_id=OUTPUT}
+--         if i==1 then
+--             -- they're all the same, but hook up to the (unused) red port of #1
+--             output_driver.connect_neighbour{wire=RED, target_entity=posi_outbound,
+--                 source_circuit_id=OUTPUT, target_circuit_id=INPUT}
+--         end
+--     end
 
-    -- Whew
-    return ret
-end
+--     -- Whew
+--     return ret
+-- end
 
-local function create_smart_comms_io(
-    prefix,entity,builder,chest,demand,threshold_trim,orientation
-)
-    ----------------------------
-    -- Design of this circuit
-    ----------------------------
-    --[[
-    Unlike the regular design, we are going to use underneathies here.
-    This allows the I/O port to be only 1 deep without letting things
-    pass through to the other side.
+-- local function create_smart_comms_io(
+--     prefix,entity,builder,chest,demand,threshold_trim,orientation
+-- )
+--     ----------------------------
+--     -- Design of this circuit
+--     ----------------------------
+--     --[[
+--     Unlike the regular design, we are going to use underneathies here.
+--     This allows the I/O port to be only 1 deep without letting things
+--     pass through to the other side.
 
-    Since underneathies can't connect to the circuit network, we need
-    to read info from the inserters.
+--     Since underneathies can't connect to the circuit network, we need
+--     to read info from the inserters.
 
-    For the "in"serters sending things to the chest, this is fine: they
-    aren't filter inserters anyway, and don't have an enable condition,
-    so they can all be wired together without interfering
+--     For the "in"serters sending things to the chest, this is fine: they
+--     aren't filter inserters anyway, and don't have an enable condition,
+--     so they can all be wired together without interfering
 
-    For the "out"serters sending things from the chest, it's tricky.
-    The problem is that one inserter's hand read will send a positive
-    signal to the other inserter, thus causing it to trigger when
-    perhaps it shouldn't.  This is only a problem for things that
-    are in the chest: if something isn't in the chest, the signal is
-    only transient, so it will only clog the filter list for one tick.
+--     For the "out"serters sending things from the chest, it's tricky.
+--     The problem is that one inserter's hand read will send a positive
+--     signal to the other inserter, thus causing it to trigger when
+--     perhaps it shouldn't.  This is only a problem for things that
+--     are in the chest: if something isn't in the chest, the signal is
+--     only transient, so it will only clog the filter list for one tick.
 
-    To mitigate this issue, we want to set everything that's in supply
-    to a negative value.  The way I chose is to set it to:
+--     To mitigate this issue, we want to set everything that's in supply
+--     to a negative value.  The way I chose is to set it to:
     
-        -MAX   if supply >  my_demand
-        -MAX/2 if supply <  my_demand
-        0      if supply == my_demand
+--         -MAX   if supply >  my_demand
+--         -MAX/2 if supply <  my_demand
+--         0      if supply == my_demand
     
-    +   -MAX/2 if threshold != 0 and their_demand >= threshold
+--     +   -MAX/2 if threshold != 0 and their_demand >= threshold
 
-    This wraps around to be positive if both are satisfied, and is
-    definitely negative if supply < my_demand.
+--     This wraps around to be positive if both are satisfied, and is
+--     definitely negative if supply < my_demand.
 
-    It's still not quite safe to connect the outserters directly
-    to the bus, but maybe almost? (FUTURE?) The basic problem is
-    if an item arrives this tick, and the bus requests (or sends it
-    to me) this tick, then it will be set in the filter with no
-    convenient way to suppress it.  Therefore the outserters are
-    buffered onto the bus.
+--     It's still not quite safe to connect the outserters directly
+--     to the bus, but maybe almost? (FUTURE?) The basic problem is
+--     if an item arrives this tick, and the bus requests (or sends it
+--     to me) this tick, then it will be set in the filter with no
+--     convenient way to suppress it.  Therefore the outserters are
+--     buffered onto the bus.
     
-    --]]
+--     --]]
 
 
-    -- TODO: add reset control
+--     -- TODO: add reset control
 
-    local MINUS_HMAX = -0x40000000
-    local MINUS_MAX  = -0x80000000
+--     local MINUS_HMAX = -0x40000000
+--     local MINUS_MAX  = -0x80000000
 
-    -- Outreg drives the bus (on green)
-    -- Outreg is driven by the outserters (on red)
-    -- (This is set up in control.lua)
-    local outreg = builder:combi{op="+",R=0}
+--     -- Outreg drives the bus (on green)
+--     -- Outreg is driven by the outserters (on red)
+--     -- (This is set up in control.lua)
+--     local outreg = builder:combi{op="+",R=0}
 
-    local power = power_consumption_combi(builder, prefix, "io", orientation, 0)
+--     local power = power_consumption_combi(builder, prefix, "io", orientation, 0)
 
-    -- Construct the inbound counter counter
-    -- Counts +1 on bus % DEMAND_FACTOR
-    -- Counts -1 on outreg [red, so it's not connected to the bus]
-    -- Counts -1 on inbound stuff (connected by control)
-    local inbound_neg   = builder:combi{op="*",R=-1,red={outreg}}
-    local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green={outreg}}
-    local inbound_count = builder:combi{op=">",R=RESET,green={inbound_neg,inbound_and},red={ITSELF}}
+--     -- Construct the inbound counter counter
+--     -- Counts +1 on bus % DEMAND_FACTOR
+--     -- Counts -1 on outreg [red, so it's not connected to the bus]
+--     -- Counts -1 on inbound stuff (connected by control)
+--     local inbound_neg   = builder:combi{op="*",R=-1,red={outreg}}
+--     local inbound_and   = builder:combi{op="AND",R=DEMAND_FACTOR-1,green={outreg}}
+--     local inbound_count = builder:combi{op=">",R=RESET,green={inbound_neg,inbound_and},red={ITSELF}}
 
-    -- burst suppression
-    local BURST_FACTOR = DEMAND_FACTOR/8
-    local BURST_FALLOFF = DEMAND_FACTOR
-    local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR}
-    builder:connect_inputs(scale_before_burst,outreg,RED) -- connected to outserters
-    local burst_hold = builder:combi{op="+", R=1, green={scale_before_burst,ITSELF}}
-    local burst_falloff = builder:combi{op="/", R=-BURST_FALLOFF, green={scale_before_burst,ITSELF}}
+--     -- burst suppression
+--     local BURST_FACTOR = DEMAND_FACTOR/8
+--     local BURST_FALLOFF = DEMAND_FACTOR
+--     local scale_before_burst = builder:combi{op="*",R=-DEMAND_FACTOR*BURST_FACTOR}
+--     builder:connect_inputs(scale_before_burst,outreg,RED) -- connected to outserters
+--     local burst_hold = builder:combi{op="+", R=1, green={scale_before_burst,ITSELF}}
+--     local burst_falloff = builder:combi{op="/", R=-BURST_FALLOFF, green={scale_before_burst,ITSELF}}
 
-    -- OK, create the comms
-    local internal_combi = builder:constant_combi{{signal=LEAF,count=-1}}
-    local demand_pos     = builder:combi{op=">",R=0,green={entity}}
-    local demand1        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}}
-    local demand2        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}} -- separate to not mix with inbound_count
-    -- demand each item whose net supply is < 0
-    local supply_neg     = builder:combi{op="<",R=0,red={chest},green={inbound_count,internal_combi,demand1}}
+--     -- OK, create the comms
+--     local internal_combi = builder:constant_combi{{signal=LEAF,count=-1}}
+--     local demand_pos     = builder:combi{op=">",R=0,green={entity}}
+--     local demand1        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}}
+--     local demand2        = builder:combi{op="-",L=0,R=EACH,green={demand_pos}} -- separate to not mix with inbound_count
+--     -- demand each item whose net supply is < 0
+--     local supply_neg     = builder:combi{op="<",R=0,red={chest},green={inbound_count,internal_combi,demand1}}
 
-    -- Set one output control according to supply and demand
-    -- The setting is MINUS_MAX for things the network demands more than us
-    -- and MINUS_HMAX for things we demand more
-    -- This will be added to { -HMAX if threshold > 0 } resulting in underflow
-    --    ==> positive ==> filter will be set
-    --
-    -- If 0 < x < 0x40000000 then x | MINUS_HMAX = (x + MINUS_HMAX)
-    -- If MINUS_HMAX <= x < 0 then x | MINUS_HMAX = x
-    -- Thus (MINUS_HMAX - x) + (x | MINUS_HMAX) = {
-    --   MINUS_MAX if 0 < x < 0x40000000
-    --   MINUS_HMAX if MINUS_HMAX <= x < 0
-    --   0 if x isn't in the combinator
-    -- }
-    local mm_one         = builder:combi{op="OR", L=MINUS_HMAX,R=EACH,red={chest},green={demand2}}
-    local mm_two         = builder:combi{op="-",  L=MINUS_HMAX,R=EACH,red={chest},green={demand2}}
-    builder:connect_outputs(mm_one,mm_two,GREEN)
+--     -- Set one output control according to supply and demand
+--     -- The setting is MINUS_MAX for things the network demands more than us
+--     -- and MINUS_HMAX for things we demand more
+--     -- This will be added to { -HMAX if threshold > 0 } resulting in underflow
+--     --    ==> positive ==> filter will be set
+--     --
+--     -- If 0 < x < 0x40000000 then x | MINUS_HMAX = (x + MINUS_HMAX)
+--     -- If MINUS_HMAX <= x < 0 then x | MINUS_HMAX = x
+--     -- Thus (MINUS_HMAX - x) + (x | MINUS_HMAX) = {
+--     --   MINUS_MAX if 0 < x < 0x40000000
+--     --   MINUS_HMAX if MINUS_HMAX <= x < 0
+--     --   0 if x isn't in the combinator
+--     -- }
+--     local mm_one         = builder:combi{op="OR", L=MINUS_HMAX,R=EACH,red={chest},green={demand2}}
+--     local mm_two         = builder:combi{op="-",  L=MINUS_HMAX,R=EACH,red={chest},green={demand2}}
+--     builder:connect_outputs(mm_one,mm_two,GREEN)
 
-    -- Scale threshold by DEMAND, and trim by -DEMAND
-    local trim_scaler = builder:combi{op="*",R=-DEMAND_FACTOR,green={threshold_trim}}
-    local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=2*DEMAND_FACTOR,out=THRESHOLD,green={threshold_trim}}
+--     -- Scale threshold by DEMAND, and trim by -DEMAND
+--     local trim_scaler = builder:combi{op="*",R=-DEMAND_FACTOR,green={threshold_trim}}
+--     local threshold_scaler = builder:combi{op="*",L=THRESHOLD,R=2*DEMAND_FACTOR,out=THRESHOLD,green={threshold_trim}}
 
-    -- Set threshold = -HMAX-1 if threshold != 0
-    -- This will get added to +1 below, resulting in -HMAX
-    -- = -HMAX-1 if power is on
-    -- = -1 if power is off
-    local power_adjust = builder:combi{op=">>",L=POWER,R=1,out=POWER,green={power}} -- -HMAX if power is off
-    local power_adjust_2 = builder:constant_combi{{signal=POWER,count=-1}}
-    local threshold_nonzero = builder:combi{op="!=",L=THRESHOLD,R=0,out=THRESHOLD,set_one=true,green={threshold_trim}}
-    local threshold_test     = builder:combi{op="*",L=THRESHOLD,R=POWER,out=THRESHOLD,green={threshold_nonzero},red={power_adjust,power_adjust_2}}
+--     -- Set threshold = -HMAX-1 if threshold != 0
+--     -- This will get added to +1 below, resulting in -HMAX
+--     -- = -HMAX-1 if power is on
+--     -- = -1 if power is off
+--     local power_adjust = builder:combi{op=">>",L=POWER,R=1,out=POWER,green={power}} -- -HMAX if power is off
+--     local power_adjust_2 = builder:constant_combi{{signal=POWER,count=-1}}
+--     local threshold_nonzero = builder:combi{op="!=",L=THRESHOLD,R=0,out=THRESHOLD,set_one=true,green={threshold_trim}}
+--     local threshold_test     = builder:combi{op="*",L=THRESHOLD,R=POWER,out=THRESHOLD,green={threshold_nonzero},red={power_adjust,power_adjust_2}}
 
-    -- drive the bus according to demand
-    local driver        = builder:combi{op="*",R=-DEMAND_FACTOR,green={supply_neg}}
-    builder:connect_outputs(driver,outreg,GREEN)
+--     -- drive the bus according to demand
+--     local driver        = builder:combi{op="*",R=-DEMAND_FACTOR,green={supply_neg}}
+--     builder:connect_outputs(driver,outreg,GREEN)
 
-    -- output MINUS_HMAX if > threshold and threshold != 0
-    local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={
-        threshold_scaler,trim_scaler,burst_hold,scale_before_burst
-    },set_one=true}
-    local in_demand_2   = builder:combi{op="*",R=THRESHOLD,green={in_demand_1,threshold_test}}
-    builder:connect_outputs(mm_one,in_demand_2,GREEN)
+--     -- output MINUS_HMAX if > threshold and threshold != 0
+--     local in_demand_1   = builder:combi{op=">=",R=THRESHOLD,green={driver},red={
+--         threshold_scaler,trim_scaler,burst_hold,scale_before_burst
+--     },set_one=true}
+--     local in_demand_2   = builder:combi{op="*",R=THRESHOLD,green={in_demand_1,threshold_test}}
+--     builder:connect_outputs(mm_one,in_demand_2,GREEN)
 
-    return {output=in_demand_2, outreg=outreg, input=inbound_neg, power=power}
+--     return {output=in_demand_2, outreg=outreg, input=inbound_neg, power=power}
 end
 
 -- Construct module
