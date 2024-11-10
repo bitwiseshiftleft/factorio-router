@@ -171,7 +171,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     end
 
     -- Create the comms and port control network
-    circuit.create_smart_comms(builder, prefix, input_belts, input_loaders, output_loaders)
+    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders)
     bust_ghosts(entity)
 end
 

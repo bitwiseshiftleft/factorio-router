@@ -4,12 +4,19 @@ local M = {}
 
 
 -- Wire definitions
-local RED    = defines.wire_connector_id.circuit_red
-local GREEN  = defines.wire_connector_id.circuit_green
+local WRED   = defines.wire_type.red
+local WGREEN = defines.wire_type.green
+local CRED   = defines.wire_connector_id.circuit_red
+local CGREEN = defines.wire_connector_id.circuit_green
 local IRED   = defines.wire_connector_id.combinator_input_red
 local IGREEN = defines.wire_connector_id.combinator_input_green
 local ORED   = defines.wire_connector_id.combinator_output_red
 local OGREEN = defines.wire_connector_id.combinator_output_green
+
+local NGREEN = {green=true,red=false}
+local NRED   = {green=false,red=true}
+local NBOTH  = {green=true,red=true}
+local NNONE  = {green=false,red=false}
 
 -- Signal definitions
 local EACH = {type="virtual",name="signal-each"}
@@ -18,6 +25,7 @@ local EVERYTHING = {type="virtual",name="signal-everything"}
 local THRESHOLD = {type="virtual",name="router-signal-threshold"}
 local DEFAULT = {type="virtual",name="router-signal-default"}
 local ZERO = {type="virtual",name="signal-0"}
+local SIGC = {type="virtual",name="signal-C"}
 -- local INPUT = defines.circuit_connector_id.combinator_input
 -- local OUTPUT = defines.circuit_connector_id.combinator_output
 
@@ -48,36 +56,19 @@ function Builder:constant_combi(signals)
     return entity
 end
 
-function Builder:combi(args)
-    -- Create a combinator.
-    -- Args:
-    --   op: the operation (default "+")
-    --   L, R: the left and right operands (signal or int; default EACH)
-    --   out: the output signal (default EACH)
-    --   set_one: if a decider combinator, set output=1 instead of input
-    --   red: inputs to hook up with red wires
-    --   green: inptus to hook up with green wires
-    --   visible: actually make it a visible combinator
-    local control = {}
-
-    -- Make either a decider or arithmetic combinator
-    local name, parameters, is_arithmetic
-    local op = args.op or "+"
+function Builder:make_blinken_combi(args)
     local blinken = args.blinken
     local blinken_suffix = blinken and "-blinken" or ""
-    if string.find("+-*/ANDORXOR",op) or op==">>" or op=="<<" then
+
+    if args.arithmetic then
         name = args.combinator_name or (args.visible and "arithmetic-combinator") or "router-component-arithmetic-combinator" .. blinken_suffix
-        parameters = {operation=op}
-        is_arithmetic = true
     else
         name = args.combinator_name or (args.visible and "decider-combinator") or "router-component-decider-combinator" .. blinken_suffix
-        parameters = {comparator=op, copy_count_from_input=not args.set_one}
     end
-    parameters.output_signal = args.out or EACH
-
+    
     -- Lay out blinkenlights on a grid
     local x_offset, y_offset, orientation = 0
-    if blinken then
+    if args.blinken then
         x_offset = self.blinken_base_x + self.blinken_offset_x*self.blinken_xi
         y_offset = self.blinken_base_y + self.blinken_offset_y*self.blinken_yi
         self.blinken_xi = self.blinken_xi + 1
@@ -87,75 +78,96 @@ function Builder:combi(args)
         end
 
         -- arbitrary
-        orientation = (self.rngstate*2) % 8
+        orientation = (self.rngstate*4) % 16
         self.rngstate = bit32.bxor(bit32.lrotate(self.rngstate,3),self.rngstate + 0xb96e43d2)
     else
         x_offset = 0
         y_offset = 0
     end
 
-    local entity = self.surface.create_entity{
+    return self.surface.create_entity{
         name=name, position=myutil.vector_add(self.position,{x=x_offset,y=y_offset}), force=self.force,
         direction = args.orientation or orientation
     }
+end
 
-    -- Set left and right params
+function Builder:left_and_right(args)
+    -- Parse out shorthand args like L=7, R=THRESHOLD or whatever
+    local condition = {}
     local L = args.L or EACH
-    if type(L) == 'table' then
-        parameters.first_signal = L
-    else
-        parameters.first_constant = L
-    end
-
     local R = args.R or EACH
-    if type(R) == 'table' then
-        parameters.second_signal = R
-    elseif is_arithmetic then
-        parameters.second_constant = R
+    if type(L) == 'table' then
+        condition.first_signal = L
+        condition.first_signal_networks = args.NL or NBOTH
     else
-        parameters.constant = R
+        condition.first_constant = L
+        condition.first_signal_networks = NNONE
     end
-    entity.get_or_create_control_behavior().parameters = parameters
+    if type(R) == 'table' then
+        condition.second_signal = R
+        condition.second_signal_networks = args.NR or NBOTH
+    else
+        condition.second_constant = R
+        condition.second_signal_networks = NNONE
+    end
+    return condition
+end
 
+function Builder:connect_inputs(args, combi)
     -- Connect up the inputs
-    for i,red in ipairs(args.red or {}) do
-        if red then
-            if red == ITSELF then red = entity end
-            parameters = {wire=RED,target_entity=entity,target_circuit_id=INPUT}
-            if red.type == "arithmetic-combinator" or red.type == "decider-combinator" then
-                parameters.source_circuit_id=OUTPUT
+    for j,args_color in ipairs({
+        {args.red or {},WRED,ORED,CRED,IRED},
+        {args.green or {},WGREEN,OGREEN,CGREEN,IGREEN}
+    }) do
+        local my_connector = combi.get_wire_connector(args_color[5])
+        local wire = args_color[2]
+        local their_connector
+        for i,conn in ipairs(args_color[1]) do
+            if conn then
+                if conn == ITSELF then conn = combi end
+
+                if     conn.type == "arithmetic-combinator"
+                    or conn.type == "decider-combinator"
+                    or conn.type == "selector-combinator" then
+                    their_connector = conn.get_wire_connector(args_color[3],true)
+                else
+                    their_connector = conn.get_wire_connector(args_color[4],true)
+                end
+                my_connector.connect_to(their_connector,false,defines.wire_origin.script)
             end
-            red.connect_neighbour(parameters)
         end
     end
-    for i,green in ipairs(args.green or {}) do
-        if green then
-            if green == ITSELF then green = entity end
-            parameters = {wire=GREEN,target_entity=entity,target_circuit_id=INPUT}
-            if green.type == "arithmetic-combinator" or green.type == "decider-combinator" then
-                parameters.source_circuit_id=OUTPUT
-            end
-            green.connect_neighbour(parameters)
-        end
-    end
-
-    return entity
+    return combi
 end
 
-function Builder:connect_outputs(a,b,color)
-    a.connect_neighbour{wire=color or RED,target_entity=b,target_circuit_id=OUTPUT,source_circuit_id=OUTPUT}
-    if color==nil then
-        -- Both
-        a.connect_neighbour{wire=GREEN,target_entity=b,target_circuit_id=OUTPUT,source_circuit_id=OUTPUT}
+function Builder:decider(args)
+    -- Create a decider combinator
+    local combi = self:make_blinken_combi(args)
+
+    local behavior = combi.get_or_create_control_behavior()
+    for i,clause in ipairs(args.decisions or {args}) do
+        local condition = self:left_and_right(clause)
+        condition=clause.op
+        compare_type=clause.and_ and "and" or "or"
+        behavior.add_condition(condition)
     end
+    for i,clause in ipairs(args.output or {args}) do
+        local output = { networks=clause.WO or WBOTH, copy_count_from_input=not args.set_one, signal=clause.out or EACH }
+        behavior.add_output(output)
+    end
+
+    return self:connect_inputs(args, combi)
 end
 
-function Builder:connect_inputs(a,b,color)
-    a.connect_neighbour{wire=color or RED,target_entity=b,target_circuit_id=INPUT,source_circuit_id=INPUT}
-    if color==nil then
-        -- Both
-        a.connect_neighbour{wire=GREEN,target_entity=b,target_circuit_id=INPUT,source_circuit_id=INPUT}
-    end
+function Builder:arithmetic(args)
+    -- Create an arithmetic combinator
+    local combi = self:make_blinken_combi(util.merge{args,{arithmetic=true}})
+    local behavior = combi.get_or_create_control_behavior()
+    local params = self:left_and_right(args)
+    params.operation=args.op or "+"
+    params.output_signal=args.out or EACH
+    behavior.parameters = params
+    return self:connect_inputs(args, combi)
 end
 
 function Builder:new(surface,position,force)
@@ -322,8 +334,29 @@ end
 -- request more than 200000 of any given resource, I guess.
 local DEMAND_FACTOR = 64
 
-local function create_smart_comms(builder,prefix,input_belts,input_loaders,output_loaders)
+local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders)
     -- Create communications system.
+
+    builder.blinken_cols = 8
+    builder.blinken_base_x = 0.43
+    builder.blinken_base_y = 0.33
+    builder.blinken_offset_x = 0.06
+    builder.blinken_offset_y = 0.050
+
+    for _,b in ipairs(input_belts) do
+        local control = b.get_or_create_control_behavior()
+        control.read_contents = true
+        control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.entire_belt_hold
+        -- TODO: enable/disable for show, or is that too expensive?
+    end
+    local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest}}
+    local jammed_max = 4*8*1 -- TODO set based on stacked belts
+    for _,l in ipairs(input_loaders) do
+        local control = l.get_or_create_control_behavior()
+        control.circuit_enable_disable = true
+        control.circuit_condition = {first_signal = SIGC, comparator="<", constant = jammed_max}
+        l.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
+    end
 
     -- For each output belt, set its mode to {don't enable or disable; read=pulse}
     -- The green wire from that output belt becomes the bus (connect it to a lamp)
@@ -335,12 +368,6 @@ local function create_smart_comms(builder,prefix,input_belts,input_loaders,outpu
 --         output_pickup  = {},
 --         output_dropoff = {}
 --     }
-
---     builder.blinken_cols = 8
---     builder.blinken_base_x = 0.43
---     builder.blinken_base_y = 0.33
---     builder.blinken_offset_x = 0.06
---     builder.blinken_offset_y = 0.050
 
 --     -----------------------------------------
 --     -- Construct the counter
