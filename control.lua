@@ -13,33 +13,35 @@ local router_component_table = {
     offset = { x=-1.5, y=-1.5 },
     contents_offset = {x=0, y=0},
     combi_offset = {x=1, y=1},
-    input  = {
-        -- d = direction
-        -- b = belt location
-        -- i = inserter location
-        {d=NORTH, b={x=2, y=2}, i={x=2,y=1}},
-        {d=WEST,  b={x=2, y=1}, i={x=1,y=1}},
-        {d=SOUTH, b={x=1, y=1}, i={x=1,y=2}},
-        {d=EAST,  b={x=1, y=2}, i={x=2,y=2}}
-    },
-    xbelts  = {
-        -- d = direction
-        -- b = belt location
+    ibelts  = {
+        -- d = direction, b = belt location
         {d=NORTH, b={x=2, y=3}},
         {d=WEST,  b={x=3, y=1}},
         {d=SOUTH, b={x=1, y=0}},
         {d=EAST,  b={x=0, y=2}}
     },
-    output = {
-        {d=SOUTH, b={x=1, y=3}, ind={x=1, y=3}, control={x=1, y=3}, pulse={x=0, y=3}, lamp={x=1.5, y=2.3359375}},
-        {d=EAST,  b={x=3, y=2}, ind={x=3, y=2}, control={x=3, y=2}, pulse={x=3, y=3}, lamp={x=2.3359375, y=1.5}},
-        {d=NORTH, b={x=2, y=0}, ind={x=2, y=0}, control={x=2, y=0}, pulse={x=3, y=0}, lamp={x=1.5, y=0.6640625}},
-        {d=WEST,  b={x=0, y=1}, ind={x=0, y=1}, control={x=0, y=1}, pulse={x=0, y=0}, lamp={x=0.6640625, y=1.5}}
+    iloaders = {
+        -- d = direction, b = belt location
+        {d=NORTH, b={x=2, y=2}},
+        {d=WEST,  b={x=2, y=1}},
+        {d=SOUTH, b={x=1, y=1}},
+        {d=EAST,  b={x=1, y=2}}
+    },
+    xbelts  = {
+        -- Nothing in the small version
+    },
+    oloaders = {
+        -- d = direction, b = belt location
+        {d=SOUTH, b={x=1, y=3}},
+        {d=EAST,  b={x=3, y=2}},
+        {d=NORTH, b={x=2, y=0}},
+        {d=WEST,  b={x=0, y=1}}
     },
     lamp_distance = 0.86
 }
 
 local function is_router_belt(entity) return string.find(entity.name, '^router%-component%-.*belt$') ~= nil end
+local function is_router_loader(entity) return string.find(entity.name, '^router%-component%-.*loader$') ~= nil end
 local function is_router_outer(entity) return string.find(entity.name, '^router%-.*router$') ~= nil end
 local function is_router_smart(entity) return string.find(entity.name, '^router%-.*smart$') ~= nil end
 local function is_router_io(entity)    return string.find(entity.name, '^router%-.*io$') ~= nil end
@@ -79,101 +81,6 @@ local function relative_location(epos, orientation, data)
     return inner
 end
 
-local function fixup_extra_inserters(surface, force, area, prefix, buffer)
-    local multiplier = math.ceil(game.entity_prototypes[prefix.."transport-belt"].belt_speed * 8) - 1
-    
-    local function idx(e)
-        local ret = ""
-        ret = ret .. tostring(e.position.x)..","
-        ret = ret .. tostring(e.position.y)..","
-        ret = ret .. tostring(e.pickup_position.x)..","
-        ret = ret .. tostring(e.pickup_position.y)..","
-        ret = ret .. tostring(e.drop_position.x)..","
-        ret = ret .. tostring(e.drop_position.y)..","
-        return ret
-    end
-
-    -- Inserter types we care about
-    for _,name in ipairs{"router-component-inserter","router-component-nonf-inserter"} do
-        local added = 0
-        local extras = 0
-        local removed =0
-        local count_table = {}
-        local entities = surface.find_entities_filtered{area=area,force=force,name=name}
-
-        -- Count the entities with each pickup/dropoff position
-        for _,e in ipairs(entities) do
-            local the_idx = idx(e)
-            if count_table[the_idx] ~= nil then
-                count_table[the_idx].count = count_table[the_idx].count + 1
-            else 
-                count_table[the_idx] = {entity=e, count=1}
-            end
-        end
-
-        -- Multiply the expected counts by the multiplier
-        for _,j in pairs(count_table) do
-            j.count = j.count*multiplier
-        end
-        
-        -- Count the extras
-        entities = surface.find_entities_filtered{force=force,area=area,name=name.."-extra"}
-
-        -- Count the entities with each pickup/dropoff position
-        for _,e in ipairs(entities) do
-            local the_idx = idx(e)
-            extras = extras + 1
-            if count_table[the_idx] then
-                if count_table[the_idx].count <= 0 then
-                    -- We have too many of them ... destroy!
-                    if buffer then buffer.insert(e.held_stack) end
-                    e.destroy()
-                    removed = removed + 1
-                else
-                    -- Just count down
-                    count_table[the_idx].count = count_table[the_idx].count - 1
-                end
-            else
-                -- What?  This shouldn't even be here...
-                if buffer then buffer.insert(e.held_stack) end
-                e.destroy()
-                removed = removed + 1
-            end
-        end
-
-        -- Create extra entities as necessary
-        for the_idx,j in pairs(count_table) do
-            for c=1,j.count do
-                local ins = surface.create_entity({
-                    name = name.."-extra",
-                    position = j.entity.position,
-                    force = force
-                })
-                for _,p in ipairs{"pickup_position","drop_position","inserter_stack_size_override"} do
-                    ins[p] = j.entity[p]
-                end
-                if ins.filter_slot_count and ins.filter_slot_count > 0 then
-                    ins.inserter_filter_mode = j.entity.inserter_filter_mode
-                end
-                local con1 = j.entity.get_or_create_control_behavior()
-                local con2 = ins.get_or_create_control_behavior()
-                for _,p in ipairs{
-                    "circuit_mode_of_operation","circuit_read_hand_contents","circuit_condition",
-                    "circuit_hand_read_mode","circuit_set_stack_size","circuit_stack_control_signal"
-                } do
-                    if con1[p] then con2[p] = con1[p] end
-                end
-
-                added = added+1
-
-                ins.connect_neighbour{wire=circuit.RED,  target_entity=j.entity}
-                ins.connect_neighbour{wire=circuit.GREEN,target_entity=j.entity}
-            end
-        end
-        -- game.print("Added "..tostring(added)..", found " .. tostring(extras)..", removed "..tostring(removed))
-    end
-end
-
 -- Adjustments for outserters to output to different lanes
 local lane_adj = {}
 lane_adj[NORTH] = {x= 0.25,y=0}
@@ -181,249 +88,120 @@ lane_adj[SOUTH] = lane_adj[NORTH]
 lane_adj[EAST]  = {x=0, y=0.25}
 lane_adj[WEST]  = lane_adj[EAST]
 
-local function create_router(prefix, entity, is_fast_replace, buffer)
-    entity.operable = false -- disable its gui
-
-    -- The tricky part: constructing the router
-    local epos = entity.position
-    local data = router_component_table
-    local relative = relative_location(epos, entity.orientation, data)
-    local my_orientation = entity.orientation*8
-
-    local input_ports = {}
-
-    -- Create the input belts
-    for i,ipt in ipairs(data.input) do
-        input_ports[i] = entity.surface.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
-            position = relative(ipt.b),
-            direction = (my_orientation + ipt.d)%8,
-            force = entity.force,
-            fast_replace = is_fast_replace
-        }
-        input_ports[i].rotatable = false
-    end
-    -- Create the extra input belts
-    for _,ipt in ipairs(data.xbelts) do
-        local extra = entity.surface.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
-            position = relative(ipt.b),
-            direction = (my_orientation + ipt.d)%8,
-            force = entity.force,
-            fast_replace = is_fast_replace
-        }
-        extra.rotatable = false
-    end
-
-    local passbands
-    local contents_indicator
-    if not is_fast_replace then
-        -- Create the pass-band combinator network
-        passbands = circuit.create_passband(builder, input_ports, #(data.output))
-
-        -- Create the contents-nonempty indicator    
-        contents_indicator = entity.surface.create_entity({
-            name = "router-component-contents-indicator-lamp", position=vector_add(epos, data.contents_offset), force=entity.force
-        })
-        contents_indicator.connect_neighbour{wire=circuit.RED,  target_entity=passbands.indicator_combi, target_circuit_id=circuit.OUTPUT}
-        contents_indicator.connect_neighbour{wire=circuit.GREEN,target_entity=passbands.indicator_combi, target_circuit_id=circuit.OUTPUT}
-        contents_indicator.operable = false
-    end
-
-    for i,opt in ipairs(data.output) do
-        -- Create the output belts
-        local output_belt = entity.surface.create_entity({
-            name = "router-component-" .. prefix .. "transport-belt",
-            position = relative(opt.b),
-            direction = (my_orientation+opt.d)%8,
-            force = entity.force,
-            fast_replace = is_fast_replace
-        })
-        output_belt.rotatable = false
-
-        if not is_fast_replace then
-            -- Create indicator inserters
-            local indicator_position = relative(opt.ind)
-            local ins = entity.surface.create_entity({
-                name = "router-component-indicator-inserter",
-                position = indicator_position,
-                force = entity.force
-            })
-            local control = ins.get_or_create_control_behavior()
-            ins.pickup_position = epos
-            ins.drop_position = epos
-            ins.inserter_filter_mode = "whitelist"
-            control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
-
-            ins.connect_neighbour{wire=circuit.RED,  target_entity=passbands.input_control[i],target_circuit_id=circuit.INPUT}
-            ins.connect_neighbour{wire=circuit.GREEN,target_entity=passbands.input_control[i],target_circuit_id=circuit.INPUT}
-
-            -- Create port control
-            local control_combi = entity.surface.create_entity({
-                name = "router-component-port-control-combinator",
-                position = relative(opt.control),
-                force = entity.force
-            })
-            control_combi.connect_neighbour{wire=circuit.RED,target_entity=ins}
-            control_combi.connect_neighbour{wire=circuit.GREEN,target_entity=ins}
-
-            -- Create output pulse interface
-            local lamp_pulse = entity.surface.create_entity({
-                name = "router-component-output-indicator-lamp",
-                position = relative(opt.pulse),
-                force = entity.force
-            })
-            lamp_pulse.operable = false -- disable its gui
-            control = output_belt.get_or_create_control_behavior()
-            control.enable_disable = false
-            control.read_contents = true
-            control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.pulse
-            output_belt.connect_neighbour{wire=circuit.RED,target_entity=lamp_pulse}
-            output_belt.connect_neighbour{wire=circuit.GREEN,target_entity=lamp_pulse}
-
-            -- Create the movement inserters
-            for j,ipt in ipairs(data.input) do
-                for lane=1,2 do
-                    -- Create and configure the inserter
-                    ins = entity.surface.create_entity({
-                        name = "router-component-inserter",
-                        position = relative(ipt.i),
-                        force = entity.force
-                    })
-                    ins.pickup_position = relative(ipt.b)
-                    ins.inserter_stack_size_override = 1 -- TODO: but perf...
-                    if lane==1 then
-                        ins.drop_position = relative(vector_add(opt.b, lane_adj[opt.d]))
-                    else
-                        ins.drop_position = relative(vector_sub(opt.b, lane_adj[opt.d]))
-                    end
-
-                    control = ins.get_or_create_control_behavior()
-                    ins.inserter_filter_mode = "whitelist"
-                    control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
-                    -- control.circuit_read_hand_contents = true
-                    -- control.circuit_hand_read_mode = defines.control_behavior.inserter.hand_read_mode.pulse
-
-                    ins.connect_neighbour{wire=circuit.RED,   target_entity=passbands.output_dropoff[i], target_circuit_id=circuit.OUTPUT}
-                    ins.connect_neighbour{wire=circuit.GREEN, target_entity=passbands.output_pickup[j],  target_circuit_id=circuit.OUTPUT}
-                end
-            end
-        end
-    end
-    fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
-    bust_ghosts(entity)
+local function fixup_loaders(surface, force, area, prefix, buffer)
+    -- TODO
 end
 
 local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     entity.operable = false -- disable its gui
 
+    local sz = "4x4" -- TODO
     local epos = entity.position
+    local surf = entity.surface
     local data = router_component_table -- TODO: make multiple of these
     local builder=circuit.Builder:new(entity.surface,entity.position,entity.force)
     local relative = relative_location(epos, entity.orientation, data)
-    local my_orientation = entity.orientation*8
+    local my_orientation = entity.orientation*16
     local input_belts = {}
-    local output_belts = {}
+    local input_loaders = {}
+    local output_loaders = {}
     
-    local count_color_combi
-    if not is_fast_replace then
-        count_color_combi = builder:constant_combi{
-            {signal=circuit.COUNT,count=2*circuit.DEMAND_FACTOR},
-            {signal=circuit.LEAF, count=circuit.DEMAND_FACTOR}
-        }
-    end
+    -- local count_color_combi
+    -- if not is_fast_replace then
+    --     count_color_combi = builder:constant_combi{
+    --         {signal=circuit.COUNT,count=2*circuit.DEMAND_FACTOR},
+    --         {signal=circuit.LEAF, count=circuit.DEMAND_FACTOR}
+    --     }
+    -- end
 
-    -- Create the input and output belts, and lamps
-    for _,ipt in ipairs(data.xbelts) do
-        local xb = entity.surface.create_entity{
+    -- Create the input and output belts and container
+    local chest = surf.create_entity{
+        name = "router-component-container-for-"..sz,
+        position = epos,
+        force = entity.force,
+        fast_replace = is_fast_replace
+    }
+
+    local function mkbelt(ipt)
+        local xb = surf.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
             position = relative(ipt.b),
-            direction = (my_orientation + ipt.d)%8,
+            direction = (my_orientation + ipt.d)%16,
             force = entity.force,
             fast_replace = is_fast_replace
         }
         xb.rotatable = false
+        return xb
     end
-    for i,ipt in ipairs(data.input) do
-        input_belts[i] = entity.surface.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
+
+    local function mkldr(ipt,dir)
+        local tweak = (dir == "input") and 8 or 0 -- because setting loader_type will reverse it
+        local xb = surf.create_entity{
+            name = "router-component-" .. dir .. "-" .. prefix .. "loader",
             position = relative(ipt.b),
-            direction = (my_orientation + ipt.d)%8,
+            direction = (my_orientation + ipt.d + tweak)%16,
             force = entity.force,
             fast_replace = is_fast_replace
         }
-        input_belts[i].rotatable = false
+        xb.rotatable = false
+        xb.loader_type = dir
+        return xb
     end
-    for i,opt in ipairs(data.output) do
-        output_belts[i] = entity.surface.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
-            position = relative(opt.b),
-            direction = (my_orientation + opt.d)%8,
-            force = entity.force,
-            fast_replace = is_fast_replace
-        }
-        output_belts[i].rotatable = false
 
-        local port = builder:create_or_find_entity{
-            name = "router-component-smart-port-lamp",
-            position = relative(opt.lamp)
-        }
-        port.operable = false -- disable its gui
-
-        -- Light if the other port is on
-        local control = port.get_or_create_control_behavior()
-        control.use_colors = true
-        control.circuit_condition = {condition = {comparator="!=",first_signal=circuit.COUNT,second_signal=circuit.LEAF}}
-        output_belts[i].connect_neighbour{wire=circuit.GREEN, target_entity=port}
-        if not is_fast_replace then
-            port.connect_neighbour{wire=circuit.RED, target_entity=count_color_combi}
-        end
+    for i,ipt in ipairs(data.ibelts) do
+        input_belts[i] = mkbelt(ipt)
+    end
+    for i,extra in ipairs(data.xbelts) do
+        input_belts[i] = mkbelt(extra)
+    end
+    for i,ild in ipairs(data.iloaders) do
+        input_loaders[i] = mkldr(ild,"input")
+    end
+    for i,old in ipairs(data.oloaders) do
+        output_loaders[i] = mkldr(old,"output")
     end
 
     -- Fast replace: all the electronics should exist: we're done here!
-    -- TODO: make extra inserters / or cull
     if is_fast_replace then
         circuit.fixup_power_consumption(
             builder, entity,
             "router-component-"..prefix.."power-combinator-smart"
         )
-        fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
         return
     end
 
     -- Create the comms and port control network
-    local passbands = circuit.create_smart_comms(builder, prefix, input_belts, output_belts)
+    -- local passbands = circuit.create_smart_comms(builder, prefix, input_belts, output_belts)
 
     -- Create the movement inserters
-    for i,opt in ipairs(data.output) do
-        for j,ipt in ipairs(data.input) do
-            for lane=1,2 do
-                -- Create and configure the inserter
-                ins = entity.surface.create_entity({
-                    name = "router-component-inserter",
-                    position = relative(ipt.i),
-                    force = entity.force
-                })
-                ins.pickup_position = relative(ipt.b)
-                ins.inserter_stack_size_override = 1 -- TODO: but perf...
-                if lane==1 then
-                    ins.drop_position = relative(vector_add(opt.b, lane_adj[opt.d]))
-                else
-                    ins.drop_position = relative(vector_sub(opt.b, lane_adj[opt.d]))
-                end
+    -- for i,opt in ipairs(data.output) do
+    --     for j,ipt in ipairs(data.input) do
+    --         for lane=1,2 do
+    --             -- Create and configure the inserter
+    --             ins = entity.surface.create_entity({
+    --                 name = "router-component-inserter",
+    --                 position = relative(ipt.i),
+    --                 force = entity.force
+    --             })
+    --             ins.pickup_position = relative(ipt.b)
+    --             ins.inserter_stack_size_override = 1 -- TODO: but perf...
+    --             if lane==1 then
+    --                 ins.drop_position = relative(vector_add(opt.b, lane_adj[opt.d]))
+    --             else
+    --                 ins.drop_position = relative(vector_sub(opt.b, lane_adj[opt.d]))
+    --             end
 
-                control = ins.get_or_create_control_behavior()
-                ins.inserter_filter_mode = "whitelist"
-                control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
-                -- control.circuit_read_hand_contents = true
-                -- control.circuit_hand_read_mode = defines.control_behavior.inserter.hand_read_mode.pulse
+    --             control = ins.get_or_create_control_behavior()
+    --             ins.inserter_filter_mode = "whitelist"
+    --             control.circuit_mode_of_operation = defines.control_behavior.inserter.circuit_mode_of_operation.set_filters
+    --             -- control.circuit_read_hand_contents = true
+    --             -- control.circuit_hand_read_mode = defines.control_behavior.inserter.hand_read_mode.pulse
 
-                ins.connect_neighbour{wire=circuit.RED,   target_entity=passbands.output_dropoff[i], target_circuit_id=circuit.OUTPUT}
-                ins.connect_neighbour{wire=circuit.GREEN, target_entity=passbands.output_pickup[j],  target_circuit_id=circuit.OUTPUT}
-            end
-        end
-    end
-    fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, buffer)
+    --             ins.connect_neighbour{wire=circuit.RED,   target_entity=passbands.output_dropoff[i], target_circuit_id=circuit.OUTPUT}
+    --             ins.connect_neighbour{wire=circuit.GREEN, target_entity=passbands.output_pickup[j],  target_circuit_id=circuit.OUTPUT}
+    --         end
+    --     end
+    -- end
     bust_ghosts(entity)
 end
 
@@ -519,7 +297,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
             builder, entity,
             "router-component-"..prefix.."power-combinator-io"
         )
-        fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
+        fixup_loaders(entity.surface, entity.force, entity.bounding_box, prefix, nil)
         return
     end
 
@@ -616,7 +394,7 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes, 
             force=entity.force
         })
     end
-    fixup_extra_inserters(entity.surface, entity.force, entity.bounding_box, prefix, nil)
+    fixup_loaders(entity.surface, entity.force, entity.bounding_box, prefix, nil)
     bust_ghosts(entity)
 end
 

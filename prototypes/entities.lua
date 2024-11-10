@@ -179,6 +179,18 @@ local hidden_widget_proto = {
     draw_circuit_wires = false
 }
 
+local hidden_container_for_4x4 = util.merge{hidden_widget_proto,{
+    name = "router-component-container-for-4x4", -- its actual size is 2x2
+    type = "container",
+    -- "player-creation" is required for loaders to connect to it
+    flags = { "not-blueprintable", "hide-alt-info", "not-on-map", "player-creation", "placeable-neutral" },
+    icon = "__router__/graphics/router-icon.png",
+    collision_box = {{-0.8,-0.8},{0.8,0.8}},
+    selection_box = {{-0.8,-0.8},{0.8,0.8}},
+    inventory_size = 20,
+    draw_circuit_wires = false
+}}
+
 -- Prototype base for interface combinators
 local control_combinator_proto = {
     type = "constant-combinator",
@@ -280,7 +292,9 @@ if protos.enable_manual or protos.enable_smart then
         hidden_arith_blinken, hidden_decider_blinken,
 
         -- Super filter inserters
-        super_inserter, super_inserter_2
+        super_inserter, super_inserter_2,
+
+        hidden_container_for_4x4, hidden_loader
     }
 end
 
@@ -444,9 +458,11 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         energy_source = { type = "void", },
         energy_usage_per_tick = "1J",
 		collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
+        collision_mask = {layers={}},
 		selection_box = {{-2, -2}, {2, 2}},
         selection_priority = 30,
         selectable_in_game = true,
+        -- selectable_in_game = false,
         circuit_wire_max_distance = 0,
         circuit_wire_connection_points = { wire={}, shadow={}},
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
@@ -567,6 +583,36 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     end
 end
 
+local function create_loader(prefix,postfix)
+    local belt_type = prefix.."transport-belt"..(postfix or "")
+    data:extend{util.merge{hidden_widget_proto,{
+        name = "router-component-input-"..prefix.."loader",
+        type = "loader-1x1",
+        filter_count = 0,
+        speed = data.raw["transport-belt"][belt_type].speed,
+        allow_rail_interaction = false,
+        collision_mask = {layers={transport_belt=true}},
+        -- max_belt_stack_size = 1, -- TODO: if belt stacking is enabled
+        circuit_wire_max_distance = 10,
+        draw_circuit_wires = false,
+        fast_replaceable_group = "router-input-loader",
+        container_distance = 0.75,
+    }},util.merge{hidden_widget_proto,{
+        name = "router-component-output-"..prefix.."loader",
+        type = "loader-1x1",
+        filter_count = 5,
+        speed = data.raw["transport-belt"][belt_type].speed,
+        allow_rail_interaction = false,
+        collision_mask = {layers={transport_belt=true}},
+        -- max_belt_stack_size = 1, -- TODO: if belt stacking is enabled
+        circuit_wire_max_distance = 10,
+        draw_circuit_wires = false,
+        fast_replaceable_group = "router-output-loader",
+        container_distance = 0.75
+    }}}
+end
+
 for prefix,router in pairs(protos.table) do
     create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "",router.power)
+    create_loader(prefix)
 end

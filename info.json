@@ -14,6 +14,7 @@
       "? Krastorio2 >= 1.3.0",
       "? DeadlockBlackRubberBelts >= 1.0",
       "? PickerDollies >= 1.2.0",
-      "? Dectorio >= 0.12"
+      "? Dectorio >= 0.12",
+      "? enable-all-feature-flags >= 1.0.1"
     ]
   }
