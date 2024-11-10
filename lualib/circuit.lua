@@ -85,10 +85,13 @@ function Builder:make_blinken_combi(args)
         y_offset = 0
     end
 
-    return self.surface.create_entity{
+    local ret = self.surface.create_entity{
         name=name, position=myutil.vector_add(self.position,{x=x_offset,y=y_offset}), force=self.force,
         direction = args.orientation or orientation
     }
+    ret.combinator_description = args.description or ""
+
+    return ret
 end
 
 function Builder:left_and_right(args)
@@ -337,6 +340,7 @@ local DEMAND_FACTOR = 64
 local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders)
     -- Create communications system.
 
+    -- Set up the builder's blinkendata
     builder.blinken_cols = 8
     builder.blinken_base_x = 0.43
     builder.blinken_base_y = 0.33
@@ -347,9 +351,9 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         local control = b.get_or_create_control_behavior()
         control.read_contents = true
         control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.entire_belt_hold
-        -- TODO: enable/disable for show, or is that too expensive?
+        -- TODO: enable/disable for show, or maybe that's too expensive?
     end
-    local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest}}
+    local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
     local jammed_max = 4*8*1 -- TODO set based on stacked belts
     for _,l in ipairs(input_loaders) do
         local control = l.get_or_create_control_behavior()
