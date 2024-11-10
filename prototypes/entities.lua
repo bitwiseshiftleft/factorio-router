@@ -584,6 +584,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
 end
 
 local function create_loader(prefix,postfix)
+    local stack_size = feature_flags.space_travel and 255 or 1
     local belt_type = prefix.."transport-belt"..(postfix or "")
     data:extend{util.merge{hidden_widget_proto,{
         name = "router-component-input-"..prefix.."loader",
@@ -592,7 +593,7 @@ local function create_loader(prefix,postfix)
         speed = data.raw["transport-belt"][belt_type].speed,
         allow_rail_interaction = false,
         collision_mask = {layers={transport_belt=true}},
-        -- max_belt_stack_size = 1, -- TODO: if belt stacking is enabled
+        max_belt_stack_size = stack_size,
         circuit_wire_max_distance = 10,
         draw_circuit_wires = false,
         fast_replaceable_group = "router-input-loader",
@@ -604,7 +605,7 @@ local function create_loader(prefix,postfix)
         speed = data.raw["transport-belt"][belt_type].speed,
         allow_rail_interaction = false,
         collision_mask = {layers={transport_belt=true}},
-        -- max_belt_stack_size = 1, -- TODO: if belt stacking is enabled
+        max_belt_stack_size = stack_size,
         circuit_wire_max_distance = 10,
         draw_circuit_wires = false,
         fast_replaceable_group = "router-output-loader",
