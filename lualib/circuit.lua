@@ -96,7 +96,7 @@ function Builder:make_blinken_combi(args)
     return ret
 end
 
-function Builder:left_and_right(args)
+function Builder:left_and_right(args,is_decider)
     -- Parse out shorthand args like L=7, R=THRESHOLD or whatever
     local condition = {}
     local L = args.L or EACH
@@ -111,9 +111,10 @@ function Builder:left_and_right(args)
     if type(R) == 'table' then
         condition.second_signal = R
         condition.second_signal_networks = args.NR or NBOTH
+    elseif is_decider then
+        condition.constant = R
     else
         condition.second_constant = R
-        condition.second_signal_networks = NNONE
     end
     return condition
 end
@@ -151,14 +152,22 @@ function Builder:decider(args)
 
     local behavior = combi.get_or_create_control_behavior()
     for i,clause in ipairs(args.decisions or {args}) do
-        local condition = self:left_and_right(clause)
-        condition.condition=clause.op
+        local condition = self:left_and_right(clause,true)
+        condition.comparator=clause.op
         condition.compare_type=clause.and_ and "and" or "or"
-        behavior.add_condition(condition)
+        if i > 1 then
+            behavior.add_condition(condition)
+        else
+            behavior.set_condition(1,condition)
+        end
     end
     for i,clause in ipairs(args.output or {args}) do
         local output = { networks=clause.WO or WBOTH, copy_count_from_input=not args.set_one, signal=clause.out or EACH }
-        behavior.add_output(output)
+        if i > 1 then
+            behavior.add_output(output)
+        else
+            behavior.set_output(1,output)
+        end
     end
 
     return self:connect_inputs(args, combi)
@@ -337,7 +346,7 @@ end
 -- another DEMAND_FACTOR for 1/leakage = DEMAND_FACTOR^2 = 2^12, times another
 -- 2 for the lag combinator.  This leaves 2^18 less in a signed word.  So don't
 -- request more than 200000 of any given resource, I guess.
-local DEMAND_FACTOR = 64
+local LEAK_FACTOR = 64
 
 local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps)
     -- Create communications system.
@@ -378,13 +387,21 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     -- == BIGMASK if in chest inventory, 0 if not
     local inventory_bigmask = builder:arithmetic{NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory masked"}
 
-    local my_demand = builder:arithmetic{op="*",R=-4,green={chest},red=input_belts} -- negative: current and incoming inventory
+    -- TODO: currently always 1
+    local my_demand = builder:arithmetic{op="*",R=-5,green={chest},red=input_belts} -- negative: current and incoming inventory
+
+    -- Adjustments to demand
+    builder:arithmetic{op="/",R=-LEAK_FACTOR,red={my_demand,ITSELF},description="leak div"}   -- leak term: /leak_factor
+    builder:arithmetic{op="OR",R=-1,red={my_demand,ITSELF},description="leak decrement"}      -- leak term: -1
+    builder:arithmetic{op="/",R=5,red={my_demand,ITSELF},description="damper"}                -- damping term to help the network quiesce faster (?)
+    builder:arithmetic{L=LINK,op="/",R=-5,out=LINK,red={my_demand,ITSELF},description="undamp link"} -- don't damp the link
+
 
     -- Combinator that sets link=4
-    local constant_link = builder:constant_combi({{LINK,4}},"constant link")
+    local constant_link = builder:constant_combi({{LINK,6}},"constant link") -- +1 because of the "or leak" term
     my_demand.get_wire_connector(ORED,true).connect_to(constant_link.get_wire_connector(CRED,true))
 
-    local cancel_my_output = builder:decider{op="/",R=-4,description="cancel my output",red={my_demand}}
+    local cancel_my_output = builder:arithmetic{op="/",R=-5,description="cancel my output",red={my_demand}}
     local inventory_bigmask_minus_my_output = builder:decider{op="<",R=0,red={cancel_my_output},description="minus my output"}
     inventory_bigmask_minus_my_output.get_wire_connector(ORED,true).connect_to(inventory_bigmask.get_wire_connector(ORED,true))
 
@@ -399,13 +416,13 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         control.circuit_condition = {first_signal=LINK, comparator=">=", constant=2}
 
         -- Drive my demand / 4 ==> lamp (connected via their_demand)
-        local port_driver = builder:arithmetic{op="/",R=4,red={my_demand},description="port driver"}
+        local port_driver = builder:arithmetic{op="/",R=5,red={my_demand},description="port driver"}
 
         -- The lamp has (their_demand + my_output)
         -- Set their_demand = (their_demand + my_output + cancel_my_output) if > 0
         local their_demand = builder:decider{
             decisions = {{NL=NBOTH, op=">", R=0}},
-            output = {WO=WBOTH,signal=EACH},
+            output = {{WO=WBOTH,signal=EACH}},
             green = {lamp,port_driver},
             red = {cancel_my_output},
             description="input filter"
@@ -414,40 +431,43 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 
         local demand_reflector = builder:decider{
             decisions = {
-                {NL=NBOTH,  L=LINK, op="=", R=0},
-                {and_=true, NL=NGREEN, L=EACH, op=">", R=0},
+                {NL=NGREEN,  L=LINK, op="=", R=1},
+                {and_=true, NL=NRED, L=EACH, op=">", R=0},
                 -- OR --
                 {NL=NGREEN,  L=LEAF, op="=", R=1},
-                {and_=true, NL=NGREEN, L=EACH, op=">", R=0}
+                {and_=true, NL=NRED, L=EACH, op=">", R=0}
             }, -- if neighbor isn't there, or is an I/O point, reflect my demand back to me
-            output = {WO=WGREEN,signal=EACH},
-            green = {lamp,port_driver},
-            red = {cancel_my_output},
-            description="output reflector"
+            output = {{WO=NRED,signal=EACH}},
+            green = {port_driver},
+            red = {port_driver},
+            description="demand reflector"
         }
         my_demand.get_wire_connector(ORED,true).connect_to(demand_reflector.get_wire_connector(ORED,true)) -- connect to demand bus
         
-
         ------------------------------------------------------------------------------
         -- Output belt control
         ------------------------------------------------------------------------------
         -- green: their_demand + BIG_MASK
         -- red:   (inventory|BIG_MASK) - my_demand
+
+
+        -- TODO: if something is in light demand, it can be routed to default because my inventory will drag my_demand to zero
+        -- even though some other party has positive demand
         local output_controller = builder:decider{
             decisions = {
                 {NL=NRED, op=">", R=0},                     -- inventory > 0
                 -- {and_=true,L=LINK, NL=NRED, op=">", R=0},   -- link > 0
                 {and_=true,NL=NGREEN, op=">", R=0},         -- their demand > 0
-                {and_=true, NL=NBOTH, op=">=", R=BIG_MASK}, -- their demand + (mask - mine) > mask
+                {and_=true, NL=NBOTH, op=">", R=BIG_MASK}, -- their demand + (mask - mine) > mask
                 -- OR --
-                {NL=NRED, op=">", R=0},                     -- inventory > 0
-                -- {and_=true,L=LINK, NL=NRED, op=">", R=0},   -- link > 0
+                {NL=NRED, op="=", R=BIG_MASK},                -- inventory > 0 and my demand = 0
+                -- {and_=true,L=LINK, NL=NRED, op=">", R=0},  -- link > 0
                 {and_=true,NL=NGREEN,L=DEFAULT,op=">",R=0}, -- their demand[default] > 0
-                {and_=true,NL=NBOTH,L=DEFAULT,op=">=",R=0}  -- their demand[default] >= mine
+                {and_=true,NL=NBOTH,L=DEFAULT,op=">",R=0}  -- their demand[default] >= mine
             },
-            output = {set_one=true,WO=WRED,signal=EACH},
+            output = {{set_one=true,WO=WRED,signal=EACH}},
             red = {inventory_bigmask_minus_my_output},
-            green = {their_demand},
+            green = {their_demand,demand_reflector},
             description="output_controller"
         }
 
