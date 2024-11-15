@@ -43,16 +43,18 @@ local HOLD  = defines.control_behavior.transport_belt.content_read_mode.hold
 local ITSELF = "__ITSELF__"
 local Builder = {}
 
-function Builder:constant_combi(signals)
+function Builder:constant_combi(signals,description)
     -- Create a constant combinator with the given signals
     local entity = self.surface.create_entity{
         name="router-component-hidden-constant-combinator",
         position=self.position, force=self.force
     }
     local con = entity.get_or_create_control_behavior()
+    local section = con.get_section(1)
     for i,sig in ipairs(signals) do
-        con.set_signal(i,sig)
+        section.set_slot(i,{value=util.merge{sig[1],{comparator="=",quality="normal"}},min=sig[2]})
     end
+    entity.combinator_description = description or ""
     return entity
 end
 
@@ -369,29 +371,65 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     end
 
     ------------------------------------------------------------------------------
-    -- Output belt control
+    -- Signal transmission
     ------------------------------------------------------------------------------
     local BIG_MASK = 0x3fffffff
     local HALF_BIG_MASK = 0x1fffffff
     -- == BIGMASK if in chest inventory, 0 if not
-    -- TODO: supply default:bigmask
-    local inventory_bigmask = builder:arithmetic{NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory_masked"}
+    local inventory_bigmask = builder:arithmetic{NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory masked"}
+
+    local constant_link = builder:constant_combi({{LINK,4}},"constant link")
+    local my_demand = builder:arithmetic{op="*",R=-4,green={chest},red=input_belts} -- negative: current and incoming inventory
+    my_demand.get_wire_connector(ORED,true).connect_to(constant_link.get_wire_connector(CRED,true))
+
+    local cancel_my_output = builder:decider{op="/",R=-4,description="cancel my output",red={my_demand}}
+    local inventory_bigmask_minus_my_output = builder:decider{op="<",R=0,red={cancel_my_output},description="minus my output"}
+    inventory_bigmask_minus_my_output.get_wire_connector(ORED,true).connect_to(inventory_bigmask.get_wire_connector(ORED,true))
 
     for i,l in ipairs(output_loaders) do
+        local lamp = lamps[i]
+        
+        -- Set the lamp to enable when link >= 2 (one from me, one from them))
+        local control = lamp.get_or_create_control_behavior()
+        control.use_colors = true
+        control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
+        control.circuit_enable_disable = true
+        control.circuit_condition = {first_signal=LINK, comparator=">=", constant=2}
+
+        -- Drive my demand / 4 ==> lamp (connected via their_demand)
+        local port_driver = builder:arithmetic{op="/",R=4,red={my_demand},description="port driver"}
+
+        -- The lamp has (their_demand + my_output)
+        -- Set their_demand = (their_demand + my_output + cancel_my_output) if > 0
+        local their_demand = builder:decider{
+            decisions = {{NL=NBOTH, op=">", R=0}},
+            output = {WO=WBOTH,signal=EACH},
+            green = {lamp,port_driver},
+            red = {cancel_my_output},
+            description="input_filter"
+        }
+        my_demand.get_wire_connector(ORED,true).connect_to(their_demand.get_wire_connector(ORED,true)) -- connect to demand bus
+
+        ------------------------------------------------------------------------------
+        -- Output belt control
+        ------------------------------------------------------------------------------
         -- green: their_demand + BIG_MASK
-        -- red:   my_demand + (inventory|BIG_MASK)
+        -- red:   (inventory|BIG_MASK) - my_demand
         local output_controller = builder:decider{
             decisions = {
-                {NL=NRED, op=">=", R=HALF_BIG_MASK},               -- inventory > 0
-                {and_=true,NL=NGREEN, op=">", R=BIG_MASK},         -- their demand + BIG_MASK > BIG_MASK <==> their demand > 0
-                {and_=true, NL=NGREEN, op=">=", NR=NRED},          -- their demand >= mine
+                {L=LINK, NL=NRED, op=">", R=0},             -- link > 0
+                {and_=true,NL=NRED, op=">", R=0},           -- inventory > 0
+                {and_=true,NL=NGREEN, op=">", R=0},         -- their demand > 0
+                {and_=true, NL=NBOTH, op=">=", R=BIG_MASK}, -- their demand + (mask - mine) > mask
                 -- OR --
-                {NL=NRED, op=">=", R=HALF_BIG_MASK},               -- inventory > 0
-                {and_=true,NL=NGREEN,L=DEFAULT,op=">",R=BIG_MASK}, -- their demand[default] + BIG_MASK > BIG_MASK <==> their demand[default] > 0
-                {and_=true,NL=NGREEN,L=DEFAULT,op=">=",R=DEFAULT,NR=NRED} -- their demand[default] >= mine
+                {L=LINK, NL=NRED, op=">", R=0},             -- link > 0
+                {and_=true,NL=NRED, op=">", R=0},           -- inventory > 0
+                {and_=true,NL=NGREEN,L=DEFAULT,op=">",R=0}, -- their demand[default] > 0
+                {and_=true,NL=NBOTH,L=DEFAULT,op=">=",R=0}  -- their demand[default] >= mine
             },
             output = {set_one=true,WO=WRED,signal=EACH},
-            red = {inventory_bigmask},
+            red = {inventory_bigmask_minus_my_output},
+            green = {their_demand},
             description="output_controller"
         }
 

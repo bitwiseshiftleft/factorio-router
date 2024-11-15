@@ -162,7 +162,9 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         output_loaders[i] = mkldr(old,"output")
     end
 
-    -- Fast replace: all the electronics should exist: we're done here!
+    ----------------------------------------------------------------------
+    -- If fast replace: all the electronics should exist: we're done here!
+    ----------------------------------------------------------------------
     if is_fast_replace then
         circuit.fixup_power_consumption(
             builder, entity,
@@ -178,10 +180,6 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
             position = relative(old.lamp)
         }
         lamp.operable = false -- disable its gui
-        local control = lamp.get_or_create_control_behavior()
-        control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
-        control.circuit_enable_disable = true
-        control.circuit_condition = {first_signal=circuit.LINK, comparator=">", constant=1}
         lamps[i] = lamp
     end
 
