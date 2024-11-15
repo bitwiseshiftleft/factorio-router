@@ -20,7 +20,15 @@ However, a constraint to request each resource from only one place might be too
 restrictive.
 
 ## General
-* Document how the circuits work
+* Add I/O points back in
+* Add power consumption back in
+* Add a way to promise that items are on the way (red wires?)
+* Is there a way to ratchet up router belt stacking at a cost?  It should be expensive, and/or require quality routers.
+* Make sure blueprinting works
+* Make sure undo/redo works
+* Make the jam check scale with stack size
+* Re-edit the doc to say that we aren't going for autoconnect, at least not this round
+* Document in Factoripedia
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
