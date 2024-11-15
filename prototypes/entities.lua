@@ -106,7 +106,7 @@ local hidden_combinator = {
     activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
     activity_led_sprites = empty_sheet_4,
     screen_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
-    activity_led_hold_time = 60,
+    activity_led_hold_time = 120,
     circuit_wire_max_distance = 9
 }
 
@@ -115,28 +115,28 @@ local blinkensprites = {
     north = {
         filename = "__router__/graphics/blinken.png",
         priority = "very-low",
-        width = 3, height = 3, scale=0.5,
+        width = 3, height = 3, scale=0.7,
         shift = util.by_pixel(9,-13),
         tint = {0.3,0.8,0.1,1}
     },
     south = {
         filename = "__router__/graphics/blinken.png",
         priority = "very-low",
-        width = 3, height = 3, scale=0.5,
+        width = 3, height = 3, scale=0.7,
         shift = util.by_pixel(9,-13),
         tint = {0.3,0.7,0.1,1}
     },
     east = {
         filename = "__router__/graphics/blinken.png",
         priority = "very-low",
-        width = 3, height = 3, scale=0.5,
+        width = 3, height = 3, scale=0.7,
         shift = util.by_pixel(9,-13),
         tint = {0.2,0.8,0.1,1}
     },
     west = {
         filename = "__router__/graphics/blinken.png",
         priority = "very-low",
-        width = 3, height = 3, scale=0.5,
+        width = 3, height = 3, scale=0.7,
         shift = util.by_pixel(9,-13),
         tint = {0.8,0.8,0.6,1}
     },
@@ -344,16 +344,12 @@ if protos.enable_smart then
             name = "router-component-smart-port-lamp",
             picture_off = light_off,
             picture_on = util.merge{light_on,{apply_runtime_tint=true}},
-            -- Done in data-final-fixes so that Dectorio and similar can't change it
-            -- signal_to_color_mapping = {
-            --     {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
-            --     {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
-            -- },
+            -- signal_to_color_mapping is in data-final-fixes so that Dectorio and similar can't change it
             selection_box = {{-0.5,-1.26},{0.5,-0.26}},
-            circuit_wire_connection_point = {
+            circuit_connector = { points = {
                 wire = { red={0,-0.64}, green={0,-0.64} },
                 shadow = { red={0.08,-0.56}, green={0.08,-0.56} },
-            },
+            }},
             icon = "__router__/graphics/connected.png", icon_size=128,
             fast_replaceable_group = "router-component-smart-port-lamp"
         }},
@@ -368,6 +364,7 @@ if protos.enable_smart then
                 wire = { red={0,-0.40}, green={0,-0.35} },
                 shadow = { red={0.08,-0.35}, green={0.08,-0.30} },
             },
+            circuit_wire_max_distance = 64,
             icon = "__router__/graphics/leaf.png", icon_size=128,
         }},
         -- IO indicator lamp.  Visible but cannot be interacted with
@@ -377,11 +374,7 @@ if protos.enable_smart then
             draw_circuit_wires=false,
             picture_off = util.merge{light_off,{shift=util.by_pixel(0,-21)}},
             picture_on = util.merge{light_on,{apply_runtime_tint=true,shift=util.by_pixel(0,-21)}},
-            -- Done in data-final-fixes so that Dectorio and similar can't change it
-            -- signal_to_color_mapping = {
-            --     {type="virtual",name="router-signal-link",color={r=0.65,b=1,g=0.8}},
-            --     {type="virtual",name="router-signal-leaf",color={r=0.7,b=0.6,g=1}}
-            -- },
+            -- signal_to_color_mapping is in data-final-fixes so that Dectorio and similar can't change it
         }},
         -- TODO: make sprites for this
         util.merge{interface_lamp_proto,{
@@ -584,31 +577,37 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
 end
 
 local function create_loader(prefix,postfix)
-    local stack_size = feature_flags.space_travel and 255 or 1
+    local stack_size = protos.have_stacked_belts and 255 or 1
     local belt_type = prefix.."transport-belt"..(postfix or "")
+    local belt = data.raw["transport-belt"][belt_type]
     data:extend{util.merge{hidden_widget_proto,{
         name = "router-component-input-"..prefix.."loader",
         type = "loader-1x1",
         filter_count = 0,
-        speed = data.raw["transport-belt"][belt_type].speed,
+        speed = belt.speed,
         allow_rail_interaction = false,
         collision_mask = {layers={transport_belt=true}},
         max_belt_stack_size = stack_size,
         circuit_wire_max_distance = 10,
         draw_circuit_wires = false,
         fast_replaceable_group = "router-input-loader",
+        -- But actually don't bother with input animation, because the input loader is hidden
+        -- belt_animation_set = belt.belt_animation_set,
         container_distance = 0.75,
     }},util.merge{hidden_widget_proto,{
         name = "router-component-output-"..prefix.."loader",
         type = "loader-1x1",
         filter_count = 5,
-        speed = data.raw["transport-belt"][belt_type].speed,
+        belt_length = 0.5,
+        animation_speed_coefficient = 32,
+        speed = belt.speed,
         allow_rail_interaction = false,
         collision_mask = {layers={transport_belt=true}},
         max_belt_stack_size = stack_size,
         circuit_wire_max_distance = 10,
         draw_circuit_wires = false,
         fast_replaceable_group = "router-output-loader",
+        belt_animation_set = belt.belt_animation_set,
         container_distance = 0.75
     }}}
 end

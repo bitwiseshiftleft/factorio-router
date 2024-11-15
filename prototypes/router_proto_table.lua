@@ -1,11 +1,13 @@
 local M = {}
 
+M.have_stacked_belts = feature_flags.space_travel
 local sizes = {"4x4"}
 -- Krastorio2 and SE support
 local have_se = data.raw.item["se-space-transport-belt"] ~= nil
 local have_ir3 = mods["IndustrialRevolution3"]
 local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
-local have_bobs = data.raw.item["turbo-transport-belt"] ~= nil
+local have_bobs = data.raw.item["ultimate-transport-belt"] ~= nil
+local have_spaceage = feature_flags.space_travel and data.raw.item["turbo-transport-belt"] ~= nil
 local have_ae3 = (
   data.raw.technology["advanced-electronics-3"] ~= nil
   and data.raw.item["advanced-logistic-science-pack"] ~= nil
@@ -16,8 +18,10 @@ local have_py = mods["pyhightech"]
 local turbo_hex
 if mods["boblogistics-belt-reskin"] then
   turbo_hex = "df1ee5D1"
-else
+elseif have_bobs then
   turbo_hex = "a510e5D1"
+else
+  turbo_hex = "aad458D1"
 end
 
 M.table = {
@@ -311,20 +315,51 @@ elseif have_bobs then
       time = 15
     },
   }
+elseif have_spaceage then
+  M.table["turbo-"] = {
+    tint = util.color(turbo_hex),
+    prerequisites = {"turbo-transport-belt","utility-science-pack"},
+    tech_costs = {
+        count = 800,
+        ingredients =
+        {
+          {"automation-science-pack", 1},
+          {"logistic-science-pack", 1},
+          {"chemical-science-pack", 1},
+          {"production-science-pack", 1},
+          {"utility-science-pack", 1},
+          {"space-science-pack", 1},
+          {"metallurgic-science-pack", 1}
+        },
+        time = 60
+    },
+    manual_ingredients = {
+        {"processing-unit",60}
+    },
+    smart_ingredients = {
+        {"processing-unit",90}
+    },
+    io_ingredients = {
+        {"processing-unit",30}
+    }
+  }
 end
 
 -- Fixup: add automatic ingredients and power consumption
 local power_scale =  settings.startup["router-power-scale"].value
 for prefix,router in pairs(M.table) do
     local postfix = router.postfix or ""
-    table.insert(router.manual_ingredients, { prefix.."transport-belt"..postfix or "", 8 })
-    table.insert(router.manual_ingredients, { prefix.."splitter"..postfix, 8 })
-    table.insert(router.smart_ingredients,  { prefix.."transport-belt"..postfix, 8 })
-    table.insert(router.smart_ingredients,  { prefix.."splitter"..postfix, 8 })
-    table.insert(router.io_ingredients,     { prefix.."transport-belt"..postfix, 2 })
-    table.insert(router.io_ingredients,     { prefix.."splitter"..postfix, 2 })
-    local speed = data.raw["transport-belt"][prefix.."transport-belt"..postfix].speed
-    router.power = router.power or math.floor(speed * speed * 480 * 480 * power_scale / 100)
+    local belt = data.raw["transport-belt"][prefix.."transport-belt"..postfix]
+    if belt then
+        table.insert(router.manual_ingredients, { prefix.."transport-belt"..postfix or "", 8 })
+        table.insert(router.manual_ingredients, { prefix.."splitter"..postfix, 8 })
+        table.insert(router.smart_ingredients,  { prefix.."transport-belt"..postfix, 8 })
+        table.insert(router.smart_ingredients,  { prefix.."splitter"..postfix, 8 })
+        table.insert(router.io_ingredients,     { prefix.."transport-belt"..postfix, 2 })
+        table.insert(router.io_ingredients,     { prefix.."splitter"..postfix, 2 })
+        local speed = belt.speed
+        router.power = router.power or math.floor(speed * speed * 480 * 480 * power_scale / 100)
+    end
 end
 
 -- Fixup: add automatic prerequisites for upgrades

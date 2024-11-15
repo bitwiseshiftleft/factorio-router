@@ -115,14 +115,6 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     --     }
     -- end
 
-    -- Create the input and output belts and container
-    local chest = surf.create_entity{
-        name = "router-component-container-for-"..sz,
-        position = epos,
-        force = entity.force,
-        fast_replace = is_fast_replace
-    }
-
     local function mkbelt(ipt)
         local xb = surf.create_entity{
             name = "router-component-" .. prefix .. "transport-belt",
@@ -172,6 +164,14 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         )
         return
     end
+
+    -- Create the input and output belts and container
+    local chest = surf.create_entity{
+        name = "router-component-container-for-"..sz,
+        position = epos,
+        force = entity.force,
+        fast_replace = is_fast_replace
+    }
 
     -- Create port lamps
     for i,old in ipairs(data.oloaders) do
