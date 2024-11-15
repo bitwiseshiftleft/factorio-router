@@ -378,8 +378,10 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     -- == BIGMASK if in chest inventory, 0 if not
     local inventory_bigmask = builder:arithmetic{NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory masked"}
 
-    local constant_link = builder:constant_combi({{LINK,4}},"constant link")
     local my_demand = builder:arithmetic{op="*",R=-4,green={chest},red=input_belts} -- negative: current and incoming inventory
+
+    -- Combinator that sets link=4
+    local constant_link = builder:constant_combi({{LINK,4}},"constant link")
     my_demand.get_wire_connector(ORED,true).connect_to(constant_link.get_wire_connector(CRED,true))
 
     local cancel_my_output = builder:decider{op="/",R=-4,description="cancel my output",red={my_demand}}
@@ -406,9 +408,25 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
             output = {WO=WBOTH,signal=EACH},
             green = {lamp,port_driver},
             red = {cancel_my_output},
-            description="input_filter"
+            description="input filter"
         }
         my_demand.get_wire_connector(ORED,true).connect_to(their_demand.get_wire_connector(ORED,true)) -- connect to demand bus
+
+        local demand_reflector = builder:decider{
+            decisions = {
+                {NL=NBOTH,  L=LINK, op="=", R=0},
+                {and_=true, NL=NGREEN, L=EACH, op=">", R=0},
+                -- OR --
+                {NL=NGREEN,  L=LEAF, op="=", R=1},
+                {and_=true, NL=NGREEN, L=EACH, op=">", R=0}
+            }, -- if neighbor isn't there, or is an I/O point, reflect my demand back to me
+            output = {WO=WGREEN,signal=EACH},
+            green = {lamp,port_driver},
+            red = {cancel_my_output},
+            description="output reflector"
+        }
+        my_demand.get_wire_connector(ORED,true).connect_to(demand_reflector.get_wire_connector(ORED,true)) -- connect to demand bus
+        
 
         ------------------------------------------------------------------------------
         -- Output belt control
@@ -417,13 +435,13 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         -- red:   (inventory|BIG_MASK) - my_demand
         local output_controller = builder:decider{
             decisions = {
-                {L=LINK, NL=NRED, op=">", R=0},             -- link > 0
-                {and_=true,NL=NRED, op=">", R=0},           -- inventory > 0
+                {NL=NRED, op=">", R=0},                     -- inventory > 0
+                -- {and_=true,L=LINK, NL=NRED, op=">", R=0},   -- link > 0
                 {and_=true,NL=NGREEN, op=">", R=0},         -- their demand > 0
                 {and_=true, NL=NBOTH, op=">=", R=BIG_MASK}, -- their demand + (mask - mine) > mask
                 -- OR --
-                {L=LINK, NL=NRED, op=">", R=0},             -- link > 0
-                {and_=true,NL=NRED, op=">", R=0},           -- inventory > 0
+                {NL=NRED, op=">", R=0},                     -- inventory > 0
+                -- {and_=true,L=LINK, NL=NRED, op=">", R=0},   -- link > 0
                 {and_=true,NL=NGREEN,L=DEFAULT,op=">",R=0}, -- their demand[default] > 0
                 {and_=true,NL=NBOTH,L=DEFAULT,op=">=",R=0}  -- their demand[default] >= mine
             },
