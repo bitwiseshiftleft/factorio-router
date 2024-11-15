@@ -32,7 +32,7 @@ local SIGC = {type="virtual",name="signal-C"}
 -- TODO: make new virtual signal for reset
 -- (if I'm going to use it at all)
 local RESET = {type="virtual",name="signal-red"}
-local COUNT = {type="virtual",name="router-signal-link"}
+local LINK  = {type="virtual",name="router-signal-link"}
 local LEAF  = {type="virtual",name="router-signal-leaf"}
 local POWER = LEAF -- I guess
 
@@ -150,8 +150,8 @@ function Builder:decider(args)
     local behavior = combi.get_or_create_control_behavior()
     for i,clause in ipairs(args.decisions or {args}) do
         local condition = self:left_and_right(clause)
-        condition=clause.op
-        compare_type=clause.and_ and "and" or "or"
+        condition.condition=clause.op
+        condition.compare_type=clause.and_ and "and" or "or"
         behavior.add_condition(condition)
     end
     for i,clause in ipairs(args.output or {args}) do
@@ -337,7 +337,7 @@ end
 -- request more than 200000 of any given resource, I guess.
 local DEMAND_FACTOR = 64
 
-local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders)
+local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps)
     -- Create communications system.
 
     -- Set up the builder's blinkendata
@@ -347,11 +347,17 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     builder.blinken_offset_x = 0.06
     builder.blinken_offset_y = 0.050
 
+    ------------------------------------------------------------------------------
+    -- Disable the input loaders if too much stuff is in the chest (it's jammed)
+    -- FUTURE: in v0.1, individual input belts could jam without jamming the whole router
+    --   Should we preserve this behavior in v2?  Probably not worth?
+    --   But the new behavior probably makes the whole network more vulnerable to jamming.
+    ------------------------------------------------------------------------------
     for _,b in ipairs(input_belts) do
         local control = b.get_or_create_control_behavior()
         control.read_contents = true
         control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.entire_belt_hold
-        -- TODO: enable/disable for show, or maybe that's too expensive?
+        -- TODO: enable/disable the belt on low power for show, or maybe that's too expensive?
     end
     local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
     local jammed_max = 4*8*1 -- TODO set based on stacked belts
@@ -361,6 +367,43 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         control.circuit_condition = {first_signal = SIGC, comparator="<", constant = jammed_max}
         l.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
     end
+
+    ------------------------------------------------------------------------------
+    -- Output belt control
+    ------------------------------------------------------------------------------
+    local BIG_MASK = 0x3fffffff
+    local HALF_BIG_MASK = 0x1fffffff
+    -- == BIGMASK if in chest inventory, 0 if not
+    -- TODO: supply default:bigmask
+    local inventory_bigmask = builder:arithmetic{NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory_masked"}
+
+    for i,l in ipairs(output_loaders) do
+        -- green: their_demand + BIG_MASK
+        -- red:   my_demand + (inventory|BIG_MASK)
+        local output_controller = builder:decider{
+            decisions = {
+                {NL=NRED, op=">=", R=HALF_BIG_MASK},               -- inventory > 0
+                {and_=true,NL=NGREEN, op=">", R=BIG_MASK},         -- their demand + BIG_MASK > BIG_MASK <==> their demand > 0
+                {and_=true, NL=NGREEN, op=">=", NR=NRED},          -- their demand >= mine
+                -- OR --
+                {NL=NRED, op=">=", R=HALF_BIG_MASK},               -- inventory > 0
+                {and_=true,NL=NGREEN,L=DEFAULT,op=">",R=BIG_MASK}, -- their demand[default] + BIG_MASK > BIG_MASK <==> their demand[default] > 0
+                {and_=true,NL=NGREEN,L=DEFAULT,op=">=",R=DEFAULT,NR=NRED} -- their demand[default] >= mine
+            },
+            output = {set_one=true,WO=WRED,signal=EACH},
+            red = {inventory_bigmask},
+            description="output_controller"
+        }
+
+        -- Set output loader filter behavior
+        l.loader_filter_mode = "whitelist"
+        local control = l.get_or_create_control_behavior()
+        control.circuit_set_filters = true
+        l.get_wire_connector(CGREEN,true).connect_to(output_controller.get_wire_connector(OGREEN,true))
+    end
+
+
+
 
     -- For each output belt, set its mode to {don't enable or disable; read=pulse}
     -- The green wire from that output belt becomes the bus (connect it to a lamp)
@@ -390,9 +433,9 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 --     -----------------------------------------
 --     -- Construct the comms and control
 --     -----------------------------------------
---     -- Create COUNT = +1 acombinator
+--     -- Create LINK = +1 acombinator
 --     local NPORTS = #(output_belts)
---     local count_plus_one = builder:constant_combi{{signal=COUNT,count=1}}
+--     local count_plus_one = builder:constant_combi{{signal=LINK,count=1}}
 --     local FUDGE = 2*DECAY_FACTOR
 
 --     -- Term to cancel reflections
@@ -461,7 +504,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 --     -- Add in default = -2 for reasons seen below
 --     local default_neg_2 = builder:constant_combi{{signal=DEFAULT,count=-2}}
 --     default_neg_2.connect_neighbour{wire=RED,target_entity=minus_one_unhandled,target_circuit_id=OUTPUT}
---     -- local count_neg_decay = builder:constant_combi{{signal=COUNT,count=-DECAY_FACTOR}}
+--     -- local count_neg_decay = builder:constant_combi{{signal=LINK,count=-DECAY_FACTOR}}
 
 --     -----------------------------------------
 --     -- Bus interface and output determination
@@ -481,8 +524,8 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 --         inbound_pulse.connect_neighbour{wire=RED, target_entity=inbound_count,
 --             source_circuit_id=OUTPUT, target_circuit_id=INPUT}
 
---         -- bus / -COUNT = -mean(their demand, my demand) from that port
---         local inbound_demand_neg = builder:combi{blinken=true,op="/",R=COUNT,green={bus}} -- Alternate strategy: red = {count_neg_decay}
+--         -- bus / -LINK = -mean(their demand, my demand) from that port
+--         local inbound_demand_neg = builder:combi{blinken=true,op="/",R=LINK,green={bus}} -- Alternate strategy: red = {count_neg_decay}
 
 --         -- On the red side, connect to the average input
 --         inbound_demand_neg.connect_neighbour{wire=RED, target_entity=nega_average, source_circuit_id=OUTPUT, target_circuit_id=INPUT}
@@ -674,7 +717,7 @@ M.EACH = EACH
 M.ANYTHING = ANYTHING
 M.EVERYTHING = EVERYTHING
 M.Builder = Builder
-M.COUNT = COUNT
+M.LINK = LINK
 M.LEAF = LEAF
 M.ZERO = ZERO
 M.DEMAND_FACTOR = DEMAND_FACTOR

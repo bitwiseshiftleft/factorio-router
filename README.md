@@ -15,7 +15,7 @@ There are significant changes planned for Factorio 2.  Fortunately, Factorio 2 i
 * Routers will probably be easier to jam.  Previously, one router input could jam and the others might still work, but since it will now put all inputs into a container, all inputs will typically jam together.
 * Between a simpler wire protocol, not having to track incoming items, and fancier decider combinators, the router circuit will be much simpler.  Hopefully this will improve performance. 
 * To further simplify the wire protocol, as well as usage, I might change it so that routers have an automatic hidden connection to their neighbors instead of manually running green wires.
-* If you bought the expansion, routers will support belt stacking.
+* If you have the expansion, routers will support belt stacking.
 
 ## Introduction
 
@@ -25,7 +25,7 @@ An early version of this mod added manually-controlled routers, where each port 
 
 ## Smart routers and I/O terminals
 
-** Might be changed from how it works / looks in v1 **
+**Might be changed from how it works / looks in v1**
 
 The screenshot shows a simple network which uses smart routers to direct the manufacturing of blue chips.  First the green-chip station requests iron and copper; the red-chip station requests copper, plastic and green chips; the blue-chip station requests green chips, red chips, iron, sulfur and water barrels (to make sulfuric acid), and the barrel-filler station requests empty barrels.  Finally, a station at the left requests the blue chips.  All of these are routed automatically through the network.
 

@@ -1,9 +1,11 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.1.4:
-Date: 2024-07-xx
+Version: 0.2.0
+Date: 2024-11-xx
 
-  Adjust the routing algorithm to avoid a condition that it routes too aggressively to a near
-  requester, starving a further one.
+  Port to Factorio 2.
+  Routers now support stacking, if you have the expansion.
+  Routers now internally use chests and loaders, instead of inserters.
+  Router protocol changed, because we can read belt contents directly instead of keeping track.
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.3:

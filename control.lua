@@ -32,10 +32,10 @@ local router_component_table = {
     },
     oloaders = {
         -- d = direction, b = belt location
-        {d=SOUTH, b={x=1, y=3}},
-        {d=EAST,  b={x=3, y=2}},
-        {d=NORTH, b={x=2, y=0}},
-        {d=WEST,  b={x=0, y=1}}
+        {d=SOUTH, b={x=1, y=3}, lamp={x=1.5, y=2.3359375}},
+        {d=EAST,  b={x=3, y=2}, lamp={x=2.3359375, y=1.5}},
+        {d=NORTH, b={x=2, y=0}, lamp={x=1.5, y=0.6640625}},
+        {d=WEST,  b={x=0, y=1}, lamp={x=0.6640625, y=1.5}}
     },
     lamp_distance = 0.86
 }
@@ -105,6 +105,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     local input_belts = {}
     local input_loaders = {}
     local output_loaders = {}
+    local lamps = {}
     
     -- local count_color_combi
     -- if not is_fast_replace then
@@ -170,8 +171,22 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         return
     end
 
+    -- Create port lamps
+    for i,old in ipairs(data.oloaders) do
+        local lamp = builder:create_or_find_entity{
+            name = "router-component-smart-port-lamp",
+            position = relative(old.lamp)
+        }
+        lamp.operable = false -- disable its gui
+        local control = lamp.get_or_create_control_behavior()
+        control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
+        control.circuit_enable_disable = true
+        control.circuit_condition = {first_signal=circuit.LINK, comparator=">", constant=1}
+        lamps[i] = lamp
+    end
+
     -- Create the comms and port control network
-    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders)
+    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders, lamps)
     bust_ghosts(entity)
 end
 
