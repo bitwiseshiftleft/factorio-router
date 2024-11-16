@@ -93,6 +93,8 @@ local function fixup_loaders(surface, force, area, prefix, buffer)
 end
 
 local function create_smart_router(prefix, entity, is_fast_replace, buffer)
+    print("Is fast replace? "..tostring(is_fast_replace))
+
     entity.operable = false -- disable its gui
 
     local sz = "4x4" -- TODO
@@ -106,7 +108,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     local input_loaders = {}
     local output_loaders = {}
     local lamps = {}
-    
+
     -- local count_color_combi
     -- if not is_fast_replace then
     --     count_color_combi = builder:constant_combi{
@@ -115,29 +117,46 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     --     }
     -- end
 
+    local stack_size = 1+(entity.quality.level or 0)
+
     local function mkbelt(ipt)
+        local name = "router-component-" .. prefix .. "transport-belt"
         local xb = surf.create_entity{
-            name = "router-component-" .. prefix .. "transport-belt",
+            name = name,
             position = relative(ipt.b),
             direction = (my_orientation + ipt.d)%16,
             force = entity.force,
             fast_replace = is_fast_replace
         }
-        xb.rotatable = false
-        return xb
+        if xb then
+            xb.rotatable = false
+            return xb
+       else
+            return surf.find_entities_filtered{
+                name=name,
+                position=relative(ipt.b),
+                force=entity.force,
+                limit=1
+            }[1]
+       end
+            
     end
 
     local function mkldr(ipt,dir)
         local tweak = (dir == "input") and 8 or 0 -- because setting loader_type will reverse it
         local xb = surf.create_entity{
-            name = "router-component-" .. dir .. "-" .. prefix .. "loader",
+            name = ("router-component-" .. dir ..
+                    "-stack" .. tostring(stack_size) ..
+                    "-" .. prefix .. "loader"),
             position = relative(ipt.b),
             direction = (my_orientation + ipt.d + tweak)%16,
             force = entity.force,
             fast_replace = is_fast_replace
         }
-        xb.rotatable = false
-        xb.loader_type = dir
+        if xb then
+            xb.rotatable = false
+            xb.loader_type = dir
+        end
         return xb
     end
 
@@ -154,14 +173,19 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
         output_loaders[i] = mkldr(old,"output")
     end
 
+    local speed_rel_yellowbelt = 32*input_belts[1].prototype.belt_speed
+    local jam_scale = speed_rel_yellowbelt * stack_size
+
     ----------------------------------------------------------------------
-    -- If fast replace: all the electronics should exist: we're done here!
+    -- If fast replace: all the electronics should exist.
+    -- Fix up the power consumption and jam scale, and we're done!
     ----------------------------------------------------------------------
     if is_fast_replace then
         circuit.fixup_power_consumption(
             builder, entity,
             "router-component-"..prefix.."power-combinator-smart"
         )
+        circuit.set_jam_scale(builder, entity,jam_scale)
         return
     end
 
@@ -184,7 +208,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     end
 
     -- Create the comms and port control network
-    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders, lamps)
+    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders, lamps, jam_scale)
     bust_ghosts(entity)
 end
 

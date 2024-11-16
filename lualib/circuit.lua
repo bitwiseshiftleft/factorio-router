@@ -348,7 +348,22 @@ end
 -- request more than 200000 of any given resource, I guess.
 local LEAK_FACTOR = 64
 
-local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps)
+local function set_jam_scale(builder,entity,new_jam_scale)
+    for _,e in ipairs(entity.surface.find_entities_filtered{
+        type="constant-combinator",
+        area=entity.bounding_box,
+        force=builder.force
+    }) do
+        if e.combinator_description == "jammed scale" then
+            e.get_or_create_control_behavior().get_section(1).set_slot(1,
+                {value=util.merge{SIGC,{comparator="=",quality="normal"}},
+                 min=-16*new_jam_scale}
+            )
+        end
+    end
+end
+
+local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps,jam_scale)
     -- Create communications system.
 
     -- Set up the builder's blinkendata
@@ -371,11 +386,12 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         -- TODO: enable/disable the belt on low power for show, or maybe that's too expensive?
     end
     local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
-    local jammed_max = 4*8*8 -- TODO set based on stacked belts
+    local jam_scale = builder:constant_combi({{SIGC,-16*jam_scale}},"jammed scale")
+    jam_scale.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
     for _,l in ipairs(input_loaders) do
         local control = l.get_or_create_control_behavior()
         control.circuit_enable_disable = true
-        control.circuit_condition = {first_signal = SIGC, comparator="<", constant = jammed_max}
+        control.circuit_condition = {first_signal = SIGC, comparator="<", constant=0}
         l.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
     end
 
@@ -506,6 +522,7 @@ end
 -- Construct module
 M.create_passband = create_passband
 M.create_smart_comms = create_smart_comms
+M.set_jam_scale = set_jam_scale
 M.create_smart_comms_io = create_smart_comms_io
 M.power_consumption_combi = power_consumption_combi
 M.fixup_power_consumption = fixup_power_consumption

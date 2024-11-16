@@ -15,6 +15,7 @@
       "? DeadlockBlackRubberBelts >= 1.0",
       "? PickerDollies >= 1.2.0",
       "? Dectorio >= 0.12",
-      "? enable-all-feature-flags >= 1.0.1"
+      "? enable-all-feature-flags >= 1.0.1",
+      "? quality >= 2.0.0"
     ]
   }
