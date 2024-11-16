@@ -278,6 +278,7 @@ if protos.enable_manual or protos.enable_smart then
             flags = { "not-blueprintable", "hide-alt-info", "placeable-off-grid", "not-on-map" },
             hidden = true,
             selectable_in_game = false,
+            hidden_in_factoripedia = true,
             item_slot_count = 20,
             sprites = empty_sheet_4,
             circuit_wire_connection_points = connection_points,
@@ -423,8 +424,8 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     create_belt_components(prefix,postfix)
     -- doodad is a constant combinator that can't have wires connected to it
 
-    local base_underground_item = data.raw["transport-belt"][prefix .. "transport-belt"..postfix]
-    local base_name = base_underground_item.localised_name or {"entity-name."..base_underground_item.name}
+    local belt = data.raw["transport-belt"][prefix .. "transport-belt"..postfix]
+    local base_name = belt.localised_name or {"entity-name."..belt.name}
     local space = (is_space and "space-") or ""
 
     local holding_entity_as_combinator = {
@@ -451,7 +452,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         energy_source = { type = "void", },
         energy_usage_per_tick = "1J",
 		collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
-        collision_mask = {layers={}},
+        collision_mask = {layers={ player=true, water_tile=true, cliff=true, car=true, rail=true, object=true, empty_space=true, lava_tile=true}},
 		selection_box = {{-2, -2}, {2, 2}},
         selection_priority = 30,
         selectable_in_game = true,
@@ -515,9 +516,15 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             se_allow_in_space = is_space,
             localised_description = {
                 "router-templates.smart-template",
-                base_name,
+                tostring(belt.speed*480),
                 myutil.format_power(power_smart*1000)
-            }
+            },
+            factoriopedia_description = {
+                "router-templates.smart-factoriopedia-template",
+                tostring(belt.speed*480),
+                myutil.format_power(power_smart*1000),
+                "router-"..size.."-"..prefix.."io",
+            },
         }}, util.merge{holding_entity_as_combinator,{
             name = "router-"..size.."-"..prefix.."io",
             minable = { mining_time = 4, result = "router-"..size.."-"..prefix.."io" },
@@ -537,12 +544,21 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             se_allow_in_space = is_space,
             localised_description = {
                 "router-templates.io-template",
-                base_name,
+                tostring(belt.speed*480),
                 myutil.format_power(power_io*1000)
-            }
-        }}, util.merge{hidden_combinator,{
+            },
+            factoriopedia_description = {
+                "router-templates.io-factoriopedia-template",
+                tostring(belt.speed*480),
+                myutil.format_power(power_io*1000),
+                "router-"..size.."-"..prefix.."smart"
+            },
+        }}}
+        
+        data:extend{util.merge{hidden_combinator,{
             type = "arithmetic-combinator",
-            name = "router-component-"..prefix.."power-combinator-smart",
+            name = "router-component-"..size.."-"..prefix.."power-combinator-smart",
+            placeable_by = {item="router-"..size.."-"..prefix.."smart", count=1},
             selection_box = {{-1.9, -1.9}, {1.9, 1.9}},
             collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
             localised_name = {"entity-name.router-"..space..size.."-smart"},
@@ -550,28 +566,42 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
                 {icon="__router__/graphics/router-icon.png", icon_size=128,},
                 {icon="__router__/graphics/router-icon-mask.png", icon_size=128, tint=tint}
             },
+            hidden_in_factoriopedia = true,
+            factoriopedia_alternative = "router-"..size.."-"..prefix.."smart",
+            factoriopedia_description = {
+                "router-templates.power-factoriopedia",
+                "router-"..space..size.."-"..prefix.."smart"
+            },
             energy_source = {type = "electric", usage_priority="secondary-input"},
             active_energy_usage = tostring(power).."000W",
             localised_description = {
                 "router-templates.smart-internal-template",
-                base_name
-            }
+                tostring(belt.speed*480)
+            },
+            quality_indicator_scale = 0
         }}, util.merge{hidden_combinator,{
             type = "arithmetic-combinator",
-            name = "router-component-"..prefix.."power-combinator-io",
+            name = "router-component-"..size.."-"..prefix.."power-combinator-io",
             selection_box = {{-1.7, -0.45}, {1.7, 0.45}},
             collision_box = {{-1.7, -0.45}, {1.7, 0.45}},
             icons = {
                 {icon="__router__/graphics/io-icon.png", icon_size=128,},
                 {icon="__router__/graphics/io-icon-mask.png", icon_size=128, tint=tint}
             },
+            hidden_in_factoriopedia = true,
+            factoriopedia_alternative = "router-"..size.."-"..prefix.."io",
+            factoriopedia_description = {
+                "router-templates.power-factoriopedia",
+                "router-"..space..size.."-"..prefix.."io"
+            },
             localised_name = {"entity-name.router-"..space..size.."-io"},
             energy_source = {type = "electric", usage_priority="secondary-input"},
             active_energy_usage = tostring(math.floor(power/2)).."000W",
             localised_description = {
                 "router-templates.io-internal-template",
-                base_name
-            }
+                tostring(belt.speed*480)
+            },
+            quality_indicator_scale = 0
         }}}
     end
 end

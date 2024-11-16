@@ -26,6 +26,7 @@ function create_router_item(size,prefix,tint,postfix)
             place_result = "router-"..size.."-"..prefix.."router",
             order = order:gsub("belt]", "belt]-a["..size.."manual]"),
             stack_size = 10,
+            weight = 100000
         }}
     end
     if protos.enable_smart then
@@ -40,6 +41,7 @@ function create_router_item(size,prefix,tint,postfix)
             place_result = "router-"..size.."-"..prefix.."smart",
             order = order:gsub("belt]", "belt]-b["..size.."-smart]"),
             stack_size = 10,
+            weight = 100000
         },{
             type = "item",
             name = "router-"..size.."-"..prefix.."io",
@@ -51,6 +53,7 @@ function create_router_item(size,prefix,tint,postfix)
             order = order:gsub("belt]", "belt]-c["..size.."-io]"),
             place_result = "router-"..size.."-"..prefix.."io",
             stack_size = 10,
+            weight = 50000
     }}
     end
 end

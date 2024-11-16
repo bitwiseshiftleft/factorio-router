@@ -93,8 +93,6 @@ local function fixup_loaders(surface, force, area, prefix, buffer)
 end
 
 local function create_smart_router(prefix, entity, is_fast_replace, buffer)
-    print("Is fast replace? "..tostring(is_fast_replace))
-
     entity.operable = false -- disable its gui
 
     local sz = "4x4" -- TODO
@@ -208,7 +206,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, buffer)
     end
 
     -- Create the comms and port control network
-    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders, lamps, jam_scale)
+    circuit.create_smart_comms(builder, prefix, chest, input_belts, input_loaders, output_loaders, lamps, jam_scale, sz, entity.quality)
     bust_ghosts(entity)
 end
 

@@ -89,7 +89,8 @@ function Builder:make_blinken_combi(args)
 
     local ret = self.surface.create_entity{
         name=name, position=myutil.vector_add(self.position,{x=x_offset,y=y_offset}), force=self.force,
-        direction = args.orientation or orientation
+        direction = args.orientation or orientation,
+        quality = args.quality
     }
     ret.combinator_description = args.description or ""
 
@@ -228,37 +229,44 @@ end
 
 -- Make a circuit that draws power, and outputs on GREEN based on power.
 -- The outputs are based on the offset arg
---   (offset ^ INT_MAX) if power; offset if no power
---   default offset = INT_MAX
-local function power_consumption_combi(builder, prefix, suffix, orientation, offset)
-    local name = "router-component-"..prefix.."power-combinator-"..suffix
-    local c1 = builder:combi{
+--   (offset ^ INT_MIN) if power; offset if no power
+--   default offset = INT_MIN
+local function power_consumption_combi(builder,size, prefix, suffix, orientation, offset, quality)
+    local name = "router-component-"..size.."-"..prefix.."power-combinator-"..suffix
+    local c1 = builder:arithmetic{
         combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
-        orientation = orientation
+        orientation = orientation, description="Power consumer",
+        quality = quality
     }
-    local c2 = builder:combi{op="+",L=offset or -0x80000000,R=POWER,out=POWER,red={c1}}
-    builder:connect_outputs(c1,c2,GREEN)
+    local c2 = builder:arithmetic{op="+",L=offset or -0x80000000,R=POWER,out=POWER,red={c1}, description="Power consumer checker"}
+    c1.get_wire_connector(OGREEN,true).connect_to(c2.get_wire_connector(OGREEN,true))
     return c2
 end
 
 -- 
 local function fixup_power_consumption(builder, entity, name)
+    local c1o,c1,c2
     for _,e in ipairs(entity.surface.find_entities_filtered{
         type="arithmetic-combinator",
         area=entity.bounding_box,
         force=builder.force
     }) do
         if string.find(e.name,"power%-combinator") then
-            local c1 = builder:combi{
-                combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
-                orientation = 8*entity.orientation
-            }
-            local c2 = e.circuit_connected_entities.green[1]
-            builder:connect_outputs(c1,c2,GREEN)
-            c1.connect_neighbour{target_entity=c2,wire=RED,source_circuit_id=OUTPUT,target_circuit_id=INPUT}
-            e.destroy()
-            return true
+            c1o = e
+        elseif e.combinator_description == "Power consumer checker" then
+            c2 = e
         end
+    end
+    if c1o and c2 then
+        local c1 = builder:arithmetic{
+            combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
+            orientation = orientation, description="Power consumer",
+            quality = entity.quality
+        }
+        c1.get_wire_connector(OGREEN,true).connect_to(c2.get_wire_connector(OGREEN,true))
+        c1.get_wire_connector(ORED,true).connect_to(c2.get_wire_connector(IRED,true))
+        c1o.destroy()
+        return true
     end
     return false
 end
@@ -363,9 +371,8 @@ local function set_jam_scale(builder,entity,new_jam_scale)
     end
 end
 
-local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps,jam_scale)
+local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps,jam_scale,size,quality)
     -- Create communications system.
-
     -- Set up the builder's blinkendata
     builder.blinken_cols = 6
     builder.blinken_base_x = 0.43
@@ -387,11 +394,16 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     end
     local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
     local jam_scale = builder:constant_combi({{SIGC,-16*jam_scale}},"jammed scale")
+
+    local power = power_consumption_combi(builder,size,prefix,"smart",builder.orientation,offset,quality)
+    local power2 = builder:arithmetic{L=EACH,op="+",R=0,green={power},description="power buffer"} -- hopefully helps UPS?
+    power2.get_wire_connector(OGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
+
     jam_scale.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
     for _,l in ipairs(input_loaders) do
         local control = l.get_or_create_control_behavior()
         control.circuit_enable_disable = true
-        control.circuit_condition = {first_signal = SIGC, comparator="<", constant=0}
+        control.circuit_condition = {first_signal = SIGC, comparator="<", second_signal=POWER}
         l.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
     end
 
