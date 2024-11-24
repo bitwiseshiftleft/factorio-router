@@ -32,9 +32,16 @@ data:extend{
     },
     {
         type = "bool-setting",
-        name = "router-enable-blinkenlights",
+        name = "router-use-quality",
         setting_type = "startup",
         default_value = true,
         order = "d"
+    },
+    {
+        type = "bool-setting",
+        name = "router-enable-blinkenlights",
+        setting_type = "startup",
+        default_value = true,
+        order = "e"
     },
 }

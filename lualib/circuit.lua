@@ -270,8 +270,8 @@ local function fixup_power_consumption(builder, entity, name)
             orientation = orientation, description="Power consumer",
             quality = entity.quality
         }
-        c1.get_wire_connector(OGREEN,true).connect_to(c2.get_wire_connector(OGREEN,true))
         c1.get_wire_connector(ORED,true).connect_to(c2.get_wire_connector(IRED,true))
+        c1.get_wire_connector(OGREEN,true).connect_to(c2.get_wire_connector(OGREEN,true))
         c1o.destroy()
         return true
     end
@@ -357,8 +357,6 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     -- Bus for demand.  First combinator is a positive feedback so that it quiesces faster
     -- (TODO: is there a point to this?)
     local my_demand = builder:arithmetic{blinken=true,op="/",R=5,red={ITSELF},description="damper"}
-     -- don't damp the LINK signal
-    builder:arithmetic{blinken=true,L=LINK,op="/",R=-5,out=LINK,red={my_demand,ITSELF},description="undamp link"}
 
     -- Negative leak terms.  These don't feed back into the my_demand terms because we want
     -- to keep them away from the "uncalimed" detector
@@ -368,6 +366,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     mini_damp.get_wire_connector(OGREEN,true).connect_to(scaled_inv.get_wire_connector(OGREEN,true))
 
     local cancel_my_output = builder:arithmetic{blinken=true,op="/",R=-5,description="cancel my output",red={my_demand},green={scaled_inv}}
+    local constant_nega_link_1 = builder:constant_combi({{LINK,-1}}, "constant nega link")
     local inventory_bigmask_minus_my_output = builder:decider{blinken=true,op="<",R=0,red={cancel_my_output},description="minus my output"}
     inventory_bigmask_minus_my_output.get_wire_connector(ORED,true).connect_to(inventory_bigmask.get_wire_connector(ORED,true))
 
@@ -397,19 +396,15 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 
         -- Drive my demand / 4 ==> lamp (connected via their_demand)
         local port_driver = builder:arithmetic{op="/",R=5,red={my_demand},green={scaled_inv},description="port driver"}
-        -- Cancel out any output link signal
-        local port_driver_no_link = builder:arithmetic{
-            blinken=true,
-            L=LINK,op="/",R=-5,out=LINK,
-            red={my_demand},green={scaled_inv},
-            description="port driver no link"
-        }
-
+        
         -- Combinator to hold link = 1
         local constant_link = builder:constant_combi(
             {{LINK,1}},
             "constant link"
         )
+
+        -- Combinator to hold link = 1
+        local constant_nega_link_2 = builder:constant_combi({{LINK,-1}}, "constant nega link2")
 
         -- The lamp has (their_demand + my_output)
         -- Set their_demand = (their_demand + my_output + cancel_my_output) if > 0
@@ -417,8 +412,8 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
             blinken=true,
             decisions = {{NL=NBOTH, op=">", R=0}},
             output = {{WO=WBOTH,signal=EACH}},
-            green = {lamp,port_driver,port_driver_no_link,constant_link},
-            red = {cancel_my_output},
+            green = {lamp,port_driver,constant_link},
+            red = {cancel_my_output,constant_nega_link_1},
             description="input filter"
         }
         my_demand.get_wire_connector(ORED,true).connect_to(their_demand.get_wire_connector(ORED,true)) -- connect to demand bus
@@ -434,7 +429,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
             }, -- if neighbor isn't there, or is an I/O point, reflect my demand back to me
             output = {{WO=NRED,signal=EACH}},
             green = {port_driver},
-            red = {port_driver},
+            red = {port_driver,constant_nega_link_2},
             description="demand reflector"
         }
         my_demand.get_wire_connector(ORED,true).connect_to(demand_reflector.get_wire_connector(ORED,true)) -- connect to demand bus

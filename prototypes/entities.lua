@@ -623,12 +623,12 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     end
 end
 
-local function create_loader(prefix,postfix,stack_size)
+local function create_loader(prefix,postfix,named_size,stack_size)
     local stack_size = stack_size or 1
     local belt_type = prefix.."transport-belt"..(postfix or "")
     local belt = data.raw["transport-belt"][belt_type]
     data:extend{util.merge{hidden_widget_proto,{
-        name = "router-component-input-stack"..tostring(stack_size).."-"..prefix.."loader",
+        name = "router-component-input-stack"..tostring(named_size).."-"..prefix.."loader",
         type = "loader-1x1",
         filter_count = 0,
         speed = belt.speed,
@@ -642,7 +642,7 @@ local function create_loader(prefix,postfix,stack_size)
         -- belt_animation_set = belt.belt_animation_set,
         container_distance = 0.75,
     }},util.merge{hidden_widget_proto,{
-        name = "router-component-output-stack"..tostring(stack_size).."-"..prefix.."loader",
+        name = "router-component-output-stack"..tostring(named_size).."-"..prefix.."loader",
         type = "loader-1x1",
         filter_count = 5,
         belt_length = 0.5,
@@ -659,16 +659,17 @@ local function create_loader(prefix,postfix,stack_size)
     }}}
 end
 
+local care_about_quality = settings.startup["router-use-quality"].value
 for prefix,router in pairs(protos.table) do
     create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "",router.power)
     local postfix = router.postfix or ""
     if feature_flags.quality and feature_flags.space_travel then
         for name,qual in pairs(data.raw["quality"]) do
             if name ~= "quality-unknown" and qual.level >= 0 then
-                create_loader(prefix,postfix,1+qual.level)
+                create_loader(prefix,postfix,1+qual.level,care_about_quality and (1+qual.level) or 255)
             end
         end
     else
-        create_loader(prefix,postfix)
+        create_loader(prefix,postfix,1,feature_flags.space_travel and 255 or 1)
     end
 end

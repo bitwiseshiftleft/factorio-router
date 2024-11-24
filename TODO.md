@@ -1,35 +1,13 @@
 # Factorio smart routers TODO list and ideas for future work
 
-## Suggestions to consider
-
-* Tallow: constrain the operation of the network to make it more of a puzzle.
-* For example, could require the network to be a directed or undirected tree, or a DAG.
-* VVG: consider contraining to a directed tree or similar because it's better for UPS.
-* Serjevski: diagnostic tools; mark why a route is blocked (is the IO terminal trying to push things into a container but it's full?); change graphics to have double arrows on the routers; route tracing tool.  Add a signal that forces everything to go to buffers instead of wherever it's going to (possibly bottlenecked); notification that something is stuck in the router.
-
-Another possibility to constrain the network more: instead of being completely free,
-there can only be one static requester for each resource (per network). This could either
-be static or potentially circuit controlled, but if you request the same resource in
-more than one place then that resource can't be routed anywhere.  Then the user would need
-to separately track how many of each item has been delivered.
-
-The (mostly) static routing layout might be better for UPS too.  A tree with a static
-routing layout, where each resource can only be requested from one place, requires only
-about 12 combinators per router, most of which are not active at any given time.
-However, a constraint to request each resource from only one place might be too
-restrictive.
-
 ## General
-* Add I/O points back in
-* Add power consumption back in
-* Consider that deciders can secretly output constants other than 1, to simplify the circuit
-* Add a way to promise that items are on the way (red wires?)
-* Make an option for a non-quality way to scale stack size, and/or to tweak the scaling
+* In a big network, routing can be a bit haphazard: items scatter a little more than they should.
 * Make sure blueprinting/copy/paste works
-* Create ghost lamps when creating ghost router, to enable circuit connections?
+* Create ghost lamps when creating ghost router, to enable circuit connections
 * Make sure undo/redo works
 * Re-edit the doc to say that we aren't going for autoconnect, at least not this round
 * Document in Factoripedia
+* Document in tips-and-tricks
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
@@ -39,10 +17,6 @@ restrictive.
 * Make routers also function as a power pole?
 * Add filters to event listeners, for reduced UPS cost
 * Make boxes autoconnect to I/O points when placed as well as vice-versa
-
-Prevent belt-dragging from reversing the (otherwise uninteractable) input/output belts of IO points and routers.  This is caused by a Factorio bug: belt-dragging doesn't respect the entity's rotatable flag, and doesn't fire on_player_rotated_entity.  However, it may be possible to hack it by watching for on_pre_build{created_by_moving=true}, checking if there is a router's underneathie under the event, and then checking back one tick later and undoing the change.  Kind of a pain tho.
-
-Consider a "ribbon cable" mod?
 
 Refactor lua slightly
 * Move subroutines out of control.lua
