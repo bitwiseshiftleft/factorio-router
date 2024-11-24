@@ -392,11 +392,7 @@ if protos.enable_smart then
             item_slot_count = 20,
             sprites = empty_sheet_4,
             rotatable = false,
-            circuit_wire_connection_points = connection_points,
-            -- circuit_wire_connection_points = {
-            --     north=trimpoint, south=trimpoint, east=trimpoint, west=trimpoint
-            -- },
-            -- circuit_connector_sprites = connector_definitions.sprites,
+            circuit_wire_connection_points = {trimpoint,trimpoint,trimpoint,trimpoint},
             circuit_wire_max_distance = 9,
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
             fast_replaceable_group = "router-component-port-control-combinator",
@@ -428,6 +424,26 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     local base_name = belt.localised_name or {"entity-name."..belt.name}
     local space = (is_space and "space-") or ""
 
+
+    local iopoint_connection_points = {
+        {
+            wire = { red={1.4,0.00}, green={1.4,0.05} },
+            shadow = { red={1.48,0.05}, green={1.48,0.10} },
+        },
+        {
+            wire = { red={-0.45,0.9}, green={-0.45,0.9} },
+            shadow = { red={0.45,0.9}, green={-0.45,0.9} },
+        },
+        {
+            wire = { red={-1.4,-0.6}, green={-1.4,-0.65} },
+            shadow = { red={-1.4,-0.6}, green={-1.4,-0.65} },
+        },
+        {
+            wire = { red={0.42,-1.40}, green={0.42,-1.45} },
+            shadow = { red={0.48,-1.35}, green={0.48,-1.40} },
+        }
+    }
+
     local holding_entity_as_combinator = {
         type = "constant-combinator",
         flags = { "player-creation", "hide-alt-info" },
@@ -438,7 +454,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
 		selection_box = {{-2, -2}, {2, 2}},
         selection_priority = 30,
         selectable_in_game = true,
-        circuit_wire_connection_points = connection_points,
+        -- circuit_wire_connection_points = connection_points,
         -- circuit_connector_sprites = connector_definitions.sprites,
         circuit_wire_max_distance = 0,
         activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} }
@@ -540,7 +556,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             fast_replaceable_group = "router-"..space..size.."-io",
             next_upgrade = next_upgrade and ("router-" ..size.."-".. next_upgrade .. "io"),
             circuit_wire_max_distance = 10,
-            circuit_wire_connection_points = connection_points,
+            circuit_wire_connection_points = iopoint_connection_points,
             se_allow_in_space = is_space,
             localised_description = {
                 "router-templates.io-template",
@@ -555,6 +571,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
             },
         }}}
         
+        -- Power consumers
         data:extend{util.merge{hidden_combinator,{
             type = "arithmetic-combinator",
             name = "router-component-"..size.."-"..prefix.."power-combinator-smart",

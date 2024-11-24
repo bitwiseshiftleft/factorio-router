@@ -170,7 +170,7 @@ function Builder:decider(args)
         end
     end
     for i,clause in ipairs(args.output or {args}) do
-        local output = { networks=clause.WO or WBOTH, copy_count_from_input=not clause.set_one, signal=clause.out or EACH }
+        local output = { networks=clause.WO or WBOTH, copy_count_from_input=not clause.set_one, signal=clause.out or EACH, constant=clause.constant or 1 }
         if i > 1 then
             behavior.add_output(output)
         else
@@ -523,29 +523,66 @@ local function create_smart_comms_io(
     }
     my_demand.get_wire_connector(OGREEN,true).connect_to(port.get_wire_connector(CGREEN,true))
 
-    -- Anything demanded by the network, and not demanded by me, can be sent
-    local network_demands_more_than_me = builder:decider{
-        decisions = {
-            {L=EACH, NL=NGREEN, op=">", R=EACH, NR=NRED},
-            {and_=true, L=EACH, NL=NRED, op="<=", R=0},
-        },
-        output = {{signal=EACH,set_one=true}},
+    -- Implement the threshold.
+    -- First pass on positive ones, and set negative ones with -1.
+    -- When my demand is >0, set threshold to -huge
+    local my_demand_very_negative = builder:decider{
+        decisions = {{L=EACH, NL=NRED, op=">", R=0}},
+        output = {{signal=EACH,WO=NBOTH,set_one=true,constant=-0x40000000}},
+        red = {my_demand},
+        description="my demand if positive"
+    }
+    local threshold_buffer_positive = builder:decider{
+        decisions = {{L=EACH, NL=NBOTH, op=">", R=0}},
+        output = {{signal=EACH,WO=NBOTH},{signal=EACH,WO=NBOTH}}, -- times two seems about right
+        green = {threshold_trim},
+        description="threshold if positive"
+    }
+    local threshold_buffer_negative = builder:decider{
+        decisions = {{L=EACH, NL=NBOTH, op="<", R=0}},
+        output = {{signal=EACH,WO=NBOTH,set_one=true,constant=-1}},
+        green = {threshold_trim},
+        description="threshold if negative"
+    }
+
+    -- Calculate net demand of the network
+    local net_network_demand = builder:arithmetic{
+        L=EACH,NL=NGREEN,op="-",R=EACH,NR=NRED,
         green = {my_demand}, -- and the network, since it is tied to green
         red = {my_demand},
-        description="demanded"
+        description="net demand"
     }
-    local and_in_stock = builder:decider{
+
+    -- It's worth sending if it's above the threshold, and the threshold is positive.
+    local worth_sending = builder:decider{
         decisions = {
-            {L=EACH, NL=NGREEN, op=">", R=0},
-            {and_=true, L=EACH, NL=NRED, op=">", R=0}
+            {L=EACH, NL=NGREEN, op=">=", R=EACH, NR=NRED},
+            {and_=true, L=EACH, NL=NRED, op=">", R=0},
+            -- or no threshold is set
+            {L=EACH, NL=NGREEN, op=">=", R=THRESHOLD, NR=NRED},
+            {and_=true, L=THRESHOLD, NL=NRED, op=">", R=0},
+            {and_=true, L=EACH, NL=NRED, op="=", R=0},
         },
         output = {{signal=EACH,set_one=true}},
-        green = {network_demands_more_than_me},
+        green = {net_network_demand},
+        red = {threshold_buffer_negative,threshold_buffer_positive,my_demand_very_negative},
+        description="worth sending"
+    }
+
+    -- For each good which is worth sending but not in stock, set output to -1
+    local block_not_in_stock = builder:decider{
+        decisions = {
+            {L=EACH, NL=NGREEN, op=">", R=0},
+            {and_=true, L=EACH, NL=NRED, op="=", R=0}
+        },
+        output = {{signal=EACH,set_one=true,constant=-1}},
+        green = {worth_sending},
         red = {port},
-        description="demanded and in stock"
+        description="block not in stock"
     }
     for _,ldr in ipairs(output_loaders) do
-        ldr.get_wire_connector(CGREEN,true).connect_to(and_in_stock.get_wire_connector(OGREEN,true))
+        ldr.get_wire_connector(CGREEN,true).connect_to(worth_sending.get_wire_connector(OGREEN,true))
+        ldr.get_wire_connector(CRED,true).connect_to(block_not_in_stock.get_wire_connector(ORED,true))
         ldr.loader_filter_mode = "whitelist"
         control = ldr.get_or_create_control_behavior()
         control.circuit_set_filters = true
