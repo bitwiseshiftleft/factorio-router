@@ -26,18 +26,12 @@ local THRESHOLD = {type="virtual",name="router-signal-threshold"}
 local DEFAULT = {type="virtual",name="router-signal-default"}
 local ZERO = {type="virtual",name="signal-0"}
 local SIGC = {type="virtual",name="signal-C"}
--- local INPUT = defines.circuit_connector_id.combinator_input
--- local OUTPUT = defines.circuit_connector_id.combinator_output
 
--- TODO: make new virtual signal for reset
--- (if I'm going to use it at all)
-local RESET = {type="virtual",name="signal-red"}
 local LINK  = {type="virtual",name="router-signal-link"}
 local LEAF  = {type="virtual",name="router-signal-leaf"}
 local POWER = LEAF -- I guess
 
-local PULSE = defines.control_behavior.transport_belt.content_read_mode.pulse
-local HOLD  = defines.control_behavior.transport_belt.content_read_mode.hold
+local READ_ALL = defines.control_behavior.transport_belt.content_read_mode.entire_belt_hold
 
 -- When used as a builder interface, takes input from itself
 local ITSELF = "__ITSELF__"
@@ -59,6 +53,17 @@ function Builder:constant_combi(signals,description)
 end
 
 function Builder:make_blinken_combi(args)
+    -----------------------------------------------------------------------
+    -- Make a combinator entity.
+    -----------------------------------------------------------------------
+    -- If args.arithmetic then it will be an arithmetic combinator (otherwise decider)
+    -- If args.combinator_name the you can set the entity name; otherwise it will be
+    --   a regular combinator if args.visible, ando otherwise a hidden one
+    -- If it's hidden, and args.blinken is truthy, then it will still have visible
+    --   blinkenlights.  Blinkenlight combinators will be laid out in a grid with
+    --   pseudorandom colors according to the builder's blinken settings
+    -- Set the combinator description according to args.description.
+    -----------------------------------------------------------------------
     local blinken = args.blinken
     local blinken_suffix = blinken and "-blinken" or ""
 
@@ -97,8 +102,9 @@ function Builder:make_blinken_combi(args)
     return ret
 end
 
-function Builder:left_and_right(args,is_decider)
+function Builder:expand_shorthand_conditions(args,is_decider)
     -- Parse out shorthand args like L=7, R=THRESHOLD or whatever
+    -- into combinator condition descriptions
     local condition = {}
     local L = args.L or EACH
     local R = args.R or EACH
@@ -121,7 +127,8 @@ function Builder:left_and_right(args,is_decider)
 end
 
 function Builder:connect_inputs(args, combi)
-    -- Connect up the inputs
+    -- Connect up the inputs to a combinator according to ARGS
+    -- Return the combinator entity (= combi)
     for j,args_color in ipairs({
         {args.red or {},WRED,ORED,CRED,IRED},
         {args.green or {},WGREEN,OGREEN,CGREEN,IGREEN}
@@ -153,7 +160,7 @@ function Builder:decider(args)
 
     local behavior = combi.get_or_create_control_behavior()
     for i,clause in ipairs(args.decisions or {args}) do
-        local condition = self:left_and_right(clause,true)
+        local condition = self:expand_shorthand_conditions(clause,true)
         condition.comparator=clause.op
         condition.compare_type=clause.and_ and "and" or "or"
         if i > 1 then
@@ -178,7 +185,7 @@ function Builder:arithmetic(args)
     -- Create an arithmetic combinator
     local combi = self:make_blinken_combi(util.merge{args,{arithmetic=true}})
     local behavior = combi.get_or_create_control_behavior()
-    local params = self:left_and_right(args)
+    local params = self:expand_shorthand_conditions(args)
     params.operation=args.op or "+"
     params.output_signal=args.out or EACH
     behavior.parameters = params
@@ -270,93 +277,19 @@ local function fixup_power_consumption(builder, entity, name)
     end
     return false
 end
-
--- TODO: rename
-local function create_passband(builder,input_belts,n_outputs)
-    -- Create a passband for user-controlled routers that sets the belts
-    -- Return several arrays:
-    -- input_control[i]  should be connected to the control signals for direction[i]
-    -- output_dropoff[i] should be connected to each inserter TO direction[i]
-    -- output_pickup[i]  should be connected to each inserter FROM direction[i]
     
-    -- This has the following behavior:
-    -- Each signal that's > 0 will be mapped to 0x80000000 = INT_MIN
-    -- Adding -1 to that signal will give a positive value for setting a filter
-    -- Each signal that's < 0 will be mapped to 0 or a negative value other than INT_MIN
-    -- However, rets[0][1] is an "unhandled inputs" combinator
-    local ret = {
-        input_control  = {},
-        output_pickup  = {},
-        output_dropoff = {}
-    }
-
-    -- For unhandled inputs: each = ((-1)|each) & -0x40000000
-    -- = -4.. if present and unhandled
-    -- = 0 otherwise
-    local ipt0 = builder:combi{op="OR",L=-1}
-    local unhandled = builder:combi{op="AND",R=-0x40000000,red={ipt0}}
-
-    -- Create green_combi: DEFAULT = 0 + 32
-    local green_combi = builder:constant_combi({{signal=DEFAULT,count=32}})
-
-    -- Crreate a buffer for the circuit contents
-    ret.indicator_combi = builder:combi{op="+",R=0}
-    builder:connect_inputs(ipt0,ret.indicator_combi,RED)
-
-    -- Create control for handled inputs
-    for i,the_belt in ipairs(input_belts) do
-        -- First, configure the belt
-        local control = the_belt.get_or_create_control_behavior()
-        control.enable_disable = false
-        control.read_contents = true
-        control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.hold
-
-        -- check combinators: -256 (or more) for each item present
-        local from = builder:combi{op="*",R=-0x10000,green={the_belt}}
-        the_belt.connect_neighbour{wire=RED, target_entity=ipt0, target_circuit_id=INPUT}
-
-        ret.output_pickup[i] = from
-    end
-
-    for i=1,n_outputs do
-        -- For handled inputs: each = (0xC0...) << (each > 0)
-        -- = 0x80... if present, or else 0
-        -- but also wire up G = 32, so that G nonpresent = 0xC...
-        local ipt = builder:combi{op=">",R=0,set_one=true}
-        builder:connect_outputs(ipt,ipt0,RED)
-        nxt = builder:combi{op="<<",L=-0x40000000,red={green_combi},green={ipt}}
-
-        -- output = DEFAULT & each
-        local to = builder:combi{op="AND",R=DEFAULT,red={unhandled},green={nxt}}
-
-        ret.input_control[i] = ipt
-        ret.output_dropoff[i] = to
-    end
-
-    return ret
-end
-    
--- Smart router demand is multiplied by this
--- Must a power of 2
--- Must be > 2 * maximum number of items that can be placed per tick
--- Hopefully multiple inserters with the same drop point can't drop more
--- than one stack per lane per tick?  If so, we would have
--- 2 directions of communication
--- * 2 lanes per belt
--- * 2 belts if we do 2x2 routers
--- * 4 items per stack (in Vanilla)
--- = 32 items per tick
+-- Smart router heat-equation leakage factor.
 --
--- The leakage rate is inversely proportional to the DEMAND_FACTOR (unless
--- I set it higher than 1, and adjust the circuit to fix the resulting bugs)
--- Since the equilibrium value of the network is scaled by 1/leakage, the
--- true demands are scaled by DEMAND_FACTOR for the representation, and by
--- another DEMAND_FACTOR for 1/leakage = DEMAND_FACTOR^2 = 2^12, times another
--- 2 for the lag combinator.  This leaves 2^18 less in a signed word.  So don't
--- request more than 200000 of any given resource, I guess.
+-- The greater this is, the greater the equilibrium value on the wires will be, and the further
+-- signals will propagate throughout the network.
+--
+-- The smaller this is, the faster the network will equilibrate.
 local LEAK_FACTOR = 64
 
 local function set_jam_scale(builder,entity,new_jam_scale)
+    -- Update a router to set the scale for the number of items in its buffer at which it is
+    -- considered jammed.  Multiplied by a constant, currently 16 (or rather -16 because it's
+    -- added to the item count)
     for _,e in ipairs(entity.surface.find_entities_filtered{
         type="constant-combinator",
         area=entity.bounding_box,
@@ -372,7 +305,10 @@ local function set_jam_scale(builder,entity,new_jam_scale)
 end
 
 local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders,output_loaders,lamps,jam_scale,size,quality)
-    -- Create communications system.
+    ------------------------------------------------------------------------------
+    -- Create communications system for a smart router.
+    ------------------------------------------------------------------------------
+
     -- Set up the builder's blinkendata
     builder.blinken_cols = 6
     builder.blinken_base_x = 0.43
@@ -389,7 +325,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     for _,b in ipairs(input_belts) do
         local control = b.get_or_create_control_behavior()
         control.read_contents = true
-        control.read_contents_mode = defines.control_behavior.transport_belt.content_read_mode.entire_belt_hold
+        control.read_contents_mode = READ_ALL
         -- TODO: enable/disable the belt on low power for show, or maybe that's too expensive?
     end
     local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
@@ -412,16 +348,20 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     ------------------------------------------------------------------------------
     local BIG_MASK = 0x3fffffff
     local HALF_BIG_MASK = 0x1fffffff
+
     -- == BIGMASK if in chest inventory, 0 if not
     local inventory_bigmask = builder:arithmetic{blinken=true,NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory masked"}
 
     local scaled_inv = builder:arithmetic{blinken=true,op="*",R=-5,green={chest},red=input_belts,description="scaled inventory"} -- negative: current and incoming inventory
 
-    -- Bus for demand.  Has positive feedback so that it quiesces faster (TODO: is there a point to this?)
-    local my_demand = builder:arithmetic{blinken=true,op="/",R=5,red={ITSELF},description="damper"}               -- damping term to help the network quiesce faster (?)
-    builder:arithmetic{blinken=true,L=LINK,op="/",R=-5,out=LINK,red={my_demand,ITSELF},description="undamp link"} -- don't damp the link
+    -- Bus for demand.  First combinator is a positive feedback so that it quiesces faster
+    -- (TODO: is there a point to this?)
+    local my_demand = builder:arithmetic{blinken=true,op="/",R=5,red={ITSELF},description="damper"}
+     -- don't damp the LINK signal
+    builder:arithmetic{blinken=true,L=LINK,op="/",R=-5,out=LINK,red={my_demand,ITSELF},description="undamp link"}
 
-    -- Negative leak terms.  These don't feed back into the my_demand terms because we want to keep them away from the "uncalimed" detector
+    -- Negative leak terms.  These don't feed back into the my_demand terms because we want
+    -- to keep them away from the "uncalimed" detector
     local mini_damp = builder:arithmetic{blinken=true,op="OR",R=-1,red={my_demand},description="leak decrement"}
     mini_damp.get_wire_connector(OGREEN,true).connect_to(scaled_inv.get_wire_connector(OGREEN,true))
     mini_damp = builder:arithmetic{blinken=true,op="/",R=-LEAK_FACTOR,red={my_demand},description="leak div"}   -- leak term: /leak_factor
@@ -531,15 +471,95 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     end
 end
 
+
+local function create_smart_comms_io(
+    builder,size,prefix,entity,
+    input_belts,input_inserters,output_loaders,
+    port,indicator,threshold_trim
+)
+    ------------------------------------------------------------------------------
+    -- Create I/O system for a smart router.
+    ------------------------------------------------------------------------------
+    -- First, set links and leaf to 1, and set up the indicator lamp
+    indicator.get_wire_connector(CGREEN,true).connect_to(port.get_wire_connector(CGREEN,true))
+    local control = indicator.get_or_create_control_behavior()
+    local leafplus = builder:constant_combi({{LEAF,1},{LINK,1}},"io link leaf")
+    local leafminus = builder:constant_combi({{LEAF,-1}},"io leaf negative")
+    indicator.get_wire_connector(CGREEN,true).connect_to(leafplus.get_wire_connector(CGREEN,true))
+    indicator.get_wire_connector(CRED,true).connect_to(leafminus.get_wire_connector(CRED,true))
+    control.use_colors = true
+    control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
+    control.circuit_enable_disable = true
+    control.circuit_condition = {first_signal=LINK, comparator=">=", constant=2}
+
+    -- Create the power controller
+    local quality = entity.quality
+    local power = power_consumption_combi(builder,size,prefix,"io",builder.orientation,offset,quality)
+    local power2 = builder:arithmetic{L=EACH,op="+",R=0,green={power},description="power buffer"} -- hopefully helps UPS?
+    for _,ins in ipairs(input_inserters) do
+        control = ins.get_or_create_control_behavior()
+        control.circuit_enable_disable = true
+        control.circuit_condition = {first_signal = POWER, comparator=">", constant=0}
+    end
+
+    -- Set input belts to read contents
+    for _,belt in ipairs(input_belts) do
+        control = belt.get_or_create_control_behavior()
+        control.read_contents = true
+        control.read_contents_mode = READ_ALL
+    end
+
+    -- Send demand to the network
+    local my_nega_supply = builder:arithmetic{L=0,op="-",R=EACH,red={port},green=input_belts,
+        description = "io negate supply"
+    }
+
+    local my_demand = builder:decider{
+        decisions = {{L=EACH, NL=NBOTH, op=">", R=0}},
+        output = {{signal=EACH,WO=NBOTH,}},
+        green = {entity},
+        red = {my_nega_supply},
+        description="my demand if positive"
+    }
+    my_demand.get_wire_connector(OGREEN,true).connect_to(port.get_wire_connector(CGREEN,true))
+
+    -- Anything demanded by the network, and not demanded by me, can be sent
+    local network_demands_more_than_me = builder:decider{
+        decisions = {
+            {L=EACH, NL=NGREEN, op=">", R=EACH, NR=NRED},
+            {and_=true, L=EACH, NL=NRED, op="<=", R=0},
+        },
+        output = {{signal=EACH,set_one=true}},
+        green = {my_demand}, -- and the network, since it is tied to green
+        red = {my_demand},
+        description="demanded"
+    }
+    local and_in_stock = builder:decider{
+        decisions = {
+            {L=EACH, NL=NGREEN, op=">", R=0},
+            {and_=true, L=EACH, NL=NRED, op=">", R=0}
+        },
+        output = {{signal=EACH,set_one=true}},
+        green = {network_demands_more_than_me},
+        red = {port},
+        description="demanded and in stock"
+    }
+    for _,ldr in ipairs(output_loaders) do
+        ldr.get_wire_connector(CGREEN,true).connect_to(and_in_stock.get_wire_connector(OGREEN,true))
+        ldr.loader_filter_mode = "whitelist"
+        control = ldr.get_or_create_control_behavior()
+        control.circuit_set_filters = true
+    end
+end
+
 -- Construct module
-M.create_passband = create_passband
 M.create_smart_comms = create_smart_comms
 M.set_jam_scale = set_jam_scale
 M.create_smart_comms_io = create_smart_comms_io
 M.power_consumption_combi = power_consumption_combi
 M.fixup_power_consumption = fixup_power_consumption
-M.RED = RED
-M.GREEN = GREEN
+M.RED = CRED
+M.GREEN = CGREEN
 M.DEFAULT = DEFAULT
 M.INPUT = INPUT
 M.OUTPUT = OUTPUT
@@ -553,7 +573,5 @@ M.LEAF = LEAF
 M.ZERO = ZERO
 M.DEMAND_FACTOR = DEMAND_FACTOR
 M.THRESHOLD = THRESHOLD
-M.PULSE = PULSE
-M.HOLD = HOLD
 
 return M

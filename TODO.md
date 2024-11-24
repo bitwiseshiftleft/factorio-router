@@ -22,6 +22,7 @@ restrictive.
 ## General
 * Add I/O points back in
 * Add power consumption back in
+* Consider that deciders can secretly output constants other than 1, to simplify the circuit
 * Add a way to promise that items are on the way (red wires?)
 * Make an option for a non-quality way to scale stack size, and/or to tweak the scaling
 * Make sure blueprinting/copy/paste works

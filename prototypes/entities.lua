@@ -361,10 +361,10 @@ if protos.enable_smart then
             name = "router-component-io-connection-lamp",
             fast_replaceable_group = "router-component-io-connection-lamp",
             selection_box = {{-0.5,-1.1},{0.5,-0.1}},
-            circuit_wire_connection_point = {
+            circuit_connector = { points = {
                 wire = { red={0,-0.40}, green={0,-0.35} },
                 shadow = { red={0.08,-0.35}, green={0.08,-0.30} },
-            },
+            }},
             circuit_wire_max_distance = 64,
             icon = "__router__/graphics/leaf.png", icon_size=128,
         }},
