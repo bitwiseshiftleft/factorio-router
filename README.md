@@ -1,21 +1,15 @@
 # Sushi routers
 
-## Planned changes for v2.0
-
-**This version doesn't work.  I'm just pushing the repo as a backup and to check that this README is properly formatted.**
-
-There are significant changes planned for Factorio 2.  Fortunately, Factorio 2 is also likely to significantly reduce the performance impact of routers.
+## Changes for v2.0
 
 * Manually-controlled routers are not implemented for now.  I don't have the graphics anyway.
-* The mod will be renamed "sushi routers" (or something) to reflect the implemented case.
-* Sushi routers will now read the incoming belt contents, using the v2 "read entire belt" feature.  This means that they do not have to track the expected incoming items with combinators.
-    * **However**, at first, it also means that, for now, the routers must be connected with continuous belts, and not e.g. trains or rockets.  I eventually plan to make a way to do this, but for now I am focused on porting and reworking for v2.
+* Routers will now read the incoming belt contents, using the v2 "read entire belt" feature.  This means that they do not have to track the expected incoming items with combinators.
+    * **However** it also means that, for now, the routers should be connected with continuous belts, and not e.g. trains or rockets.
     *  It also means your sushi belt backbone will be uglier, unless you get a mod that hides/decorates the wire reader frames.
 * Internally, the routers will use loaders and a chest instead of inserters, because v2 loaders can be circuit-controlled.  Hopefully this will improve performance.
 * Routers will probably be easier to jam.  Previously, one router input could jam and the others might still work, but since it will now put all inputs into a container, all inputs will typically jam together.
 * Between a simpler wire protocol, not having to track incoming items, and fancier decider combinators, the router circuit will be much simpler.  Hopefully this will improve performance. 
-* To further simplify the wire protocol, as well as usage, I might change it so that routers have an automatic hidden connection to their neighbors instead of manually running green wires.
-* If you have the expansion, routers will support belt stacking.
+* If you have the expansion, routers support belt stacking.  By default, the stack size is limited by the quality level of the router.
 
 ## Introduction
 
