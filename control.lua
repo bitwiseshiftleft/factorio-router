@@ -216,7 +216,7 @@ local function autoconnect_router_io(routers, chests)
     local router_tbl = {}
     for i,router in ipairs(routers) do
         if is_router_io(router) then
-            table.insert(router_tbl,{
+            local tmp = {
                 router = router,
                 inserters = router.surface.find_entities_filtered{
                     area = router.bounding_box,
@@ -224,13 +224,17 @@ local function autoconnect_router_io(routers, chests)
                 },
                 outserters = router.surface.find_entities_filtered{
                     area = router.bounding_box,
-                    name = "router-component-inserter"
+                    type = "loader-1x1"
                 },
                 connectors = router.surface.find_entities_filtered{
                     area = router.bounding_box,
                     name = "router-component-io-connection-lamp"
                 }
-            })
+            }
+            table.insert(router_tbl,tmp)
+            for _,ldr in ipairs(tmp.outserters) do
+                ldr.update_connections() -- else loader_container isn't ready yet
+            end
         end
     end
     for _,chest in ipairs(chests) do
@@ -244,8 +248,8 @@ local function autoconnect_router_io(routers, chests)
                     break
                 end
             end
-            for _,ins in ipairs(router.outserters) do
-                if math2d.bounding_box.contains_point(chest.bounding_box, ins.pickup_position) then
+            for _,ldr in ipairs(router.outserters) do
+                if ldr.loader_container == chest then
                     do_connect = true
                     break
                 end

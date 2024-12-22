@@ -352,13 +352,13 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     local inventory_large = builder:arithmetic{blinken=true,NL=NGREEN,op="OR",R=LARGE,green={chest},description="inventory large mask"}
 
      -- negative: current and incoming inventory.  Will get extra green connected to it from the ports
-    local demand_holdover_2 = builder:arithmetic{blinken=true,op="+",R=0,description="demand holdover 2"}
-    local INV_SCALE=-1 -- TODO: why?
+    -- local demand_holdover_2 = builder:arithmetic{blinken=true,op="+",R=0,description="demand holdover 2"}
+    local INV_SCALE=-2 -- TODO: -1 results in slight overdelivery, -2 probably underdelivery
     local scaled_inv = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,green={chest},red=input_belts,description="scaled inventory"}
     local my_demand = builder:decider{
         blinken=true,
         decisions={{L=EACH, op=">", R=0}},
-        red={scaled_inv,demand_holdover_2},
+        red={scaled_inv},
         description="demand if positive"
     }
     local claimed = builder:decider{
@@ -426,12 +426,12 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         loader.loader_filter_mode = "whitelist"
         local control = loader.get_or_create_control_behavior()
         control.circuit_set_filters = true
-        control.circuit_read_transfers = true
+        -- control.circuit_read_transfers = true
         loader.get_wire_connector(CGREEN,true).connect_to(output_controller.get_wire_connector(OGREEN,true))
 
-        local demand_holdover = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,red={loader},description="demand holdover 1"}
-        demand_holdover.get_wire_connector(ORED,true).connect_to(scaled_inv.get_wire_connector(ORED,true))
-        demand_holdover.get_wire_connector(OGREEN,true).connect_to(demand_holdover_2.get_wire_connector(IGREEN,true))
+        -- local demand_holdover = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,red={loader},description="demand holdover 1"}
+        -- demand_holdover.get_wire_connector(ORED,true).connect_to(scaled_inv.get_wire_connector(ORED,true))
+        -- demand_holdover.get_wire_connector(OGREEN,true).connect_to(demand_holdover_2.get_wire_connector(IGREEN,true))
     end
 end
 
@@ -454,7 +454,7 @@ local function create_smart_comms_io(
     control.use_colors = true
     control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
     control.circuit_enable_disable = true
-    control.circuit_condition = {first_signal=LINK, comparator=">", constant=0}
+    control.circuit_condition = {first_signal=LINK, comparator=">", constant=1}
 
     -- Create the power controller
     local quality = entity.quality
