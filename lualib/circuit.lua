@@ -353,7 +353,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 
      -- negative: current and incoming inventory.  Will get extra green connected to it from the ports
     local demand_holdover_2 = builder:arithmetic{blinken=true,op="+",R=0,description="demand holdover 2"}
-    local INV_SCALE=-2 -- TODO: why?
+    local INV_SCALE=-1 -- TODO: why?
     local scaled_inv = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,green={chest},red=input_belts,description="scaled inventory"}
     local my_demand = builder:decider{
         blinken=true,
