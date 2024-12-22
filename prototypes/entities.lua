@@ -416,6 +416,7 @@ if mods["space-exploration"] then
     spaceship_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("moving-tile")
 end
 
+local care_about_quality = settings.startup["router-use-quality"].value
 local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
     create_belt_components(prefix,postfix)
     -- doodad is a constant combinator that can't have wires connected to it
@@ -540,6 +541,9 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
                 tostring(belt.speed*480),
                 myutil.format_power(power_smart*1000),
                 "router-"..size.."-"..prefix.."io",
+                {(feature_flags.quality and feature_flags.space_travel and care_about_quality and "router-templates.router-quality-template")
+                or (feature_flags.space_travel and not (feature_flags.quality and care_about_quality) and "router-templates.router-no-quality-template")
+                or "router-templates.router-no-stacking-template"}
             },
         }}, util.merge{holding_entity_as_combinator,{
             name = "router-"..size.."-"..prefix.."io",
@@ -567,7 +571,10 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
                 "router-templates.io-factoriopedia-template",
                 tostring(belt.speed*480),
                 myutil.format_power(power_io*1000),
-                "router-"..size.."-"..prefix.."smart"
+                "router-"..size.."-"..prefix.."smart",
+                {(feature_flags.quality and feature_flags.space_travel and care_about_quality and "router-templates.router-quality-template")
+                or (feature_flags.space_travel and not (feature_flags.quality and care_about_quality) and "router-templates.router-no-quality-template")
+                or "router-templates.router-no-stacking-template"}
             },
         }}}
         
@@ -659,7 +666,6 @@ local function create_loader(prefix,postfix,named_size,stack_size)
     }}}
 end
 
-local care_about_quality = settings.startup["router-use-quality"].value
 for prefix,router in pairs(protos.table) do
     create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "",router.power)
     local postfix = router.postfix or ""

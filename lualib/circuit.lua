@@ -354,7 +354,8 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
      -- negative: current and incoming inventory.  Will get extra green connected to it from the ports
     -- local demand_holdover_2 = builder:arithmetic{blinken=true,op="+",R=0,description="demand holdover 2"}
     local INV_SCALE=-2 -- TODO: -1 results in slight overdelivery, -2 probably underdelivery
-    local scaled_inv = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,green={chest},red=input_belts,description="scaled inventory"}
+    local scaled_inv = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,red=input_belts,description="scaled inventory"}
+    chest.get_wire_connector(CRED,true).connect_to(scaled_inv.get_wire_connector(IRED,true))
     local my_demand = builder:decider{
         blinken=true,
         decisions={{L=EACH, op=">", R=0}},
@@ -377,6 +378,9 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     local nega_driver = nil
     for i,loader in ipairs(output_loaders) do
         local lamp = lamps[i]
+
+        -- Lightly-documented feature: also connect red to see/set inventory
+        lamp.get_wire_connector(CRED,true).connect_to(scaled_inv.get_wire_connector(IRED,true))
         
         -- Set the lamp to enable when link >= 2 (one from me, one from them))
         local control = lamp.get_or_create_control_behavior()

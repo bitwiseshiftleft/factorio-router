@@ -5,7 +5,6 @@
 * Make sure blueprinting/copy/paste works
 * Create ghost lamps when creating ghost router, to enable circuit connections
 * Make sure undo/redo works
-* Re-edit the doc to say that we aren't going for autoconnect, at least not this round
 * Document in Factoripedia
 * Document in tips-and-tricks
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
@@ -13,10 +12,8 @@
 * Test fast-replacing ghosts
 * Why are "port connection" etc items (in py, with crafting combinator)?
 * Remove unused icons
-* Proper packaging for upload to mod portal
 * Make routers also function as a power pole?
 * Add filters to event listeners, for reduced UPS cost
-* Make boxes autoconnect to I/O points when placed as well as vice-versa
 
 Refactor lua slightly
 * Move subroutines out of control.lua
@@ -33,6 +30,7 @@ Refine the recipes -- add some kind of circuits or filter inserters?
 * Integrate with Exotic
 * Integrate with 248k
 * Integrate with Ultimate belts
+* Re-test integration
 
 ## Smart routers
 
