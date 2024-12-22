@@ -346,45 +346,36 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     ------------------------------------------------------------------------------
     -- Signal transmission
     ------------------------------------------------------------------------------
-    local BIG_MASK = 0x3fffffff
-    local HALF_BIG_MASK = 0x1fffffff
+    local LARGE = 0x3fffffff
 
     -- == BIGMASK if in chest inventory, 0 if not
-    local inventory_bigmask = builder:arithmetic{blinken=true,NL=NGREEN,op="OR",R=BIG_MASK,green={chest},description="inventory masked"}
+    local inventory_large = builder:arithmetic{blinken=true,NL=NGREEN,op="OR",R=LARGE,green={chest},description="inventory large mask"}
 
-    local scaled_inv = builder:arithmetic{blinken=true,op="*",R=-5,green={chest},red=input_belts,description="scaled inventory"} -- negative: current and incoming inventory
-
-    -- Bus for demand.  First combinator is a positive feedback so that it quiesces faster
-    -- (TODO: is there a point to this?)
-    local my_demand = builder:arithmetic{blinken=true,op="/",R=5,red={ITSELF},description="damper"}
-
-    -- Negative leak terms.  These don't feed back into the my_demand terms because we want
-    -- to keep them away from the "uncalimed" detector
-    local mini_damp = builder:arithmetic{blinken=true,op="OR",R=-1,red={my_demand},description="leak decrement"}
-    mini_damp.get_wire_connector(OGREEN,true).connect_to(scaled_inv.get_wire_connector(OGREEN,true))
-    mini_damp = builder:arithmetic{blinken=true,op="/",R=-LEAK_FACTOR,red={my_demand},description="leak div"}   -- leak term: /leak_factor
-    mini_damp.get_wire_connector(OGREEN,true).connect_to(scaled_inv.get_wire_connector(OGREEN,true))
-
-    local cancel_my_output = builder:arithmetic{blinken=true,op="/",R=-5,description="cancel my output",red={my_demand},green={scaled_inv}}
-    local constant_nega_link_1 = builder:constant_combi({{LINK,-1}}, "constant nega link")
-    local inventory_bigmask_minus_my_output = builder:decider{blinken=true,op="<",R=0,red={cancel_my_output},description="minus my output"}
-    inventory_bigmask_minus_my_output.get_wire_connector(ORED,true).connect_to(inventory_bigmask.get_wire_connector(ORED,true))
-
-    -- 1 for each unclaimed item in the chest
-    local unclaimed = builder:decider{
+     -- negative: current and incoming inventory.  Will get extra green connected to it from the ports
+    local demand_holdover_2 = builder:arithmetic{blinken=true,op="+",R=0,description="demand holdover 2"}
+    local INV_SCALE=-2 -- TODO: why?
+    local scaled_inv = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,green={chest},red=input_belts,description="scaled inventory"}
+    local my_demand = builder:decider{
         blinken=true,
-        decisions = {
-            {NL=NRED,   L=EACH, op="=", R=0},
-            {and_=true, NL=NGREEN, L=EACH, op=">", R=0},
-        },
-        red = {my_demand},
-        green = {chest},
-        output = {{set_one=true}},
-        description = "unclaimed"
+        decisions={{L=EACH, op=">", R=0}},
+        red={scaled_inv,demand_holdover_2},
+        description="demand if positive"
     }
-    unclaimed.get_wire_connector(ORED,true).connect_to(inventory_bigmask_minus_my_output.get_wire_connector(ORED,true))
+    local claimed = builder:decider{
+        blinken=true,
+        decisions={{L=EACH, op=">", R=0}},
+        description="claimed",
+        output={{set_one=true,signal=EACH}}
+    }
+    claimed.get_wire_connector(IGREEN,true).connect_to(my_demand.get_wire_connector(IGREEN,true))
+    local nega_average_demand = builder:arithmetic{
+        blinken=true,L=EACH,op="/",R=-4,
+        description="nega average demand"
+    }
+    nega_average_demand.get_wire_connector(IGREEN,true).connect_to(my_demand.get_wire_connector(IGREEN,true))
 
-    for i,l in ipairs(output_loaders) do
+    local nega_driver = nil
+    for i,loader in ipairs(output_loaders) do
         local lamp = lamps[i]
         
         -- Set the lamp to enable when link >= 2 (one from me, one from them))
@@ -392,77 +383,55 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         control.use_colors = true
         control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
         control.circuit_enable_disable = true
-        control.circuit_condition = {first_signal=LINK, comparator=">=", constant=2}
+        control.circuit_condition = {first_signal=LINK, comparator=">", constant=64}
 
-        -- Drive my demand / 4 ==> lamp (connected via their_demand)
-        local port_driver = builder:arithmetic{op="/",R=5,red={my_demand},green={scaled_inv},description="port driver"}
+        -- Drive my demand * 4 ==> lamp (connected via their_demand)
+        local port_driver = builder:arithmetic{blinken=true,op="*",R=LEAK_FACTOR/4,red={my_demand},description="port driver"}
+        if not nega_driver then
+            nega_driver = builder:arithmetic{blinken=true,op="/",L=EACH,R=-LEAK_FACTOR,red={port_driver},description="nega-driver"}
+            local nega_driver_2 = builder:arithmetic{blinken=true,op="/",L=EACH,R=-LEAK_FACTOR/4,red={port_driver},description="nega-driver-2"}
+            nega_driver_2.get_wire_connector(ORED,true).connect_to(nega_average_demand.get_wire_connector(IRED,true))
+        end
         
         -- Combinator to hold link = 1
-        local constant_link = builder:constant_combi(
-            {{LINK,1}},
-            "constant link"
-        )
+        local constant_link = builder:constant_combi({{LINK,1}},  "constant link")
 
-        -- Combinator to hold link = 1
-        local constant_nega_link_2 = builder:constant_combi({{LINK,-1}}, "constant nega link2")
-
-        -- The lamp has (their_demand + my_output)
-        -- Set their_demand = (their_demand + my_output + cancel_my_output) if > 0
-        local their_demand = builder:decider{
-            blinken=true,
-            decisions = {{NL=NBOTH, op=">", R=0}},
-            output = {{WO=WBOTH,signal=EACH}},
-            green = {lamp,port_driver,constant_link},
-            red = {cancel_my_output,constant_nega_link_1},
-            description="input filter"
-        }
-        my_demand.get_wire_connector(ORED,true).connect_to(their_demand.get_wire_connector(ORED,true)) -- connect to demand bus
-
-        local demand_reflector = builder:decider{
-            blinken=true,
-            decisions = {
-                {NL=NGREEN,  L=LINK, op="=", R=1},
-                {and_=true, NL=NRED, L=EACH, op=">", R=0},
-                -- OR --
-                {NL=NGREEN,  L=LEAF, op="=", R=1},
-                {and_=true, NL=NRED, L=EACH, op=">", R=0}
-            }, -- if neighbor isn't there, or is an I/O point, reflect my demand back to me
-            output = {{WO=NRED,signal=EACH}},
-            green = {port_driver},
-            red = {port_driver,constant_nega_link_2},
-            description="demand reflector"
-        }
-        my_demand.get_wire_connector(ORED,true).connect_to(demand_reflector.get_wire_connector(ORED,true)) -- connect to demand bus
+        -- each/link = each/(LEAK+1 if unconnected, 2*LEAK+1 if connected)
+        local input_link = builder:arithmetic{blinken=true,L=EACH,op="/",R=LINK,red={constant_link},green={lamp,port_driver},description="port input"}
+        input_link.get_wire_connector(OGREEN,true).connect_to(my_demand.get_wire_connector(IGREEN,true))
+        local buffer_link = builder:arithmetic{blinken=true,L=EACH,op="+",R=0,red={input_link},green={nega_driver},description="buffer input"}
         
         ------------------------------------------------------------------------------
         -- Output belt control
         ------------------------------------------------------------------------------
-        -- green: their_demand + BIG_MASK
-        -- red:   (inventory|BIG_MASK) + (1 if unclaimed) - my_demand
+        -- red: ~(me-them)/2
+        -- green = same/4
         local output_controller = builder:decider{
             blinken=true,
             decisions = {
-                {NL=NRED, op=">", R=0},                     -- inventory > 0
-                -- {and_=true,L=LINK, NL=NRED, op=">", R=0},   -- link > 0
-                {and_=true,NL=NGREEN, op=">", R=0},         -- their demand > 0
-                {and_=true, NL=NBOTH, op=">", R=BIG_MASK}, -- their demand + (mask - mine) > mask
+                {NL=NGREEN, op=">", R=1},                     -- in supply
+                {and_=true,NL=NRED, op=">", R=0},             -- roughly their demand > 0
+                {and_=true,NL=NBOTH, op=">", R=LARGE+1},      -- roughly their demand > mine
                 -- OR --
-                {NL=NRED, op="=", R=BIG_MASK+1},              -- inventory > 0 and unclaimed and my demand = 0
-                -- {and_=true,L=LINK, NL=NRED, op=">", R=0},  -- link > 0
-                {and_=true,NL=NGREEN,L=DEFAULT,op=">",R=0},   -- their demand[default] > 0
-                {and_=true,NL=NBOTH,L=DEFAULT,op=">",R=0}     -- their demand[default] >= mine
+                {NL=NGREEN, op="=",  R=LARGE},                -- inventory > 0 and no demand
+                {and_=true,NL=NBOTH,L=DEFAULT,op=">",R=1}     -- roughly their default > mine (with +1 because of demand signal)
             },
             output = {{set_one=true,signal=EACH}},
-            red = {inventory_bigmask_minus_my_output},
-            green = {their_demand,demand_reflector},
+            green = {nega_average_demand,inventory_large,claimed},
+            red = {buffer_link},
             description="output_controller"
         }
 
         -- Set output loader filter behavior
-        l.loader_filter_mode = "whitelist"
-        local control = l.get_or_create_control_behavior()
+        loader.loader_filter_mode = "whitelist"
+        local control = loader.get_or_create_control_behavior()
         control.circuit_set_filters = true
-        l.get_wire_connector(CGREEN,true).connect_to(output_controller.get_wire_connector(OGREEN,true))
+        control.circuit_read_transfers = true
+        loader.get_wire_connector(CGREEN,true).connect_to(output_controller.get_wire_connector(OGREEN,true))
+
+        local demand_holdover = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,red={loader},description="demand holdover 1"}
+        demand_holdover.get_wire_connector(ORED,true).connect_to(scaled_inv.get_wire_connector(ORED,true))
+        demand_holdover.get_wire_connector(OGREEN,true).connect_to(demand_holdover_2.get_wire_connector(IGREEN,true))
     end
 end
 
@@ -478,14 +447,14 @@ local function create_smart_comms_io(
     -- First, set links and leaf to 1, and set up the indicator lamp
     indicator.get_wire_connector(CGREEN,true).connect_to(port.get_wire_connector(CGREEN,true))
     local control = indicator.get_or_create_control_behavior()
-    local leafplus = builder:constant_combi({{LEAF,1},{LINK,1}},"io link leaf")
+    local leafplus = builder:constant_combi({{LEAF,1},{LINK,1}},"io leaf")
     local leafminus = builder:constant_combi({{LEAF,-1}},"io leaf negative")
     indicator.get_wire_connector(CGREEN,true).connect_to(leafplus.get_wire_connector(CGREEN,true))
     indicator.get_wire_connector(CRED,true).connect_to(leafminus.get_wire_connector(CRED,true))
     control.use_colors = true
     control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
     control.circuit_enable_disable = true
-    control.circuit_condition = {first_signal=LINK, comparator=">=", constant=2}
+    control.circuit_condition = {first_signal=LINK, comparator=">", constant=0}
 
     -- Create the power controller
     local quality = entity.quality
@@ -505,14 +474,15 @@ local function create_smart_comms_io(
     end
 
     -- Send demand to the network
-    local my_nega_supply = builder:arithmetic{L=0,op="-",R=EACH,red={port},green=input_belts,
+    local my_nega_supply = builder:arithmetic{L=EACH,op="*",R=-LEAK_FACTOR,red={port},green=input_belts,
         description = "io negate supply"
     }
+    local my_scaled_demand = builder:arithmetic{L=EACH,op="*",R=LEAK_FACTOR,green={entity}, description = "io scaled demand"}
 
     local my_demand = builder:decider{
         decisions = {{L=EACH, NL=NBOTH, op=">", R=0}},
         output = {{signal=EACH,WO=NBOTH,}},
-        green = {entity},
+        green = {my_scaled_demand},
         red = {my_nega_supply},
         description="my demand if positive"
     }
