@@ -587,7 +587,7 @@ local function on_marked_for_deconstruction(ev)
 end
 
 local function on_died(ev, mined_by_robot)
-    local entity = ev.entity
+    local entity = ev.entity or ev.ghost
     local buffer = ev.buffer
 
     -- Is it a fast upgrade?
@@ -809,6 +809,7 @@ register_event(defines.events.script_raised_revive, on_built)
 
 register_event(defines.events.on_entity_died, on_died)
 register_event(defines.events.on_player_mined_entity, on_died)
+register_event(defines.events.on_pre_ghost_deconstructed, on_died)
 register_event(defines.events.on_robot_mined_entity, on_robot_mined)
 register_event(defines.events.script_raised_destroy, on_died)
 
