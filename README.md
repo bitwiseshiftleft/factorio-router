@@ -3,13 +3,14 @@
 ## Changes for v2.0
 
 * Manually-controlled routers are not implemented for now.  I don't have the graphics anyway.
-* Routers will now read the incoming belt contents, using the v2 "read entire belt" feature.  This means that they do not have to track the expected incoming items with combinators.
-    * **However** it also means that, for now, the routers should be connected with continuous belts, and not e.g. trains or rockets.
-    *  It also means your sushi belt backbone will be uglier, unless you get a mod that hides/decorates the wire reader frames.
-* Internally, the routers will use loaders and a chest instead of inserters, because v2 loaders can be circuit-controlled.  Hopefully this will improve performance.
-* Routers will probably be easier to jam.  Previously, one router input could jam and the others might still work, but since it will now put all inputs into a container, all inputs will typically jam together.
-* Between a simpler wire protocol, not having to track incoming items, and fancier decider combinators, the router circuit will be much simpler.  Hopefully this will improve performance. 
+* Routers now read the incoming belt contents, using the v2 "read entire belt" feature.  This means that they do not have to track the expected incoming items with combinators.
+    *  This means your sushi belt backbone will be uglie, unless you get a mod that hides/decorates the wire reader frames.  But at least it will be recognizably sushi.
+    * If your items are not connected by continuous belts, you can wire the router's lamp to the RED signal to indicate items that are expected to arrive by means other than the immediately-connected belt (e.g. by train or rocket).  (TODO: better documentation for this)
+* Internally, the routers use loaders and a chest instead of inserters, because v2 loaders can be circuit-controlled.  This seems to improve performance.
+* Routers are easier to jam.  Previously, one router input could jam and the others might still work, but since it will now put all inputs into a container, all inputs will typically jam together.
+* Between a simpler wire protocol, not having to track incoming items, and fancier decider combinators, the router circuit will be much simpler.  Hopefully this will improve performance.
 * If you have the expansion, routers support belt stacking.  By default, the stack size is limited by the quality level of the router.
+* Routers should now undo/redo their wire connections if you undo building one (high chance that this is buggy though).
 
 ## Introduction
 
