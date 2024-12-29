@@ -1,19 +1,19 @@
 # Factorio smart routers TODO list and ideas for future work
 
 ## General
-* In a big network, routing can be a bit haphazard: items scatter a little more than they should.
 * Make sure blueprinting/copy/paste works
 * Create ghost lamps when creating ghost router, to enable circuit connections
-* Make sure undo/redo works
 * Document in Factoripedia
 * Document in tips-and-tricks
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
 * Test fast-replacing ghosts
+* Fix ghost issue: undoing construction doesn't remove ghosts
 * Why are "port connection" etc items (in py, with crafting combinator)?
 * Remove unused icons
 * Make routers also function as a power pole?
 * Add filters to event listeners, for reduced UPS cost
+* Deal with routers' tendency to slightly over-send (undersend is better!) especially due to the gap when a loader moves items: they disappear from the chest's inventory before they appear on the belt's inventory.
 
 Refactor lua slightly
 * Move subroutines out of control.lua

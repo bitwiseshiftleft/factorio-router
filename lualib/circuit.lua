@@ -326,7 +326,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         local control = b.get_or_create_control_behavior()
         control.read_contents = true
         control.read_contents_mode = READ_ALL
-        -- TODO: enable/disable the belt on low power for show, or maybe that's too expensive?
+        -- FUTURE: enable/disable the belt on low power for show, or maybe that's too expensive?
     end
     local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
     local jam_scale = builder:constant_combi({{SIGC,-16*jam_scale}},"jammed scale")

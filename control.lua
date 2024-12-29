@@ -40,6 +40,15 @@ local router_component_table = {
     lamp_distance = 0.86
 }
 
+
+local function name_or_ghost_name(entity)
+    if entity.name == "entity-ghost" then
+        return entity.ghost_name
+    else
+        return entity.name
+    end
+end
+
 local function is_router_belt(entity) return string.find(entity.name, '^router%-component%-.*belt$') ~= nil end
 local function is_router_loader(entity) return string.find(entity.name, '^router%-component%-.*loader$') ~= nil end
 local function is_router_outer(entity) return string.find(entity.name, '^router%-.*router$') ~= nil end
@@ -49,22 +58,58 @@ local function is_router_component(entity)  return string.find(entity.name, '^ro
 local function is_ghost_router_outer(entity) return string.find(entity.ghost_name, '^router%-.*router$') ~= nil end
 local function is_ghost_router_smart(entity) return string.find(entity.ghost_name, '^router%-.*smart$') ~= nil end
 local function is_ghost_router_io(entity)    return string.find(entity.ghost_name, '^router%-.*io$') ~= nil end
-local function is_ghost_router_component(entity)  return string.find(entity.ghost_name, '^router%-component%-') ~= nil end
+local function is_ghost_router_component(entity)       return string.find(name_or_ghost_name(entity), '^router%-component%-') ~= nil end
+local function is_maybeghost_router_outer(entity)      return string.find(name_or_ghost_name(entity), '^router%-.*router$') ~= nil end
+local function is_maybeghost_router_smart(entity)      return string.find(name_or_ghost_name(entity), '^router%-.*smart$') ~= nil end
+local function is_maybeghost_router_io(entity)         return string.find(name_or_ghost_name(entity), '^router%-.*io$') ~= nil end
+local function is_maybeghost_router_component(entity)  return string.find(name_or_ghost_name(entity), '^router%-component%-') ~= nil end
+local visible_subentity_names = {
+    ["router-component-port-trim-combinator"] = true,
+    ["router-component-io-connection-lamp"] = true,
+    ["router-component-smart-port-lamp"] = true,
+    ["router-component-port-control-combinator"] = true
+}
+local function is_maybeghost_invisible_router_component(entity)
+    if is_maybeghost_router_component(entity) then
+        if is_maybeghost_router_smart(entity) then return false end
+        if is_maybeghost_router_outer(entity) then return false end
+        if is_maybeghost_router_io(entity) then return false end
+        return not visible_subentity_names[name_or_ghost_name(entity)]
+    end
+    return false
+end
 
 local vector_add = myutil.vector_add
 local vector_sub = myutil.vector_sub
 
 local function bust_ghosts(entity)
     -- Delete all router component ghosts overlapping the entity.
+    -- Return undo information
+    local undo_info = {}
     for _,ghost in ipairs(entity.surface.find_entities_filtered{
         area = entity.bounding_box,
         force = entity.force,
         type = "entity-ghost"
     }) do
         if string.find(ghost.ghost_name, '^router%-') then
-            ghost.destroy()
+            local connector_table = {}
+            for id,connector in pairs(ghost.get_wire_connectors(false)) do
+                for _,connection in pairs(connector.connections) do
+                    local connid = connection.target.wire_connector_id
+                    local ent = connection.target.owner
+                    if not is_maybeghost_invisible_router_component(ent) then
+                        table.insert(connector_table,{id,name_or_ghost_name(ent),ent.position,connid})
+                    end
+                end
+            end
+            if next(connector_table) then
+                table.insert(undo_info, {name_or_ghost_name(ghost),ghost.position,connector_table})
+            end
+            if ghost ~= entity then ghost.destroy() end
         end
     end
+    -- game.print("Bust ghosts: return " .. serpent.line(undo_info))
+    return undo_info
 end
 
 local function relative_location(epos, orientation, data)
@@ -381,9 +426,164 @@ end
 
 -- If not nil: we think this is a fast upgrade
 local fast_replace_state = nil
-
 local function on_pre_build(args)
     fast_replace_state = {position=args.position, tick=args.tick, something_died_here = false}
+end
+
+local register_event, unregister_event
+local undo_info_to_be_attached = {}
+
+local function attach_undo_info(ev)
+    -- Fires on the tick after any relevant undo-able event occurs
+    -- attaches undo_info_to_be_attached to the undo stack
+
+    for undoer,info in pairs(undo_info_to_be_attached) do
+        local stack = game.players[undoer[1]].undo_redo_stack
+        local name = undoer[2]
+        local surface_index = undoer[3]
+        local position = undoer[4]
+        local found = false
+
+        -- game.print("Adding undo information: "..serpent.line(info))
+        for idx = 1,stack.get_undo_item_count() do
+            local item = stack.get_undo_item(idx)
+            for jdx,subitem in ipairs(item) do
+                if subitem.type == "removed-entity"
+                    and subitem.surface_index == surface_index
+                    and subitem.target.name == name
+                    and subitem.target.position.x == position.x
+                    and subitem.target.position.y == position.y
+                then
+                    -- game.print("Found item at idx,jdx,info = "..serpent.line({idx,jdx,info}))
+                    stack.set_undo_tag(idx, jdx, "router_restore_connections", info)
+                    found = true
+                end
+            end
+            if found then break end
+        end
+        -- if not found then
+        --     game.print("Undo info not found: "..serpent.line({undoer,info})) -- TODO remove
+        -- end
+    end
+    undo_info_to_be_attached = {} -- hopefully we attached them all?
+
+    -- Remove ourselves until future undo-able events occur
+    unregister_event(defines.events.on_tick, attach_undo_info)
+end
+
+local function add_undo_destroy_info(player_index, entity, undo_info)
+    undo_info_to_be_attached[{player_index, name_or_ghost_name(entity), entity.surface.index, entity.position}] = undo_info
+    register_event(defines.events.on_tick, attach_undo_info) -- to fire next tick
+end
+
+local function get_undo_restore_connections(subitem)
+    if subitem.type ~= "removed-entity" then return {} end
+    if subitem.tags and subitem.tags.router_restore_connections then
+        -- normally they're stored in the tags
+        return subitem.tags.router_restore_connections
+    else
+        -- possibly we are in the editor, and we have deleted the item but then undone it in the same tick
+        -- check through the undo info not yet attached
+        for undoer,info in pairs(undo_info_to_be_attached) do
+            local name = undoer[2]
+            local surface_index = undoer[3]
+            local position = undoer[4]
+            if subitem.surface_index == surface_index
+                and subitem.target.name == name
+                and subitem.target.position.x == position.x
+                and subitem.target.position.y == position.y
+            then return info end
+        end
+    end
+    return {}
+end
+
+local function find_entity_or_ghost(surface,name,position,force)
+    -- find an entity or ghost with the given parameters
+    local search = surface.find_entities_filtered{
+        ghost_name=name, position=position, force=force, limit=1
+    }
+    if search and search[1] then return search[1] end
+    search = surface.find_entities_filtered{
+        name=name, position=position, force=force, limit=1
+    }
+    if search and search[1] then return search[1] end
+    return nil
+end
+
+local function on_undo_applied(ev)
+    -- When an undo is applied, check whether it's a router being un-destroyed
+    -- If so, then restore the router's subentities' connections
+    local force = game.players[ev.player_index].force
+    for idx,action in ipairs(ev.actions) do
+        if action.type == "removed-entity" and action.surface_index ~= nil and game.surfaces[action.surface_index] then
+            local surface = game.surfaces[action.surface_index]
+            local child_ents = {}
+            local info = get_undo_restore_connections(action)
+
+            for idx,child in ipairs(info) do
+                -- pre-create or find the child entities as ghosts, in case they are connected to each other
+                child_ents[idx] = find_entity_or_ghost(surface,child[1],child[2],force)
+                if not child_ents[idx] then
+                    child_ents[idx] = surface.create_entity{
+                        name="entity-ghost",
+                        inner_name=child[1],
+                        position=child[2],
+                        surface=surface,
+                        force=force
+                    }
+                end
+            end
+            -- game.print("Undo delete connections " .. serpent.line(info))
+
+            for idx,child in ipairs(info) do
+                -- attempt to find and connect the wire to the other entity
+                local name      = child[1]
+                local position  = child[2]
+                local tab       = child[3]
+                for _jdx,conn in ipairs(tab) do
+                    local other_name = conn[2]
+                    local other_position = conn[3]
+                    local other_ent = find_entity_or_ghost(surface,other_name,other_position,force)
+                    if other_ent then
+                        child_ents[idx].get_wire_connector(conn[1],true).connect_to(
+                            other_ent.get_wire_connector(conn[4],true)
+                        )
+                    end
+                end
+            end
+        end
+    end
+end
+
+local function on_marked_for_deconstruction(ev)
+    if ev.player_index == nil then return end
+    local entity = ev.entity
+    if entity and entity.type ~= "entity-ghost" and (is_router_outer(entity) or is_router_smart(entity) or is_router_io(entity)) then
+        local undo_info = {}
+        for i,child in ipairs(entity.surface.find_entities_filtered{area=entity.bounding_box}) do
+            if ev.player_index ~= nil and
+                (   child.name == "router-component-io-connection-lamp"
+                    or child.name == "router-component-smart-port-lamp")
+            then
+                -- add undo information
+                local connector_table = {}
+                for id,connector in pairs(child.get_wire_connectors(false)) do
+                    for _,connection in pairs(connector.connections) do
+                        local connid = connection.target.wire_connector_id
+                        local ent = connection.target.owner
+                        if not is_maybeghost_invisible_router_component(ent) then
+                            table.insert(connector_table,{id,name_or_ghost_name(ent),ent.position,connid})
+                        end
+                    end
+                end
+                if next(connector_table) then
+                    table.insert(undo_info, {name_or_ghost_name(child),child.position,connector_table})
+                end
+            end
+        end
+        add_undo_destroy_info(ev.player_index, entity, undo_info)
+    end
 end
 
 local function on_died(ev, mined_by_robot)
@@ -411,12 +611,13 @@ local function on_died(ev, mined_by_robot)
         end
 
         local children = entity.surface.find_entities_filtered{area=entity.bounding_box}
+        local undo_info = {}
         for i,child in ipairs(children) do
             if is_router_component(child) then
                 -- First, try to mine its contents
                 if buffer and string.match(child.name, "inserter$") ~= nil and child.held_stack.valid_for_read then
                     buffer.insert(child.held_stack)
-                elseif buffer and (string.match(child.name, "transport%-belt$") ~= nil or string.match(child.name, "loader") ~= nil )then
+                elseif buffer and (string.match(child.name, "transport%-belt$") ~= nil or string.match(child.name, "loader") ~= nil) then
                     for line_idx=1,2 do
                         local line = child.get_transport_line(line_idx)
                         for j=1,math.min(#line, 256) do
@@ -429,16 +630,39 @@ local function on_died(ev, mined_by_robot)
                     for j=1,#inv do
                         buffer.insert(inv[j])
                     end
+                elseif ev.player_index ~= nil and
+                    (   child.name == "router-component-io-connection-lamp"
+                     or child.name == "router-component-smart-port-lamp") then
+                    -- add undo information
+                    local connector_table = {}
+                    for id,connector in pairs(child.get_wire_connectors(false)) do
+                        for _,connection in pairs(connector.connections) do
+                            local connid = connection.target.wire_connector_id
+                            local ent = connection.target.owner
+                            if not is_maybeghost_invisible_router_component(ent) then
+                                table.insert(connector_table,{id,name_or_ghost_name(ent),ent.position,connid})
+                            end
+                        end
+                    end
+                    if next(connector_table) then
+                        table.insert(undo_info, {name_or_ghost_name(child),child.position,connector_table})
+                    end
                 end
                 child.destroy()
             end
+        end
+        if ev.player_index ~= nil then
+            add_undo_destroy_info(ev.player_index, entity, undo_info)
         end
     elseif entity and entity.type == "entity-ghost" and (
         is_ghost_router_outer(entity)
         or is_ghost_router_io(entity)
         or is_ghost_router_smart(entity)
     ) then
-        bust_ghosts(entity)
+        local undo_info = bust_ghosts(entity)
+        if ev.player_index ~= nil then
+            add_undo_destroy_info(ev.player_index, entity, undo_info)
+        end
     end
 end
 
@@ -544,7 +768,7 @@ local function dispatch(event)
     end
 end
 
-local function register_event(event, handler)
+register_event = function(event, handler)
     local handlers = handlers_for[event]
     if not handlers then
       handlers = {}
@@ -558,8 +782,17 @@ local function register_event(event, handler)
     handlers[handler] = true
 end
 
+unregister_event = function(event, handler)
+    local handlers = handlers_for[event]
+    if not handlers then return end
+    handlers[handler] = nil
+    if not next(handlers) then
+      script.on_event(event, nil)
+    end
+end
+
 -- TODO:
--- Use event filters to avoid perf cost
+-- Use event filters to reduce perf cost
 --
 -- On marked for deconstruction
 -- On marked for upgrade
@@ -578,6 +811,9 @@ register_event(defines.events.on_entity_died, on_died)
 register_event(defines.events.on_player_mined_entity, on_died)
 register_event(defines.events.on_robot_mined_entity, on_robot_mined)
 register_event(defines.events.script_raised_destroy, on_died)
+
+register_event(defines.events.on_marked_for_deconstruction, on_marked_for_deconstruction)
+register_event(defines.events.on_undo_applied, on_undo_applied)
 
 -- register_event(defines.events.on_entity_settings_pasted, on_settings_pasted)
 register_event(defines.events.on_player_rotated_entity, on_rotated)
