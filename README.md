@@ -1,4 +1,4 @@
-# Sushi routers
+# Circuit-controlled routers
 
 ## Changes for v2.0
 
