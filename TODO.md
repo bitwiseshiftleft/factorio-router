@@ -7,7 +7,7 @@
 
 ## General
 * Create ghost lamps when creating ghost router, to enable circuit connections
-* Document in Factoripedia
+* Document better in Factoripedia
 * Document in tips-and-tricks, possibly even with a simulation
 * Support undo deconstruct with circuit reconnect, even if the lamps weren't selected for deconstruction
 * More testing with copy-paste, undo, etc.
@@ -20,12 +20,8 @@
 * Deal with routers' tendency to slightly over-send (undersend is better!) especially due to the gap when a loader moves items: they disappear from the chest's inventory before they appear on the belt's inventory.
 
 Refactor lua slightly
-* Move undo functions to their own .lua
-* Move event functions to their own .lua
-* Move other subroutines out of control.lua?
 * Use builder more extensively
 * Use util.add_shift instead of vector_add
-* Don't hard-code names in the picker-dolly banning code
 
 Make sure the collision masks are good.
 

@@ -225,7 +225,7 @@ local interface_lamp_proto = {
 -- Super inserter
 local super_inserter = util.merge{hidden_widget_proto,{
     type = "inserter",
-    name = "router-component-inserter",
+    name = "router-component-nonf-inserter",
     hand_base_picture   = util.empty_sprite(1),
     hand_open_picture   = util.empty_sprite(1),
     hand_closed_picture = util.empty_sprite(1),
@@ -245,27 +245,8 @@ local super_inserter = util.merge{hidden_widget_proto,{
     circuit_wire_max_distance = 9,
     chases_belt_frames = false,
     stack_size_bonus = 0,
+    filter_count = 0,
     platform_picture = empty_sheet_4
-}}
-local super_inserter_nonfilter = util.merge{super_inserter,{
-    name = "router-component-nonf-inserter"
-}}
-super_inserter.filter_count = 5
-
--- These are the same but for "extra" inserters on super-fast belts
-local super_inserter_2 = util.merge{super_inserter,{
-    name = "router-component-inserter-extra"
-}}
-local super_inserter_nonfilter_2 = util.merge{super_inserter_nonfilter,{
-    name = "router-component-nonf-inserter-extra"
-}}
-
-local indicator_inserter = util.merge{super_inserter,{
-    name = "router-component-indicator-inserter",
-    flags = { "not-blueprintable", "not-on-map" },
-    hidden = true,
-    energy_source = { type = "void", },
-    filter_count = 4
 }}
 
 if protos.enable_manual or protos.enable_smart then
@@ -292,8 +273,8 @@ if protos.enable_manual or protos.enable_smart then
         hidden_arith, hidden_decider,
         hidden_arith_blinken, hidden_decider_blinken,
 
-        -- Super filter inserters
-        super_inserter, super_inserter_2,
+        -- Super nonfilter inserters
+        super_inserter,
 
         hidden_container_for_4x4, hidden_loader
     }
@@ -328,9 +309,7 @@ if protos.enable_manual then
             picture_off = util.empty_sprite(1),
             picture_on = util.empty_sprite(1),
             always_on = true
-        }},
-
-        indicator_inserter
+        }}
     }
 end
 
@@ -397,8 +376,7 @@ if protos.enable_smart then
             activity_led_light_offsets = { {0,0},{0,0},{0,0},{0,0} },
             fast_replaceable_group = "router-component-port-control-combinator",
             icon = "__router__/graphics/threshold.png", icon_size=128,
-        }},
-        super_inserter_nonfilter, super_inserter_nonfilter_2
+        }}
     }
 end
 

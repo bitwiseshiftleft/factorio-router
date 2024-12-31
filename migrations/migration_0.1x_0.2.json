@@ -1,0 +1,26 @@
+{
+    "entity":
+    [
+        ["router-component-inserter-extra",      "router-component-nonf-inserter"],
+        ["router-component-nonf-inserter-extra", "router-component-nonf-inserter"],
+        ["router-component-inserter",            "router-component-nonf-inserter"],
+        ["router-component-power-combinator-io",    "router-component-4x4-power-combinator-io"],
+        ["router-component-power-combinator-smart", "router-component-4x4-power-combinator-smart"],
+        ["router-component-fast-power-combinator-io",    "router-component-4x4-fast-power-combinator-io"],
+        ["router-component-fast-power-combinator-smart", "router-component-4x4-fast-power-combinator-smart"],
+        ["router-component-express-power-combinator-io",    "router-component-4x4-express-power-combinator-io"],
+        ["router-component-express-power-combinator-smart", "router-component-4x4-express-power-combinator-smart"],
+        ["router-component-turbo-power-combinator-io",    "router-component-4x4-turbo-power-combinator-io"],
+        ["router-component-turbo-power-combinator-smart", "router-component-4x4-turbo-power-combinator-smart"],
+        ["router-component-kr-advanced-power-combinator-io",    "router-component-4x4-kr-advanced-power-combinator-io"],
+        ["router-component-kr-advanced-power-combinator-smart", "router-component-4x4-kr-advanced-power-combinator-smart"],
+        ["router-component-kr-superior-power-combinator-io",    "router-component-4x4-kr-superior-power-combinator-io"],
+        ["router-component-kr-superior-power-combinator-smart", "router-component-4x4-kr-superior-power-combinator-smart"],
+        ["router-component-se-space-power-combinator-io",    "router-component-4x4-se-space-power-combinator-io"],
+        ["router-component-se-space-power-combinator-smart", "router-component-4x4-se-space-power-combinator-smart"],
+        ["router-component-se-deep-space-power-combinator-io",    "router-component-4x4-se-deep-space-power-combinator-io"],
+        ["router-component-se-deep-space-power-combinator-smart", "router-component-4x4-se-deep-space-power-combinator-smart"],
+        ["router-component-ultimate-power-combinator-io",    "router-component-4x4-ultimate-power-combinator-io"],
+        ["router-component-ultimate-power-combinator-smart", "router-component-4x4-ultimate-power-combinator-smart"]
+    ]
+}
