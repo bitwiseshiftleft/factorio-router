@@ -2,6 +2,7 @@ local create_router = require "lualib.create_router"
 local undo = require "lualib.undo"
 local event = require "lualib.event"
 local disable_picker_dollies = require "lualib.disable_picker_dollies"
+local myutil = require "lualib.util"
 
 -- If not nil: we think this is a fast upgrade
 local fast_replace_state = nil
@@ -86,12 +87,12 @@ local function on_marked_for_deconstruction(ev)
                         local connid = connection.target.wire_connector_id
                         local ent = connection.target.owner
                         if not create_router.is_maybeghost_invisible_router_component(ent) then
-                            table.insert(connector_table,{id,name_or_ghost_name(ent),ent.position,connid})
+                            table.insert(connector_table,{id,myutil.name_or_ghost_name(ent),ent.position,connid})
                         end
                     end
                 end
                 if next(connector_table) then
-                    table.insert(undo_info, {name_or_ghost_name(child),child.position,connector_table})
+                    table.insert(undo_info, {myutil.name_or_ghost_name(child),child.position,connector_table})
                 end
             end
         end
@@ -157,12 +158,12 @@ local function on_died(ev, mined_by_robot)
                             local connid = connection.target.wire_connector_id
                             local ent = connection.target.owner
                             if not create_router.is_maybeghost_invisible_router_component(ent) then
-                                table.insert(connector_table,{id,name_or_ghost_name(ent),ent.position,connid})
+                                table.insert(connector_table,{id,myutil.name_or_ghost_name(ent),ent.position,connid})
                             end
                         end
                     end
                     if next(connector_table) then
-                        table.insert(undo_info, {name_or_ghost_name(child),child.position,connector_table})
+                        table.insert(undo_info, {myutil.name_or_ghost_name(child),child.position,connector_table})
                     end
                 end
                 child.destroy()

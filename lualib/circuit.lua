@@ -353,7 +353,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
 
      -- negative: current and incoming inventory.  Will get extra green connected to it from the ports
     -- local demand_holdover_2 = builder:arithmetic{blinken=true,op="+",R=0,description="demand holdover 2"}
-    local INV_SCALE=-2 -- TODO: -1 results in slight overdelivery, -2 probably underdelivery
+    local INV_SCALE=-4 -- TODO: -2 results in slight overdelivery, -4 probably underdelivery
     local scaled_inv = builder:arithmetic{blinken=true,op="*",R=INV_SCALE,red=input_belts,description="scaled inventory"}
     chest.get_wire_connector(CRED,true).connect_to(scaled_inv.get_wire_connector(IRED,true))
     local my_demand = builder:decider{
@@ -478,10 +478,10 @@ local function create_smart_comms_io(
     end
 
     -- Send demand to the network
-    local my_nega_supply = builder:arithmetic{L=EACH,op="*",R=-LEAK_FACTOR,red={port},green=input_belts,
+    local my_nega_supply = builder:arithmetic{L=EACH,op="*",R=-(LEAK_FACTOR*3/2),red={port},green=input_belts,
         description = "io negate supply"
     }
-    local my_scaled_demand = builder:arithmetic{L=EACH,op="*",R=LEAK_FACTOR,green={entity}, description = "io scaled demand"}
+    local my_scaled_demand = builder:arithmetic{L=EACH,op="*",R=(LEAK_FACTOR*3/2),green={entity}, description = "io scaled demand"}
 
     local my_demand = builder:decider{
         decisions = {{L=EACH, NL=NBOTH, op=">", R=0}},
@@ -513,6 +513,10 @@ local function create_smart_comms_io(
         green = {threshold_trim},
         description="threshold if negative"
     }
+    local threshold_scaled = builder:arithmetic{L=EACH,op="*",R=LEAK_FACTOR/4,
+        green={threshold_buffer_negative,threshold_buffer_positive},
+        description="threshold multiplier"
+    }
 
     -- Calculate net demand of the network
     local net_network_demand = builder:arithmetic{
@@ -534,7 +538,7 @@ local function create_smart_comms_io(
         },
         output = {{signal=EACH,set_one=true}},
         green = {net_network_demand},
-        red = {threshold_buffer_negative,threshold_buffer_positive,my_demand_very_negative},
+        red = {threshold_scaled,my_demand_very_negative},
         description="worth sending"
     }
 
