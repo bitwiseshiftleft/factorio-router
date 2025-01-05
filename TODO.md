@@ -1,8 +1,11 @@
 # Factorio smart routers TODO list and ideas for future work
 
 ## Blocking release
-* Migration script
+* Can routers be frozen?
+* More testing in py
 * Make sure blueprinting works
+* Make sure that un-marking for deconstruction, and undoing that, works
+* Is there a way to quiesce the network a little better?
 * Check balance on routing toward nearby I/O terminal vs further along the line.
 
 ## General
