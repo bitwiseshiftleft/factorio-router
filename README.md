@@ -1,5 +1,11 @@
 # Circuit-controlled routers
 
+## Introduction
+
+This mod introduces a logistic system based on "sushi" belts, meaning belts carrying a mixture of many different item types.  You can construct a network of routers and I/O points connected by belts.  The I/O points are attached to chests, and can set a request for items.  If one I/O point requests items, and another one has them in its chest, then they will sent out along the belts in the network from one chest to the other.
+
+An early version of this mod added manually-controlled routers, where each port of the router is separately controlled by a circuit.  Currently these are unsupported, but they might come back.
+
 ## Changes for v2.0
 
 * Manually-controlled routers are not implemented for now.  I don't have the graphics anyway.
@@ -12,15 +18,7 @@
 * If you have the expansion, routers support belt stacking.  By default, the stack size is limited by the quality level of the router.
 * Routers should now undo/redo their wire connections if you undo building one (high chance that this is buggy though).
 
-## Introduction
-
-This mod introduces a logistic system based on "sushi" belts, meaning belts carrying a mixture of many different item types.  You can construct a network of routers and I/O points connected by belts.  The I/O points are attached to chests, and can set a request for items.  If one I/O point requests items, and another one has them in its chest, then they will sent out along the belts in the network from one chest to the other.
-
-An early version of this mod added manually-controlled routers, where each port of the router is separately controlled by a circuit.  Currently these are unsupported, but they might come back.
-
 ## Smart routers and I/O terminals
-
-**Might be changed from how it works / looks in v1**
 
 The screenshot shows a simple network which uses smart routers to direct the manufacturing of blue chips.  First the green-chip station requests iron and copper; the red-chip station requests copper, plastic and green chips; the blue-chip station requests green chips, red chips, iron, sulfur and water barrels (to make sulfuric acid), and the barrel-filler station requests empty barrels.  Finally, a station at the left requests the blue chips.  All of these are routed automatically through the network.
 
@@ -53,25 +51,13 @@ Smart routers are not very balanced, because they make some types of logistics p
 
 The design of routers, and especially smart routers, has many limitations, both inherently and due to my scripting skills.  Because they are very complex compound entities, there are likely to be bugs around building, destroying and blueprinting routers.  In particular:
 
-**Will be changed for v2**
-
-* If you remove a router, then undoing the removal with control-Z won't restore its connections.
-* If you remove a router I/O point, then undoing the removal with control-Z won't restore its connections or its trim settings (but will restore its request list).
+* If you remove a router I/O point, then undoing the removal with control-Z should restore its connections, but might not restore some of the settings such as the "threshold trim" adjustment.
+* Undo in general has not been thoroughly tested.
 * The feature that automatically connects router I/O points to chests triggers (when turned on in map settings) even when the router and chest were built from a blueprint where they're intentionally not connected.
 
 ## Compatibility
 
-This mod should be compatible with:
-
-**Will be changed for v2**
-* Krastorio 2
-* Space Exploration
-* Pyanodon's Alternative Energy (and possibly other Py setups)
-* Bob's Logistics
-* SeaBlock
-* Industrial Revolution 3
-* Black Rubber Belts
-* Picker Dollies
+I have not tested this mod's compatibility in v2.  It seems to be compatible with PyAE, but there may be bugs in other modpacks.  Some of the features might not work.  Let me know in the forums.
 
 ## TODO list
 
@@ -82,5 +68,4 @@ See TODO.md on the github.  Some notable todo items:
 * Localization to languages other than English
 * Integration with 248k, EI, etc
 * Test and polish interactions
-* Allow manual routers to request items when negative instead of positive, in the style of LTN
-* Add routers with 2 lanes in each direction?  This is even more unbalanced but probably doesn't hurt UPS much.
+* Add routers with 2 lanes in each direction?  This is even more unbalanced but probably wouldn't hurt UPS much.

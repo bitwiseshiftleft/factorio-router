@@ -1,4 +1,12 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.2
+Date: 2025-01-06
+
+  Version bump, because I posted a copy on GitHub and have changed some small things (mostly docs).
+  There is still a tendency to oversend by the way: it's mostly noticable with stacked belts, where
+  routers can send a whole lot before they notice they've sent too much.
+  
+---------------------------------------------------------------------------------------------------
 Version: 0.2.1
 Date: 2025-01-01
 
