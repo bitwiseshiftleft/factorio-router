@@ -1,4 +1,6 @@
 local protos = require "prototypes.router_proto_table"
+local have_cube = mods["Ultracube"] ~= nil
+local category = have_cube and "cube-fabricator-handcraft" or "crafting"
 
 local function verbosify_recipe(recipe)
     local ret = {}
@@ -19,7 +21,8 @@ local function create_router_recipe(size,prefix,manual_ingredients,smart_ingredi
                 ingredients = verbosify_recipe(manual_ingredients),
                 energy_required = 30,
                 results = {{type="item", name="router-"..size.."-"..prefix.."router", amount=1}},
-                fast_replaceable_group = "router-"..size.."-router"
+                fast_replaceable_group = "router-"..size.."-router",
+                category = category
             }
         })
     end
@@ -33,7 +36,8 @@ local function create_router_recipe(size,prefix,manual_ingredients,smart_ingredi
                 ingredients = verbosify_recipe(smart_ingredients),
                 energy_required = 30,
                 results = {{type="item", name="router-"..size.."-"..prefix.."smart", amount=1}},
-                fast_replaceable_group = "router-"..size.."-smart"
+                fast_replaceable_group = "router-"..size.."-smart",
+                category = category
             }
         })
         data:extend({
@@ -44,7 +48,8 @@ local function create_router_recipe(size,prefix,manual_ingredients,smart_ingredi
                 ingredients = verbosify_recipe(io_ingredients),
                 energy_required = 30,
                 results = {{type="item", name="router-"..size.."-"..prefix.."io", amount=1}},
-                fast_replaceable_group = "router-"..size.."-io"
+                fast_replaceable_group = "router-"..size.."-io",
+                category = category
             }
         })
     end

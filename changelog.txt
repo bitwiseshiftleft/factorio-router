@@ -1,10 +1,28 @@
 ---------------------------------------------------------------------------------------------------
-Version: 0.2.2
+Version: 0.2.5
+Date: 2025-04-18
+
+  Whoops, Ultracube support broke everything else
+
+---------------------------------------------------------------------------------------------------
+Version: 0.2.4
+Date: 2025-04-18
+
+  Ultracube support, but it's poorly tested because I haven't played Ultracube.
+  
+---------------------------------------------------------------------------------------------------
+Version: 0.2.3
+Date: 2025-02-02
+
+  Fix conflict with Longer Underground Belt (Aligned).
+  
+---------------------------------------------------------------------------------------------------
+Version: 0.2.1 (was supposed to be 0.2.2)
 Date: 2025-01-06
 
-  Version bump, because I posted a copy on GitHub and have changed some small things (mostly docs).
-  There is still a tendency to oversend by the way: it's mostly noticable with stacked belts, where
-  routers can send a whole lot before they notice they've sent too much.
+  This was supposed to be a version bump, because I posted a copy on GitHub and have changed some
+  small things (mostly docs).  There is still a tendency to oversend by the way: it's mostly noticable
+  with stacked belts, where routers can send a whole lot before they notice they've sent too much.
   
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.1

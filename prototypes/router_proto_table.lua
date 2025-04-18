@@ -2,9 +2,10 @@ local M = {}
 
 M.have_stacked_belts = feature_flags.space_travel
 local sizes = {"4x4"}
--- Krastorio2 and SE support
+-- Other mod support
+local have_cube = mods["Ultracube"] ~= nil
 local have_se = data.raw.item["se-space-transport-belt"] ~= nil
-local have_ir3 = mods["IndustrialRevolution3"]
+local have_ir3 = mods["IndustrialRevolution3"] ~= nil
 local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
 local have_bobs = data.raw.item["ultimate-transport-belt"] ~= nil
 local have_spaceage = feature_flags.space_travel and data.raw.item["turbo-transport-belt"] ~= nil
@@ -13,6 +14,10 @@ local have_ae3 = (
   and data.raw.item["advanced-logistic-science-pack"] ~= nil
 ) 
 local have_py = mods["pyhightech"]
+
+if have_cube then
+  require("__Ultracube__/prototypes/lib/tech_costs")
+end
 
 -- Copied from miniloader
 local turbo_hex
@@ -24,11 +29,15 @@ else
   turbo_hex = "aad458D1"
 end
 
+local cube_prefix = (have_cube and "cube-") or ""
+local blue_chip_name = (have_cube and "cube-spectral-processor") or "processing-unit"
+
 M.table = {
     [""] = {
         tint = util.color("ffc340ff"),
-        prerequisites = { "circuit-network", "logistics" },
-        tech_costs = {
+        prerequisites = have_cube and {"cube-combinatorics"}
+          or {"circuit-network", "logistics" },
+        tech_costs = have_cube and tech_cost_unit("0",100) or {
             count = 200,
             ingredients =
             {
@@ -47,8 +56,12 @@ M.table = {
     },
     ["fast-"] = {
         tint=util.color("e31717ff"),
-        prerequisites = { "logistics-2", (have_py and "basic-electronics") or "advanced-circuit" },
-        tech_costs = {
+        prerequisites = {
+          (have_cube and "cube-logistics") or "logistics-2",
+          (have_py and "basic-electronics") or
+          (have_cube and "cube-advanced-electronics")
+          or "advanced-circuit" },
+        tech_costs = have_cube and tech_cost_unit("1b", 300) or {
             count = 300,
             ingredients =
             {
@@ -58,17 +71,18 @@ M.table = {
             time = 15
         },
         manual_ingredients = {
-            {"advanced-circuit",20}
+            {cube_prefix.."advanced-circuit",20}
         }, smart_ingredients = {
-            {"advanced-circuit",30}
+            {cube_prefix.."advanced-circuit",30}
         }, io_ingredients = {
-            {"advanced-circuit",10}
+            {cube_prefix.."advanced-circuit",10}
         }
     },
     ["express-"] = {
         tint=util.color("43c0faff"),
-        prerequisites = { "logistics-3", "processing-unit" },
-        tech_costs = {
+        prerequisites = {
+          (have_cube and "cube-express-logistics") or "logistics-3", blue_chip_name },
+        tech_costs = have_cube and tech_cost_unit("2", 300) or {
             count = 500,
             ingredients =
             have_se and  {
@@ -84,13 +98,13 @@ M.table = {
             time = 15
         },
         manual_ingredients = {
-            {"processing-unit",20}
+            {blue_chip_name,20}
         },
         smart_ingredients = {
-            {"processing-unit",30}
+            {blue_chip_name,30}
         },
         io_ingredients = {
-            {"processing-unit",10}
+            {blue_chip_name,10}
         }
     }
 }
@@ -155,6 +169,15 @@ if have_k2 and have_se then
       },
       time = 15
     },
+  }
+elseif have_cube then
+  M.table["cube-v4-"] = {
+    tint = util.color("a30bd6D1"),
+    prerequisites = {"cube-v4-logistics"},
+    manual_ingredients = { {"cube-spectral-processor",40}, {"cube-advanced-engine",10} },
+    smart_ingredients =  { {"cube-spectral-processor",60}, {"cube-advanced-engine",15} },
+    io_ingredients    =  { {"cube-spectral-processor",20}, {"cube-advanced-engine",5} },
+    tech_costs = tech_cost_unit("3", 500)
   }
 elseif have_k2 then
   M.table["kr-advanced-"] = {

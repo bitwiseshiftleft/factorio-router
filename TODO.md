@@ -1,12 +1,16 @@
 # Factorio smart routers TODO list and ideas for future work
 
-## Blocking release
+## High priority
 * Can routers be frozen?
 * More testing in py
 * Make sure blueprinting works
 * Make sure that un-marking for deconstruction, and undoing that, works
 * Is there a way to quiesce the network a little better?
 * Check balance on routing toward nearby I/O terminal vs further along the line.
+* Make the graphics on the I/O point less symmetrical so people don't put them in backwards.
+* Suggestion from Serjevski: issue alerts on clog
+* Suggestion from Serjevski: fairer balancing near vs far (near I/O port can starve far requester)
+* Suggestion from Serjevski: view inventory
 
 ## General
 * Create ghost lamps when creating ghost router, to enable circuit connections
@@ -20,6 +24,7 @@
 * Remove unused icons
 * Make routers also function as a power pole?
 * Add filters to event listeners, for reduced UPS cost
+* Loaders can now have stack size adjusted at runtime instead of having separate prototypes.
 * Deal with routers' tendency to slightly over-send (undersend is better!) especially due to the gap when a loader moves items: they disappear from the chest's inventory before they appear on the belt's inventory.
 
 Refactor lua slightly

@@ -33,7 +33,7 @@ function create_belt(belt_type,postfix)
     local entity = table.deepcopy(data.raw["transport-belt"][belt_type .. postfix])
 
     entity.name           = "router-component-"  .. belt_type
-    entity.minable.result = nil
+    entity.minable = nil
     entity.selectable_in_game = false
     entity.flags = { "not-rotatable", "not-blueprintable" }
     entity.hidden = true
@@ -63,7 +63,7 @@ function LEGACY_create_underneathie(belt_type,postfix)
     local entity = table.deepcopy(data.raw["underground-belt"][belt_type .. postfix])
     entity.name = "router-component-"  .. belt_type
     entity.max_distance = 0
-    entity.minable.result = nil
+    entity.minable = nil
     entity.selectable_in_game = false
     entity.flags = { "not-rotatable", "not-blueprintable" }
     entity.hidden = true
