@@ -284,7 +284,7 @@ end
 -- signals will propagate throughout the network.
 --
 -- The smaller this is, the faster the network will equilibrate.
-local LEAK_FACTOR = 64
+local LEAK_FACTOR = 256
 
 local function set_jam_scale(builder,entity,new_jam_scale)
     -- Update a router to set the scale for the number of items in its buffer at which it is
