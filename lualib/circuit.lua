@@ -387,7 +387,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         control.use_colors = true
         control.color_mode = defines.control_behavior.lamp.color_mode.color_mapping
         control.circuit_enable_disable = true
-        control.circuit_condition = {first_signal=LINK, comparator=">", constant=64}
+        control.circuit_condition = {first_signal=LINK, comparator=">", constant=LEAK_FACTOR}
 
         -- Drive my demand * 4 ==> lamp (connected via their_demand)
         local port_driver = builder:arithmetic{blinken=true,op="*",R=LEAK_FACTOR/4,red={my_demand},description="port driver"}
