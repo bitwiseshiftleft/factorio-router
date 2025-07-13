@@ -388,12 +388,6 @@ local function create_underground_components(prefix,postfix)
     data:extend({belt_with_no_frames.create_underneathie(prefix.."underground-belt",postfix)})
 end
 
-if mods["space-exploration"] then
-    empty_space_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("empty-space-tile")
-    space_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("space-tile")
-    spaceship_collision_layer = collision_mask_util_extended.get_make_named_collision_mask("moving-tile")
-end
-
 local care_about_quality = settings.startup["router-use-quality"].value
 local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,power)
     create_belt_components(prefix,postfix)
@@ -458,13 +452,13 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     }
     if is_space then
         holding_entity_as_combinator.collision_mask = {
-            layers={player=true, water_tile=true, empty_space_collision_layer=true, spaceship_collision_layer=ture}
+            layers={player=true, water_tile=true, empty_space_tile=true, moving_tile=true}
         }
     elseif mods["space-exploration"] then
         -- Not placeable in space
         holding_entity_as_combinator.collision_mask = {
             layers={
-                player=true, water_tile=true, empty_space_collision_layer=true, space_collision_layer=true, spaceship_collision_layer=true
+                player=true, water_tile=true, empty_space_tile=true, space_tile=true, moving_tile=true
             }
         }
     end

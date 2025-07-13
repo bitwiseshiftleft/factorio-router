@@ -8,7 +8,7 @@
     "description": "Circuit-controlled logistic router network",
     "dependencies": [
       "? boblogistics >= 1.1.0",
-      "? space-exploration >= 0.6.100",
+      "? space-exploration >= 0.7.1",
       "? IndustrialRevolution3 >= 3.0",
       "? SeaBlockMetaPack >= 1.1",
       "? Krastorio2 >= 1.3.0",

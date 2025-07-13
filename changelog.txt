@@ -1,4 +1,16 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.2.6
+Date: 2025-07-13
+
+  Changed the multiplier from request => item amount in router networks from 64 to 256.
+  This means that router requests will propagate farther than they did before.
+  
+  This is a breaking change if you're directly reading/writing the protocol that routers
+  use to communicate with each other (e.g. to set LTN/Cybersyn requests).
+
+  Compatibility fixes for Space Exploration 0.7 beta and Krastorio 2.
+
+---------------------------------------------------------------------------------------------------
 Version: 0.2.5
 Date: 2025-04-18
 

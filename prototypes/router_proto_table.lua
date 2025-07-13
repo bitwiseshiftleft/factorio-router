@@ -129,9 +129,9 @@ if have_k2 and have_se then
   M.table["kr-advanced-"] = {
     tint = util.color("3ade21D1"),
     prerequisites = {"kr-logistic-4","se-energy-science-pack-1"},
-    manual_ingredients = { {"imersium-gear-wheel",4}, {"se-energy-catalogue-1", 8} },
-    smart_ingredients =  { {"imersium-gear-wheel",6}, {"se-energy-catalogue-1", 12} },
-    io_ingredients    =  { {"imersium-gear-wheel",2}, {"se-energy-catalogue-1", 4} },
+    manual_ingredients = { {"kr-imersium-gear-wheel",4}, {"se-energy-catalogue-1", 8} },
+    smart_ingredients =  { {"kr-imersium-gear-wheel",6}, {"se-energy-catalogue-1", 12} },
+    io_ingredients    =  { {"kr-imersium-gear-wheel",2}, {"se-energy-catalogue-1", 4} },
     tech_costs = {
       count = 750,
       ingredients = {
@@ -150,9 +150,9 @@ if have_k2 and have_se then
   M.table["kr-superior-"] = {
     prerequisites = {"kr-logistic-5","kr-ai-core"},
     tint = util.color("a30bd6D1"),
-    manual_ingredients = { {"ai-core",10}, {"se-material-catalogue-2", 10} },
-    smart_ingredients  = { {"ai-core",20}, {"se-material-catalogue-2", 20} },
-    io_ingredients     = { {"ai-core",5} , {"se-material-catalogue-2", 50} },
+    manual_ingredients = { {"kr-ai-core",10}, {"se-material-catalogue-2", 10} },
+    smart_ingredients  = { {"kr-ai-core",20}, {"se-material-catalogue-2", 20} },
+    io_ingredients     = { {"kr-ai-core",5} , {"se-material-catalogue-2", 50} },
     tech_costs = {
       count = 1000,
       ingredients = {
@@ -183,9 +183,9 @@ elseif have_k2 then
   M.table["kr-advanced-"] = {
     tint = util.color("3ade21D1"),
     prerequisites = {"kr-logistic-4","kr-ai-core"},
-    manual_ingredients = { {"ai-core",4} },
-    smart_ingredients =  { {"ai-core",6} },
-    io_ingredients    =  { {"ai-core",2} },
+    manual_ingredients = { {"kr-ai-core",4} },
+    smart_ingredients =  { {"kr-ai-core",6} },
+    io_ingredients    =  { {"kr-ai-core",2} },
     tech_costs = {
       count = 750,
       ingredients = {
@@ -201,15 +201,15 @@ elseif have_k2 then
   M.table["kr-superior-"] = {
     prerequisites = {"kr-logistic-5"},
     tint = util.color("a30bd6D1"),
-    manual_ingredients = { {"ai-core",10} },
-    smart_ingredients  = { {"ai-core",20} },
-    io_ingredients     = { {"ai-core",5} },
+    manual_ingredients = { {"kr-ai-core",10} },
+    smart_ingredients  = { {"kr-ai-core",20} },
+    io_ingredients     = { {"kr-ai-core",5} },
     tech_costs = {
       count = 1000,
       ingredients = {
           { "production-science-pack", 1 },
           { "utility-science-pack", 1 },
-          { "advanced-tech-card", 1}
+          { "kr-advanced-tech-card", 1}
       },
       time = 15
     },
