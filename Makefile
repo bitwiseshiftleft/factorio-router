@@ -1,4 +1,4 @@
-VERSION=0.2.6
+VERSION=0.2.7
 MODS_DIR="$(HOME)/Library/Application Support/factorio/mods"
 FILES= thumbnail.png info.json changelog.txt *.lua prototypes migrations graphics lualib locale README.md resources \
 	resources/default.png resources/leaf.png resources/connected.png resources/threshold.png LICENSE

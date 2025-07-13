@@ -290,12 +290,14 @@ end
 local register_event = event.register_event
 register_event(defines.events.on_built_entity, on_built)
 register_event(defines.events.on_robot_built_entity, on_built)
+register_event(defines.events.on_space_platform_built_entity, on_built)
 register_event(defines.events.on_pre_build, on_pre_build)
 register_event(defines.events.script_raised_built, on_built)
 register_event(defines.events.script_raised_revive, on_built)
 
 register_event(defines.events.on_entity_died, on_died)
 register_event(defines.events.on_player_mined_entity, on_died)
+register_event(defines.events.on_space_platform_mined_entity, on_died)
 register_event(defines.events.on_pre_ghost_deconstructed, on_died)
 register_event(defines.events.on_robot_mined_entity, on_robot_mined)
 register_event(defines.events.script_raised_destroy, on_died)
