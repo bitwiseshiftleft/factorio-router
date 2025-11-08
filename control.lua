@@ -3,6 +3,7 @@ local undo = require "lualib.undo"
 local event = require "lualib.event"
 local disable_picker_dollies = require "lualib.disable_picker_dollies"
 local myutil = require "lualib.util"
+local migrate = require "lualib.migrate"
 
 -- If not nil: we think this is a fast upgrade
 local fast_replace_state = nil
@@ -314,3 +315,4 @@ local function init()
 end
 
 script.on_load(init)
+script.on_configuration_changed(migrate.migrate_all_stack_sizes)

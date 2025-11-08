@@ -65,6 +65,46 @@ local function clean_out_router_for_rebuild(entity, chests)
     end
 end
 
+local function adjust_stack_sizes(entity)
+    -- fix all the output loader stack sizes in `entity`
+    if not script.feature_flags.space_travel then return end
+    local care_about_quality = settings.startup["router-use-quality"].value
+    -- Try to insert them into the given inventories, or spill them onto the ground if not
+    local surface = entity.surface
+    local force = entity.force
+    local position = entity.position
+    local stack_size = care_about_quality and 1+(entity.quality.level or 0) or 255
+
+    -- find and destroy all children, putting their hand contents into the buffer
+    local children = entity.surface.find_entities_filtered{area=entity.bounding_box}
+    for _,child in ipairs(children) do
+        if child ~= entity and create_router.is_router_component(child) then
+            if child.type == "loader" and string.find(child.name, '^router%-component%-output') ~= nil then
+                child.loader_belt_stack_size_override = stack_size
+            end
+        end
+    end
+end
+
+-- can be run on_configuration_changed
+local function migrate_all_stack_sizes()
+    if not script.feature_flags.space_travel then return end
+    local nio = 0
+    local nsmart = 0
+    for _,surface in pairs(game.surfaces) do
+        for _,e in pairs(surface.find_entities_filtered{type="constant-combinator"}) do
+            if e.valid and create_router.is_router_io(e) then
+                adjust_stack_sizes(e)
+            end
+        end
+        for _,e in pairs(surface.find_entities_filtered{type="lamp"}) do
+            if e.valid and create_router.is_router_smart(e) then
+                adjust_stack_sizes(e)
+            end
+        end
+    end
+end
+
 local function rebuild_router_smart(entity)
     -- create the chest first so that we can transfer inventory
     local sz = "4x4" -- FUTURE
@@ -135,4 +175,6 @@ end
 M.insert_or_spill = insert_or_spill
 M.rebuild_router_io = rebuild_router_io
 M.rebuild_router_smart = rebuild_router_smart
+M.adjust_stack_sizes = adjust_stack_sizes
+M.migrate_all_stack_sizes = migrate_all_stack_sizes
 return M

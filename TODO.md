@@ -2,7 +2,11 @@
 
 ## High priority
 * Can routers be frozen?
-* More testing in py
+* Change selection priority so that combinators over ore can be used.
+* Deal with slightly over-delivering and then having components circulate / accumulate in default chests.
+* Deal better with falloff, somehow?
+* Make sure that wire connection distances are symmterical
+* Consider whether routers should include a power pole.
 * Make sure blueprinting works
 * Make sure that un-marking for deconstruction, and undoing that, works
 * Is there a way to quiesce the network a little better?

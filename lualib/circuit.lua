@@ -74,7 +74,7 @@ function Builder:make_blinken_combi(args)
     end
     
     -- Lay out blinkenlights on a grid
-    local x_offset, y_offset, orientation = 0
+    local x_offset, y_offset, direction = 0
     if args.blinken then
         x_offset = self.blinken_base_x + self.blinken_offset_x*self.blinken_xi
         y_offset = self.blinken_base_y + self.blinken_offset_y*self.blinken_yi
@@ -85,7 +85,7 @@ function Builder:make_blinken_combi(args)
         end
 
         -- arbitrary
-        orientation = (self.rngstate*4) % 16
+        direction = (self.rngstate*4) % 16
         self.rngstate = bit32.bxor(bit32.lrotate(self.rngstate,3),self.rngstate + 0xb96e43d2)
     else
         x_offset = 0
@@ -94,7 +94,7 @@ function Builder:make_blinken_combi(args)
 
     local ret = self.surface.create_entity{
         name=name, position=myutil.vector_add(self.position,{x=x_offset,y=y_offset}), force=self.force,
-        direction = args.orientation or orientation,
+        direction = args.direction or direction,
         quality = args.quality
     }
     ret.combinator_description = args.description or ""
@@ -238,11 +238,11 @@ end
 -- The outputs are based on the offset arg
 --   (offset ^ INT_MIN) if power; offset if no power
 --   default offset = INT_MIN
-local function power_consumption_combi(builder,size, prefix, suffix, orientation, offset, quality)
+local function power_consumption_combi(builder,size, prefix, suffix, direction, offset, quality)
     local name = "router-component-"..size.."-"..prefix.."power-combinator-"..suffix
     local c1 = builder:arithmetic{
         combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
-        orientation = orientation, description="Power consumer",
+        direction=direction, description="Power consumer",
         quality = quality
     }
     local c2 = builder:arithmetic{op="+",L=offset or -0x80000000,R=POWER,out=POWER,red={c1}, description="Power consumer checker"}
@@ -251,7 +251,7 @@ local function power_consumption_combi(builder,size, prefix, suffix, orientation
 end
 
 -- 
-local function fixup_power_consumption(builder, entity, name)
+local function fixup_power_consumption(builder, entity, name, direction)
     local c1o,c1,c2
     for _,e in ipairs(entity.surface.find_entities_filtered{
         type="arithmetic-combinator",
@@ -267,7 +267,7 @@ local function fixup_power_consumption(builder, entity, name)
     if c1o and c2 then
         local c1 = builder:arithmetic{
             combinator_name=name,op="+",L=-0x80000000,R=POWER,out=POWER,red={ITSELF},
-            orientation = orientation, description="Power consumer",
+            direction=direction, description="Power consumer",
             quality = entity.quality
         }
         c1.get_wire_connector(ORED,true).connect_to(c2.get_wire_connector(IRED,true))
@@ -331,7 +331,7 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
     local jammed = builder:arithmetic{L=EACH,NL=NGREEN,R=0,out=SIGC,green={chest},description="jammed"}
     local jam_scale = builder:constant_combi({{SIGC,-16*jam_scale}},"jammed scale")
 
-    local power = power_consumption_combi(builder,size,prefix,"smart",builder.orientation,offset,quality)
+    local power = power_consumption_combi(builder,size,prefix,"smart",builder.direction,offset,quality)
     local power2 = builder:arithmetic{L=EACH,op="+",R=0,green={power},description="power buffer"} -- hopefully helps UPS?
     power2.get_wire_connector(OGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
 
@@ -342,6 +342,53 @@ local function create_smart_comms(builder,prefix,chest,input_belts,input_loaders
         control.circuit_condition = {first_signal = SIGC, comparator="<", second_signal=POWER}
         l.get_wire_connector(CGREEN,true).connect_to(jammed.get_wire_connector(OGREEN,true))
     end
+
+    local jam_counter = builder:decider{
+        decisions = {
+            {NL=NGREEN, L=SIGC, op=">=", R=0},
+        },
+        green = {jammed},
+        red = {ITSELF},
+        output = {
+            {out=SIGC,set_one=true,constant=1},
+            {out=SIGC,WO=NRED}
+        }
+    }
+
+    -- make a speaker and panel to alert the user that the router is jammed.
+    local jam_alert = builder:create_or_find_entity{ name="router-component-jam-speaker" }
+    local jam_behavior = jam_alert.get_or_create_control_behavior()
+    jam_behavior.circuit_condition = {first_signal = SIGC, comparator=">=", constant=600} -- ten seconds
+    jam_alert.get_wire_connector(CRED,true).connect_to(jam_counter.get_wire_connector(ORED,true))
+    jam_alert.parameters.playback_volume = 0
+    jam_alert.alert_parameters = {
+        alert_message = "Router is jammed!",
+        icon_signal_id = {type="entity",name="router-"..size.."-"..prefix.."smart"},
+        show_alert = true,
+        show_on_map = true
+    }
+
+    local jam_counter_2 = builder:decider{
+        decisions = {
+            {NL=NGREEN, L=SIGC, op=">=", R=572},
+            {and_=true,NL=NRED, L=SIGC, op="<", R=59}
+        },
+        green = {jam_counter},
+        red = {ITSELF},
+        output = {
+            {out=SIGC,set_one=true,constant=1},
+            {out=SIGC,WO=NRED}
+        }
+    }
+    jam_alert = builder:create_or_find_entity{ name="router-component-jam-panel" }
+    jam_alert.get_wire_connector(CGREEN,true).connect_to(jam_counter_2.get_wire_connector(OGREEN,true))
+    jam_behavior = jam_alert.get_or_create_control_behavior()
+    jam_behavior.set_message(1,{
+        text="",
+        icon={type="virtual",name="signal-alert"},
+        condition={first_signal = SIGC, comparator=">=", constant=30}
+    })
+    
 
     ------------------------------------------------------------------------------
     -- Signal transmission
@@ -462,7 +509,7 @@ local function create_smart_comms_io(
 
     -- Create the power controller
     local quality = entity.quality
-    local power = power_consumption_combi(builder,size,prefix,"io",builder.orientation,offset,quality)
+    local power = power_consumption_combi(builder,size,prefix,"io",entity.orientation*16,offset,quality)
     local power2 = builder:arithmetic{L=EACH,op="+",R=0,green={power},description="power buffer"} -- hopefully helps UPS?
     for _,ins in ipairs(input_inserters) do
         control = ins.get_or_create_control_behavior()

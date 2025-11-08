@@ -144,6 +144,7 @@ local function create_smart_router(prefix, entity, is_fast_replace, is_migration
     -- end
 
     local stack_size = 1+(entity.quality.level or 0)
+    if not settings.startup["router-use-quality"].value then stack_size = 255 end
 
     local function mkbelt(ipt)
         local name = "router-component-" .. prefix .. "transport-belt"
@@ -171,14 +172,15 @@ local function create_smart_router(prefix, entity, is_fast_replace, is_migration
     local function mkldr(ipt,dir)
         local tweak = (dir == "input") and 8 or 0 -- because setting loader_type will reverse it
         local xb = surf.create_entity{
-            name = ("router-component-" .. dir ..
-                    "-stack" .. tostring(stack_size) ..
-                    "-" .. prefix .. "loader"),
+            name = ("router-component-" .. dir .. "-" .. prefix .. "loader"),
             position = relative(ipt.b),
             direction = (my_orientation + ipt.d + tweak)%16,
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        if dir == "output" then
+            xb.loader_belt_stack_size_override = stack_size
+        end
         if xb then
             xb.rotatable = false
             xb.loader_type = dir
@@ -308,20 +310,21 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
     local my_orientation = entity.orientation*16
     local opposite_orientation = (8+entity.orientation*16)%16
     local stack_size = 1+(entity.quality.level or 0)
+    if not settings.startup["router-use-quality"].value then stack_size = 255 end
 
     local input_inserters = {}
     local n_inserters = 4
 
     for i=1,n_lanes do
         output_loaders[i] = entity.surface.create_entity{
-            name = ("router-component-output-stack"
-                    .. tostring(stack_size) ..
+            name = ("router-component-output"..
                     "-" .. prefix .. "loader"),
             position = relative({x=i-0.5,y=0}),
             direction = my_orientation,
             force = entity.force,
             fast_replace = is_fast_replace
         }
+        output_loaders[i].loader_belt_stack_size_override = stack_size
         if output_loaders[i] then
             output_loaders[i].rotatable = false
         end

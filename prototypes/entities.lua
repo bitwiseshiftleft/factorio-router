@@ -222,6 +222,27 @@ local interface_lamp_proto = {
     glow_size = 0
 }
 
+local jam_speaker = util.merge{hidden_widget_proto,{
+    type = "programmable-speaker",
+    name = "router-component-jam-speaker",
+    energy_source = { type = "void", },
+    energy_usage_per_tick = "1J",
+    maximum_polyphony = 0,
+    instruments = {data.raw["programmable-speaker"]["programmable-speaker"].instruments[1]},
+    circuit_wire_max_distance = 9
+}}
+
+local jam_panel = util.merge{hidden_widget_proto,{
+    type = "display-panel",
+    name = "router-component-jam-panel",
+    collision_box = {{-1,-1},{1,1}},
+    selection_box = {{-1,-1},{1,1}},
+    circuit_wire_max_distance = 9,
+    icon_draw_specification = {shift = util.by_pixel(29, 2), scale = 0.5},
+
+}}
+jam_panel.flags = { "not-blueprintable", "placeable-off-grid", "not-on-map" }
+
 -- Super inserter
 local super_inserter = util.merge{hidden_widget_proto,{
     type = "inserter",
@@ -278,6 +299,8 @@ if protos.enable_manual or protos.enable_smart then
 
         hidden_container_for_4x4, hidden_loader
     }
+    data:extend{jam_speaker}
+    data:extend{jam_panel}
 end
 
 if protos.enable_manual then
@@ -425,7 +448,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
         item_slot_count = 0,
 		collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
 		selection_box = {{-2, -2}, {2, 2}},
-        selection_priority = 30,
+        selection_priority = 65,
         selectable_in_game = true,
         -- circuit_wire_connection_points = connection_points,
         -- circuit_connector_sprites = connector_definitions.sprites,
@@ -443,7 +466,7 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
 		collision_box = {{-1.9, -1.9}, {1.9, 1.9}},
         collision_mask = {layers={ player=true, water_tile=true, cliff=true, car=true, rail=true, object=true, empty_space=true, lava_tile=true}},
 		selection_box = {{-2, -2}, {2, 2}},
-        selection_priority = 30,
+        selection_priority = 60,
         selectable_in_game = true,
         -- selectable_in_game = false,
         circuit_wire_max_distance = 0,
@@ -602,12 +625,12 @@ local function create_router(size,prefix,tint,next_upgrade,is_space,postfix,powe
     end
 end
 
-local function create_loader(prefix,postfix,named_size,stack_size)
-    local stack_size = stack_size or 1
+local function create_loader(prefix,postfix)
+    local stack_size = feature_flags.space_travel and 255 or 1
     local belt_type = prefix.."transport-belt"..(postfix or "")
     local belt = data.raw["transport-belt"][belt_type]
     data:extend{util.merge{hidden_widget_proto,{
-        name = "router-component-input-stack"..tostring(named_size).."-"..prefix.."loader",
+        name = "router-component-input-"..prefix.."loader",
         type = "loader-1x1",
         filter_count = 0,
         speed = belt.speed,
@@ -621,7 +644,7 @@ local function create_loader(prefix,postfix,named_size,stack_size)
         -- belt_animation_set = belt.belt_animation_set,
         container_distance = 0.75,
     }},util.merge{hidden_widget_proto,{
-        name = "router-component-output-stack"..tostring(named_size).."-"..prefix.."loader",
+        name = "router-component-output-"..prefix.."loader",
         type = "loader-1x1",
         filter_count = 5,
         belt_length = 0.5,
@@ -630,6 +653,7 @@ local function create_loader(prefix,postfix,named_size,stack_size)
         allow_rail_interaction = false,
         collision_mask = {layers={transport_belt=true}},
         max_belt_stack_size = stack_size,
+        adjustable_belt_stack_size = feature_flags.space_travel,
         circuit_wire_max_distance = 10,
         draw_circuit_wires = false,
         fast_replaceable_group = "router-output-loader",
@@ -640,14 +664,5 @@ end
 
 for prefix,router in pairs(protos.table) do
     create_router("4x4",prefix,router.tint,router.next_upgrade,router.is_space,router.postfix or "",router.power)
-    local postfix = router.postfix or ""
-    if feature_flags.quality and feature_flags.space_travel then
-        for name,qual in pairs(data.raw["quality"]) do
-            if name ~= "quality-unknown" and qual.level >= 0 then
-                create_loader(prefix,postfix,1+qual.level,care_about_quality and (1+qual.level) or 255)
-            end
-        end
-    else
-        create_loader(prefix,postfix,1,feature_flags.space_travel and 255 or 1)
-    end
+    create_loader(prefix,router.postfix or "")
 end
