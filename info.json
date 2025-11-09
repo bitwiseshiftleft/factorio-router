@@ -17,6 +17,7 @@
       "? Dectorio >= 0.12",
       "? enable-all-feature-flags >= 1.0.1",
       "? quality >= 2.0.0",
-      "? Ultracube >= 0.6.8"
+      "? Ultracube >= 0.6.8",
+      "? sei-turbo_belts >= 1.0"
     ]
   }

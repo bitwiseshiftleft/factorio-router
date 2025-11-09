@@ -8,6 +8,7 @@ local have_se = data.raw.item["se-space-transport-belt"] ~= nil
 local have_ir3 = mods["IndustrialRevolution3"] ~= nil
 local have_k2 = data.raw.item["kr-superior-transport-belt"] ~= nil
 local have_bobs = data.raw.item["ultimate-transport-belt"] ~= nil
+local have_sei_turbo = mods["sei-turbo-belts"] ~= nil
 local have_spaceage = feature_flags.space_travel and data.raw.item["turbo-transport-belt"] ~= nil
 local have_ae3 = (
   data.raw.technology["advanced-electronics-3"] ~= nil
@@ -337,6 +338,38 @@ elseif have_bobs then
       },
       time = 15
     },
+  }
+elseif have_sei_turbo then
+  M.table["turbo-"] = {
+    tint = util.color(turbo_hex),
+    prerequisites = {"turbo-transport-belt","utility-science-pack","se-energy-science-pack-1"},
+    tech_costs = {
+        count = 800,
+        ingredients =
+        {
+          {"automation-science-pack", 1},
+          {"logistic-science-pack", 1},
+          {"chemical-science-pack", 1},
+          {"production-science-pack", 1},
+          {"se-material-science-pack-1", 1},
+          {"se-energy-science-pack-1", 1},
+          {"space-science-pack", 1}
+        },
+        time = 60
+    },
+    manual_ingredients = {
+        {"processing-unit",60},
+        {"se-iridium-plate",20}
+    },
+    smart_ingredients = {
+        {"processing-unit",90},
+        {"se-iridium-plate",30},
+        {"se-energy-catalogue-1",10}
+    },
+    io_ingredients = {
+        {"processing-unit",30},
+        {"se-iridium-plate",10}
+    }
   }
 elseif have_spaceage then
   M.table["turbo-"] = {

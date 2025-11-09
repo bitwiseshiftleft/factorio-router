@@ -1,6 +1,10 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.8
-Date: 2025-11-07
+Date: 2025-11-08
+
+  New feature: Routers (but not I/O points) now show an alert when jammed for more than 10 seconds.
+
+  New integration: Turbo Belts (Space Exploration integration)
 
   Fixed a bug: Router I/O points were not correctly determining whether they were powered.
   Depending on their rotation, the hitbox for powering them would be different from the I/O point
@@ -9,10 +13,10 @@ Date: 2025-11-07
   Fixed a bug: Router I/O points had a lower selection index than ore, so they couldn't be selected
   if they were on an ore field.
 
+  Fixed a bug: Router I/O port lamps were operable.
+
   Routers' internal loaders now use adjustable stack size (available since Factorio 2.0.35) instead
   of having a separate prototype for each size.
-
-  Routers (but not I/O points) now show an alert when jammed for more than 10 seconds.
 
 ---------------------------------------------------------------------------------------------------
 Version: 0.2.7

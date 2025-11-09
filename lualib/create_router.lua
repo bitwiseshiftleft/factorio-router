@@ -385,6 +385,8 @@ local function create_smart_router_io(prefix, entity, is_fast_replace, n_lanes)
         direction = my_orientation,
         position = relative({x=0,y=0})
     }
+    port.operable = false -- disable its gui
+    indicator.operable = false
 
     -- Create the comms and port control network
     circuit.create_smart_comms_io(
